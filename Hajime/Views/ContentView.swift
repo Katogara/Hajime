@@ -128,7 +128,7 @@ private struct TaskListView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("🌱")
                 .font(.system(size: 48))
-            PhraseText("なかなか始められないこと、ありますか？")
+            HeadlineText("なかなか始められないこと、ありますか？")
                 .font(.system(.title3, design: .rounded, weight: .heavy))
                 .foregroundStyle(Pop.ink)
             PhraseText("決めた時刻に、最初の一歩だけを通知でお知らせします。「はじめる」を押したら、たっぷり褒めます。")
@@ -270,7 +270,7 @@ private struct DonePraise: View {
                 .rotationEffect(.degrees(bounce ? 10 : -10))
                 .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: bounce)
             VStack(alignment: .leading, spacing: 2) {
-                PhraseText("できた！えらすぎる！")
+                HeadlineText("できた！えらすぎる！")
                     .font(.system(.headline, design: .rounded, weight: .black))
                     .foregroundStyle(Pop.orange)
                 PhraseText("今日のぶん、ちゃんと始められました")
@@ -329,7 +329,7 @@ private struct OneDayTimeSheet: View {
         let endOfDay = Calendar.current.date(bySettingHour: 23, minute: 59, second: 0, of: now) ?? now
         NavigationStack {
             VStack(spacing: 16) {
-                PhraseText("今日の「\(task.title)」は何時から？")
+                HeadlineText("今日の「\(task.title)」は何時から？")
                     .font(.system(.title3, design: .rounded, weight: .heavy))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Pop.ink)

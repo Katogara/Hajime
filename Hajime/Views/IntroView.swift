@@ -101,7 +101,7 @@ private struct IntroPage<Content: View>: View {
                     .animation(.spring(response: 0.5, dampingFraction: 0.45), value: appeared)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 24)
-                PhraseText(title)
+                HeadlineText(title)
                     .font(.system(.largeTitle, design: .rounded, weight: .black))
                     .foregroundStyle(Pop.ink)
                 VStack(alignment: .leading, spacing: 16) {

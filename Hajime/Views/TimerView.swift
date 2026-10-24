@@ -39,9 +39,15 @@ struct TimerView: View {
         let remaining = max(0, session.endsAt.timeIntervalSince(now))
         return VStack(spacing: 14) {
             Button { model.continueSession() } label: {
-                Text("やりました！")
-                    .font(.system(.title2, design: .rounded, weight: .black))
-                    .frame(maxWidth: .infinity, minHeight: 48)
+                // 2 行目は小さめの決意表明
+                VStack(spacing: 2) {
+                    Text("やりました！")
+                        .font(.system(.title2, design: .rounded, weight: .black))
+                    Text("続きをやります")
+                        .font(.system(.subheadline, design: .rounded, weight: .heavy))
+                        .opacity(0.9)
+                }
+                .frame(maxWidth: .infinity, minHeight: 56)
             }
             .buttonStyle(PopButtonStyle(color: Pop.green, shade: Pop.greenDeep, depth: 6))
             PhraseText("⏰ \(session.minutes)分たったら、続きに夢中なあなたの代わりに、やりましたボタンを押しておきますね（のこり \(Self.clock(remaining))）")
@@ -73,7 +79,7 @@ struct TimerView: View {
 struct ConceptBanner: View {
     var body: some View {
         VStack(spacing: 6) {
-            PhraseText("📣 このアプリはあなたの「はじめる」を応援します！")
+            HeadlineText("📣 このアプリはあなたの「はじめる」を応援します！")
                 .font(.system(.title3, design: .rounded, weight: .black))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white)
