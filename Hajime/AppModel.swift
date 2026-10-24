@@ -210,20 +210,40 @@ final class AppModel {
     func quit() {
         guard let session else { return }
         if let record = records.first(where: { $0.id == session.recordID }), record.xpAwarded == true {
-            xp = max(0, xp - 1)
-            defaults.set(xp, forKey: StoreKey.xp)
-            // その +1 で上がったレベルも、つみあげからそっと消す
-            let current = level.level
-            if levelUps.contains(where: { $0.level > current }) {
-                levelUps.removeAll { $0.level > current }
-                store(levelUps, StoreKey.levelUps)
-            }
+            revokeXP()
         }
         updateRecord(session.recordID) {
             $0.outcome = .quit
             $0.xpAwarded = nil
         }
         finish()
+    }
+
+    /// まちがえて「やりました！」を押したときの取り消し。「やっぱりやめます」を押したのと同じにする
+    /// (経験値をそっと戻し、カードのキラキラが消えて元の位置に戻る)
+    func undoDone(_ task: StartTask, now: Date = .now) {
+        let indices = records.indices.filter {
+            records[$0].taskID == task.id && records[$0].xpAwarded == true
+                && Calendar.current.isDate(records[$0].startedAt, inSameDayAs: now)
+        }
+        guard !indices.isEmpty else { return }
+        for index in indices {
+            records[index].outcome = .quit
+            records[index].xpAwarded = nil
+            revokeXP()
+        }
+        store(records, StoreKey.records)
+    }
+
+    /// 経験値 -1。その +1 で上がったレベルも、つみあげからそっと消す
+    private func revokeXP() {
+        xp = max(0, xp - 1)
+        defaults.set(xp, forKey: StoreKey.xp)
+        let current = level.level
+        if levelUps.contains(where: { $0.level > current }) {
+            levelUps.removeAll { $0.level > current }
+            store(levelUps, StoreKey.levelUps)
+        }
     }
 
     /// 「やりました！」。一歩をやった時点でアプリの役目は終わりなので、褒めて一覧に戻る (続きの時間は数えない)
