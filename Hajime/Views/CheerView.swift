@@ -22,16 +22,16 @@ struct CheerView: View {
         switch kind {
         case .started:
             return [
-                ("はじめた！\n天才！", "いちばん難しいところを、もう越えました"),
-                ("すごい！\n始められた！", "これができる人は、ほんとうに強い"),
+                ("はじめた！天才！", "いちばん難しいところを、もう越えました"),
+                ("すごい！始められた！", "これができる人は、ほんとうに強い"),
                 ("えらすぎる！", "腰が重いのに動いた。最高です"),
-                ("最高の\nスタート！", "始めた時点で、今日はもう勝ち"),
+                ("最高のスタート！", "始めた時点で、今日はもう勝ち"),
             ]
         case .continued:
             return [
-                ("一歩やった！\nすごすぎる！", "その勢いで、続きもいこう"),
-                ("できてる！\n最高！", "もう完全に動き出してます"),
-                ("やったね！\nかっこいい！", "始めた自分に感謝しよう"),
+                ("一歩やった！すごすぎる！", "その勢いで、続きもいこう"),
+                ("できてる！最高！", "もう完全に動き出してます"),
+                ("やったね！かっこいい！", "始めた自分に感謝しよう"),
             ]
         case .graduated:
             return [("卒業おめでとう！", "もうあなたは、1人で何でもできます")]
@@ -68,7 +68,7 @@ struct CheerView: View {
                     .scaleEffect(burst ? 1 : 0.2)
                     .rotationEffect(.degrees(burst ? 0 : -30))
                     .animation(.spring(response: 0.45, dampingFraction: 0.4), value: burst)
-                Text(phrase.title)
+                PhraseText(phrase.title)
                     .font(.system(size: 46, weight: .black, design: .rounded))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.white)
@@ -76,7 +76,7 @@ struct CheerView: View {
                     .scaleEffect(burst ? 1 : 0.5)
                     .opacity(burst ? 1 : 0)
                     .animation(.spring(response: 0.5, dampingFraction: 0.5).delay(0.1), value: burst)
-                Text(phrase.sub)
+                PhraseText(phrase.sub)
                     .font(.system(.headline, design: .rounded, weight: .bold))
                     .foregroundStyle(.white.opacity(0.9))
                     .opacity(burst ? 1 : 0)
@@ -127,10 +127,10 @@ private struct LevelUpStage: View {
     let level: Int
     @State private var appeared = false
     @State private var phrase = [
-        "積み上げてきた証拠！\nほんとうにすごい！",
-        "一歩ずつが、\nちゃんと力になってる！",
-        "成長が止まらない！\nかっこいい！",
-        "昨日の自分より、\n確実に強い！",
+        "積み上げてきた証拠！ほんとうにすごい！",
+        "一歩ずつが、ちゃんと力になってる！",
+        "成長が止まらない！かっこいい！",
+        "昨日の自分より、確実に強い！",
     ].randomElement()!
 
     static let duration: Duration = .seconds(3.6)
@@ -166,12 +166,12 @@ private struct LevelUpStage: View {
                     .shadow(color: .black.opacity(0.18), radius: 0, y: 6)
                     .scaleEffect(appeared ? 1 : 0.3)
                     .animation(.spring(response: 0.5, dampingFraction: 0.35).delay(0.25), value: appeared)
-                Text("「\(LevelTable.title(for: level))」になりました！")
+                PhraseText("「\(LevelTable.title(for: level))」になりました！")
                     .font(.system(.headline, design: .rounded, weight: .heavy))
                     .foregroundStyle(.white)
                     .opacity(appeared ? 1 : 0)
                     .animation(.easeOut(duration: 0.4).delay(0.5), value: appeared)
-                Text(phrase)
+                PhraseText(phrase)
                     .font(.system(.title2, design: .rounded, weight: .black))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.white)
@@ -221,15 +221,15 @@ private struct GraduationView: View {
                         .font(.system(size: 64, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.15), radius: 0, y: 5)
-                    Text("卒業おめでとう！")
+                    PhraseText("卒業おめでとう！")
                         .font(.system(size: 40, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
                         .shadow(color: .black.opacity(0.15), radius: 0, y: 4)
-                    Text("もうあなたは、\n1人で何でもできます。")
+                    PhraseText("もうあなたは、1人で何でもできます。")
                         .font(.system(.title2, design: .rounded, weight: .heavy))
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.white)
-                    Text("考える前に始められる力は、もうあなたのものです。\nこのアプリがなくても、きっと大丈夫。")
+                    PhraseText("考える前に始められる力は、もうあなたのものです。このアプリがなくても、きっと大丈夫。")
                         .font(.system(.body, design: .rounded, weight: .semibold))
                         .multilineTextAlignment(.center)
                         .foregroundStyle(.white.opacity(0.9))

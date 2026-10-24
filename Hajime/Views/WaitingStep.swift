@@ -15,6 +15,17 @@ struct WaitingStep: View {
 
     private var fontSize: CGFloat { step.count > 14 ? 32 : 44 }
 
+    /// 文節ごとの文字と、一歩全体での何文字目か (跳ねる順番に使う)
+    private var phrases: [[(index: Int, value: Character)]] {
+        var index = 0
+        return Phrases.split(step).map { phrase in
+            phrase.map { character in
+                defer { index += 1 }
+                return (index, character)
+            }
+        }
+    }
+
     var body: some View {
         VStack(spacing: 14) {
             Text(beckoning ? "👀 まってるよ" : "👣 まずはこれ")
@@ -23,14 +34,21 @@ struct WaitingStep: View {
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(Capsule().fill(Pop.orange.opacity(0.14)))
+            let phrases = self.phrases
             TimelineView(.animation(paused: !beckoning)) { context in
                 let t = context.date.timeIntervalSinceReferenceDate
+                // 文節ごとにまとめて並べ、文節の間だけで折り返す (語の途中で行が変わらないように)
                 FlowLayout {
-                    ForEach(Array(step.enumerated()), id: \.offset) { index, character in
-                        Text(String(character))
-                            .font(.system(size: fontSize, weight: .black, design: .rounded))
-                            .foregroundStyle(Pop.ink)
-                            .offset(y: beckoning ? lift(index: index, time: t) : 0)
+                    ForEach(phrases.indices, id: \.self) { phrase in
+                        HStack(spacing: 0) {
+                            ForEach(phrases[phrase].indices, id: \.self) { item in
+                                let character = phrases[phrase][item]
+                                Text(String(character.value))
+                                    .font(.system(size: fontSize, weight: .black, design: .rounded))
+                                    .foregroundStyle(Pop.ink)
+                                    .offset(y: beckoning ? lift(index: character.index, time: t) : 0)
+                            }
+                        }
                     }
                 }
                 // ゆっくり息をしているように、わずかに大きさを変える

@@ -50,34 +50,34 @@ struct IntroView: View {
     // MARK: - ページ
 
     private var purpose: some View {
-        IntroPage(emoji: "😮‍💨", color: Pop.orange, title: "始める直前が、\nいちばんつらい") {
-            Text("やらなきゃと思うほど、なかなか始められない。でも始めてしまえば、意外とすんなり進む。")
-            Text("このアプリはあなたの「はじめる」を応援します！")
+        IntroPage(emoji: "😮‍💨", color: Pop.orange, title: "始める直前が、いちばんつらい") {
+            PhraseText("やらなきゃと思うほど、なかなか始められない。でも始めてしまえば、意外とすんなり進む。")
+            PhraseText("このアプリはあなたの「はじめる」を応援します！")
                 .font(.system(.title3, design: .rounded, weight: .black))
                 .foregroundStyle(Pop.orange)
-            Text("手伝うのは「始めること」だけ。やることの管理はしませんし、終わらせなくていいアプリです。")
+            PhraseText("手伝うのは「始めること」だけ。やることの管理はしませんし、終わらせなくていいアプリです。")
         }
     }
 
     private var usage: some View {
         IntroPage(emoji: "👆", color: Pop.yellow, title: "使い方") {
-            IntroStep(number: 1, text: "やることと、すぐ終わる「最初の一歩」を登録する\n（例：筋トレ →「ウェアに着替える」）")
+            IntroStep(number: 1, text: "やることと、すぐ終わる「最初の一歩」を登録する（例：筋トレなら「ウェアに着替える」）")
             IntroStep(number: 2, text: "決めた時刻に通知が届いたら、長押しして「始める」。まずはたっぷり褒めます")
-            IntroStep(number: 3, text: "一歩をやったら「最初の一歩やりました！続きをやります」。やらなかったら「やっぱりやめます」")
-            Text("続きに夢中で押し忘れても大丈夫。\(StartTask.firstMinutes)分たったら、1つ目のボタンを押しておきます。")
+            IntroStep(number: 3, text: "一歩をやったら「やりました！」。やらなかったら「やっぱりやめます」")
+            PhraseText("続きに夢中で押し忘れても大丈夫。\(StartTask.firstMinutes)分たったら、代わりに「やりました！」を押しておきます。")
                 .font(.system(.subheadline, design: .rounded))
-            Text("始められなかったら、\(Int(ReminderSchedule.nudgeDelay / 60))分後にもっと小さな一歩で、もう一度だけ知らせます。")
+            PhraseText("始められなかったら、\(Int(ReminderSchedule.nudgeDelay / 60))分後にもっと小さな一歩で、もう一度だけ知らせます。")
                 .font(.system(.subheadline, design: .rounded))
-            Text("日によって始めたい時刻が違うときは、一覧の「今日は別の時間にする？」から時刻を選べます。")
+            PhraseText("日によって始めたい時刻が違うときは、一覧の「今日は別の時間にする？」から時刻を選べます。")
                 .font(.system(.subheadline, design: .rounded))
         }
     }
 
     private var future: some View {
-        IntroPage(emoji: "🏃", color: Pop.green, title: "考える前に、\nもう始めている") {
-            Text("迷っている時間とストレスが減り、通知から始めるまでの時間が少しずつ短くなっていきます。")
-            Text("始めるたびに経験値 +1（同じやることは1日1回まで）。レベル\(LevelTable.maxLevel)になったら卒業です。そのころには、もうアプリがなくても始められるはず。")
-            Text("記録に残るのは、始めた回数と始めるまでの時間だけ。やらなかった日を責めることはありません。")
+        IntroPage(emoji: "🏃", color: Pop.green, title: "考える前に、もう始めている") {
+            PhraseText("迷っている時間とストレスが減り、通知から始めるまでの時間が少しずつ短くなっていきます。")
+            PhraseText("始めるたびに経験値 +1（同じやることは1日1回まで）。レベル\(LevelTable.maxLevel)になったら卒業です。そのころには、もうアプリがなくても始められるはず。")
+            PhraseText("記録に残るのは、始めた回数と始めるまでの時間だけ。やらなかった日を責めることはありません。")
         }
     }
 }
@@ -101,7 +101,7 @@ private struct IntroPage<Content: View>: View {
                     .animation(.spring(response: 0.5, dampingFraction: 0.45), value: appeared)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 24)
-                Text(title)
+                PhraseText(title)
                     .font(.system(.largeTitle, design: .rounded, weight: .black))
                     .foregroundStyle(Pop.ink)
                 VStack(alignment: .leading, spacing: 16) {
@@ -129,7 +129,7 @@ private struct IntroStep: View {
                 .foregroundStyle(.white)
                 .frame(width: 30, height: 30)
                 .background(Circle().fill(Pop.orange))
-            Text(text)
+            PhraseText(text)
                 .foregroundStyle(Pop.ink)
         }
     }

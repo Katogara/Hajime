@@ -50,7 +50,7 @@ struct TaskEditView: View {
                     .listRowBackground(Color.clear)
                 } footer: {
                     if task.isOneDay {
-                        Text("今日だけのやることは、始めたあともキラキラのカードで残り、明日になると消えます。")
+                        PhraseText("今日だけのやることは、始めたあともキラキラのカードで残り、明日になると消えます。")
                     }
                 }
                 Section("やること") {
@@ -61,7 +61,7 @@ struct TaskEditView: View {
                 } header: {
                     Text("最初の一歩")
                 } footer: {
-                    Text("失敗しようのない、すぐ終わる行動にします。通知にはこの一歩だけが出ます。")
+                    PhraseText("失敗しようのない、すぐ終わる行動にします。通知にはこの一歩だけが出ます。")
                 }
                 Section(task.isOneDay ? "今日、何時に促す？" : "促す時刻") {
                     DatePicker("時刻", selection: time, displayedComponents: .hourAndMinute)
@@ -74,7 +74,7 @@ struct TaskEditView: View {
                 } header: {
                     Text("さらに小さい一歩（任意）")
                 } footer: {
-                    Text("通知から15分たっても始めていないとき、一度だけこの一歩で促します（\(StartTask.nudgeMinutes)分）。空なら最初の一歩で促します。")
+                    PhraseText("通知から15分たっても始めていないとき、一度だけこの一歩で促します（\(StartTask.nudgeMinutes)分）。空なら最初の一歩で促します。")
                 }
                 if !isNew {
                     Section {

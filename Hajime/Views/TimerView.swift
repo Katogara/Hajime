@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// 「はじめる」を押したあとの画面。主役は時間ではなく「最初の一歩」。
-/// 選ぶのは「最初の一歩やりました！続きをやります」か「やっぱりやめます」の 2 つだけ。
-/// 時間 (5 分) は、続きに夢中になっているかもしれない人のために、1 つ目を代わりに押しておく補助。
+/// 選ぶのは「やりました！」か「やっぱりやめます」の 2 つだけ。
+/// 時間 (5 分) は、続きに夢中になっているかもしれない人のために、「やりました！」を代わりに押しておく補助。
 struct TimerView: View {
     @Environment(AppModel.self) private var model
     let session: TimerSession
@@ -14,7 +14,7 @@ struct TimerView: View {
                 VStack(spacing: 18) {
                     LevelBadge(progress: model.level)
                     ConceptBanner()
-                    Text(session.title)
+                    PhraseText(session.title)
                         .font(.system(.headline, design: .rounded, weight: .bold))
                         .foregroundStyle(Pop.ink.opacity(0.55))
                         .padding(.top, 4)
@@ -30,7 +30,7 @@ struct TimerView: View {
             .frame(maxWidth: .infinity)
             .popBackground()
         }
-        // 時間がたったら「続きをやります」を押しておく
+        // 時間がたったら「やりました！」を押しておく
         .task(id: session.recordID) {
             let wait = session.endsAt.timeIntervalSinceNow
             if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
@@ -43,25 +43,22 @@ struct TimerView: View {
         let remaining = max(0, session.endsAt.timeIntervalSince(now))
         return VStack(spacing: 14) {
             Button { model.continueSession() } label: {
-                VStack(spacing: 2) {
-                    Text("最初の一歩やりました！")
-                        .font(.system(.title3, design: .rounded, weight: .black))
-                    Text("続きをやります")
-                        .font(.system(.subheadline, design: .rounded, weight: .heavy))
-                }
-                .frame(maxWidth: .infinity, minHeight: 52)
+                Text("やりました！")
+                    .font(.system(.title2, design: .rounded, weight: .black))
+                    .frame(maxWidth: .infinity, minHeight: 48)
             }
             .buttonStyle(PopButtonStyle(color: Pop.green, shade: Pop.greenDeep, depth: 6))
+            PhraseText("⏰ \(session.minutes)分たったら、続きに夢中なあなたの代わりに、やりましたボタンを押しておきますね（のこり \(Self.clock(remaining))）")
+                .font(.system(.caption, design: .rounded, weight: .semibold))
+                .monospacedDigit()
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Pop.ink.opacity(0.55))
             // 一歩もやらなかったとき。始めた記録は残し、経験値はそっと取り消す
             Button { model.quit() } label: {
                 Text("やっぱりやめます").frame(maxWidth: .infinity)
             }
             .buttonStyle(PopButtonStyle.plain)
-            Text("⏰ \(session.minutes)分たったら、1つ目のボタンを押しておきますね（のこり \(Self.clock(remaining))）")
-                .font(.system(.caption, design: .rounded, weight: .semibold))
-                .monospacedDigit()
-                .multilineTextAlignment(.center)
-                .foregroundStyle(Pop.ink.opacity(0.55))
+            .padding(.top, 6)
         }
         .padding(.top, 6)
     }
@@ -69,7 +66,7 @@ struct TimerView: View {
     private func continuing(now: Date) -> some View {
         VStack(spacing: 14) {
             if session.autoContinued == true {
-                Text("\(session.minutes)分たったので、「続きをやります」にしておきました")
+                PhraseText("\(session.minutes)分たったので、代わりに「やりました！」を押しておきました")
                     .font(.system(.caption, design: .rounded, weight: .semibold))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Pop.ink.opacity(0.55))
@@ -100,11 +97,11 @@ struct TimerView: View {
 struct ConceptBanner: View {
     var body: some View {
         VStack(spacing: 6) {
-            Text("📣 このアプリはあなたの\n「はじめる」を応援します！")
+            PhraseText("📣 このアプリはあなたの「はじめる」を応援します！")
                 .font(.system(.title3, design: .rounded, weight: .black))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white)
-            Text("やることの管理はしません。終わらせなくていい。\n始めたあなたを、ただ応援します。")
+            PhraseText("やることの管理はしません。終わらせなくていい。始めたあなたを、ただ応援します。")
                 .font(.system(.caption, design: .rounded, weight: .bold))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.white.opacity(0.9))

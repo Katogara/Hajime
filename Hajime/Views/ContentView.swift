@@ -114,7 +114,7 @@ private struct TaskListView: View {
                         .font(.title3)
                         .foregroundStyle(Pop.orange.opacity(0.45))
                 }
-                Text("ちょっとだけ、やってみよ。")
+                PhraseText("ちょっとだけ、やってみよ。")
                     .font(.system(.subheadline, design: .rounded, weight: .semibold))
                     .foregroundStyle(Pop.ink.opacity(0.6))
             }
@@ -128,10 +128,10 @@ private struct TaskListView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("🌱")
                 .font(.system(size: 48))
-            Text("なかなか始められないこと、\nありますか？")
+            PhraseText("なかなか始められないこと、ありますか？")
                 .font(.system(.title3, design: .rounded, weight: .heavy))
                 .foregroundStyle(Pop.ink)
-            Text("決めた時刻に、最初の一歩だけを通知でお知らせします。「はじめる」を押したら、たっぷり褒めます。")
+            PhraseText("決めた時刻に、最初の一歩だけを通知でお知らせします。「はじめる」を押したら、たっぷり褒めます。")
                 .font(.system(.subheadline, design: .rounded))
                 .foregroundStyle(Pop.ink.opacity(0.7))
             Button("やることを追加") { editing = .draft() }
@@ -179,10 +179,10 @@ private struct TaskCard: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(alignment: .center, spacing: 12) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(task.title)
+                        PhraseText(task.title)
                             .font(.system(.title3, design: .rounded, weight: .heavy))
                             .foregroundStyle(Pop.ink)
-                        Text("👣 \(task.firstStep)")
+                        PhraseText("👣 \(task.firstStep)")
                             .font(.system(.subheadline, design: .rounded, weight: .medium))
                             .foregroundStyle(Pop.ink.opacity(0.75))
                         if task.isOneDay {
@@ -190,7 +190,7 @@ private struct TaskCard: View {
                         } else if let oneDay {
                             HStack(spacing: 6) {
                                 PopChip(text: "今日は \(StartTask.timeText(oneDay)) から", color: Pop.orange)
-                                Text("いつもは \(task.scheduleText)")
+                                PhraseText("いつもは \(task.scheduleText)")
                                     .font(.system(.caption2, design: .rounded))
                                     .foregroundStyle(Pop.ink.opacity(0.5))
                             }
@@ -270,10 +270,10 @@ private struct DonePraise: View {
                 .rotationEffect(.degrees(bounce ? 10 : -10))
                 .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: bounce)
             VStack(alignment: .leading, spacing: 2) {
-                Text("できた！えらすぎる！")
+                PhraseText("できた！えらすぎる！")
                     .font(.system(.headline, design: .rounded, weight: .black))
                     .foregroundStyle(Pop.orange)
-                Text("今日のぶん、ちゃんと始められました")
+                PhraseText("今日のぶん、ちゃんと始められました")
                     .font(.system(.caption, design: .rounded, weight: .semibold))
                     .foregroundStyle(Pop.ink.opacity(0.6))
             }
@@ -329,7 +329,7 @@ private struct OneDayTimeSheet: View {
         let endOfDay = Calendar.current.date(bySettingHour: 23, minute: 59, second: 0, of: now) ?? now
         NavigationStack {
             VStack(spacing: 16) {
-                Text("今日の「\(task.title)」は\n何時から？")
+                PhraseText("今日の「\(task.title)」は何時から？")
                     .font(.system(.title3, design: .rounded, weight: .heavy))
                     .multilineTextAlignment(.center)
                     .foregroundStyle(Pop.ink)

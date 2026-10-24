@@ -17,11 +17,11 @@ struct HistoryView: View {
                         StatCard(emoji: "⚡️", value: stats.medianDelay.map(StartStats.format) ?? "—",
                                  label: "通知から始めるまで", color: Pop.yellow)
                     }
-                    Text("通知から始めるまでの時間は、この7日間に通知から始めた分の中央値です。")
+                    PhraseText("通知から始めるまでの時間は、この7日間に通知から始めた分の中央値です。")
                         .font(.system(.caption, design: .rounded))
                         .foregroundStyle(Pop.ink.opacity(0.55))
                     if days.isEmpty {
-                        Text("まだありません。最初の1回、楽しみにしています 🌱")
+                        PhraseText("まだありません。最初の1回、楽しみにしています 🌱")
                             .font(.system(.subheadline, design: .rounded))
                             .foregroundStyle(Pop.ink.opacity(0.6))
                             .popCard()
@@ -59,7 +59,7 @@ private struct StatCard: View {
                 .foregroundStyle(Pop.ink)
                 .minimumScaleFactor(0.6)
                 .lineLimit(1)
-            Text(label)
+            PhraseText(label)
                 .font(.system(.caption, design: .rounded, weight: .bold))
                 .foregroundStyle(Pop.ink.opacity(0.6))
         }
@@ -121,7 +121,7 @@ private struct RainbowLevelUp: View {
                         .foregroundStyle(LinearGradient(colors: Self.rainbow,
                                                         startPoint: UnitPoint(x: -1 + sin(t) , y: 0),
                                                         endPoint: UnitPoint(x: 1 + sin(t), y: 1)))
-                    Text("Lv.\(event.level)「\(LevelTable.title(for: event.level))」になった")
+                    PhraseText("Lv.\(event.level)「\(LevelTable.title(for: event.level))」になった")
                         .font(.system(.subheadline, design: .rounded, weight: .heavy))
                         .foregroundStyle(Pop.ink)
                 }
@@ -174,7 +174,7 @@ private struct RecordRow: View {
                 .font(.system(size: 26))
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    Text(record.taskTitle)
+                    PhraseText(record.taskTitle)
                         .font(.system(.body, design: .rounded, weight: .bold))
                         .foregroundStyle(Pop.ink)
                     if record.oneDay == true {
@@ -186,7 +186,7 @@ private struct RecordRow: View {
                         .foregroundStyle(Pop.ink.opacity(0.5))
                 }
                 if !detail.isEmpty {
-                    Text(detail)
+                    PhraseText(detail)
                         .font(.system(.caption, design: .rounded))
                         .foregroundStyle(Pop.ink.opacity(0.6))
                 }
