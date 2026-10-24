@@ -125,6 +125,37 @@ final class ExperienceTests: XCTestCase {
     }
 }
 
+final class PhrasesTests: XCTestCase {
+    func testKeepsQuotesAndAppWordsTogether() {
+        XCTAssertEqual(Phrases.split("📣 このアプリはあなたの「はじめる」を応援します！"),
+                       ["📣 この", "アプリは", "あなたの", "「はじめる」を", "応援します！"])
+        XCTAssertEqual(Phrases.split("はじめた！天才！"), ["はじめた！", "天才！"])
+        XCTAssertEqual(Phrases.split("おきますね（のこり 4:32）").last, "（のこり 4:32）")
+    }
+
+    func testLineStartAndEndRules() {
+        let samples = [
+            "一歩をやったら「やりました！」。やらなかったら「やっぱりやめます」",
+            "やることと、すぐ終わる「最初の一歩」を登録する（例：筋トレなら「ウェアに着替える」）",
+            "手伝うのは「始めること」だけ。やることの管理はしませんし、終わらせなくていいアプリです。",
+        ]
+        for text in samples {
+            let chunks = Phrases.split(text)
+            XCTAssertEqual(chunks.joined(), text)
+            for chunk in chunks {
+                XCTAssertFalse(chunk.hasSuffix("「"), chunk)
+                XCTAssertFalse(["」", "、", "。", "！", "）"].contains { chunk.hasPrefix($0) }, chunk)
+            }
+        }
+    }
+
+    func testPunctuationLines() {
+        XCTAssertEqual(Phrases.punctuationLines("考える前に、もう始めている")?.components(separatedBy: "\n").count, 2)
+        XCTAssertNil(Phrases.punctuationLines("使い方"))
+        XCTAssertNil(Phrases.punctuationLines("応援します！"))
+    }
+}
+
 final class DayLogTests: XCTestCase {
     func testGroupsByDayNewestFirst() {
         var calendar = Calendar(identifier: .gregorian)
