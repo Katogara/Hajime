@@ -164,10 +164,17 @@ final class DayLogTests: XCTestCase {
             calendar.date(from: DateComponents(year: 2026, month: 10, day: day, hour: hour))!
         }
         let task = UUID()
+        func earned(_ title: String, _ date: Date, xp: Bool = true) -> StartRecord {
+            var record = StartRecord(taskID: task, taskTitle: title, startedAt: date)
+            record.xpAwarded = xp ? true : nil
+            return record
+        }
         let records = [
-            StartRecord(taskID: task, taskTitle: "筋トレ", startedAt: at(19, 20)),
-            StartRecord(taskID: task, taskTitle: "掃除", startedAt: at(19, 8)),
-            StartRecord(taskID: task, taskTitle: "筋トレ", startedAt: at(21, 7)),
+            earned("筋トレ", at(19, 20)),
+            earned("掃除", at(19, 8)),
+            // 同じ日に 2 回目に始めた分 (経験値なし) は出さない
+            earned("掃除", at(19, 21), xp: false),
+            earned("筋トレ", at(21, 7)),
         ]
         let levelUps = [LevelUpEvent(level: 2, date: at(19, 8)), LevelUpEvent(level: 3, date: at(22, 9))]
         let days = DayLog.build(records: records, levelUps: levelUps, calendar: calendar)
