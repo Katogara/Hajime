@@ -84,8 +84,10 @@ struct StartRecord: Codable, Identifiable, Equatable {
     enum Outcome: String, Codable {
         /// 時間がたっても続けた
         case continued
-        /// 時間で (または途中で) やめた
+        /// 時間がたったところでやめた
         case stopped
+        /// 時間の途中で「やめる」を押した (経験値はそっと取り消す)
+        case quit
     }
 
     var id = UUID()
@@ -96,6 +98,8 @@ struct StartRecord: Codable, Identifiable, Equatable {
     var startedAt: Date
     var outcome: Outcome?
     var endedAt: Date?
+    /// この記録で経験値 +1 をもらった (以前の記録にはないので省略可)
+    var xpAwarded: Bool?
 
     /// 促されてから始めるまでの時間
     var delay: TimeInterval? {

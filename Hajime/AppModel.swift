@@ -14,10 +14,16 @@ struct Cheer: Identifiable, Equatable {
     enum Kind {
         case started
         case continued
+        /// レベル 100 に達した (卒業)
+        case graduated
     }
 
     let id = UUID()
     var kind: Kind
+    /// 経験値 +1 をもらった
+    var gainedXP = false
+    /// レベルが上がったときの新しいレベル
+    var levelUp: Int?
 }
 
 /// やること・記録・タイマーを持ち、通知の予約をそれに合わせる。
@@ -32,6 +38,12 @@ final class AppModel {
     var ready: ReadyPrompt?
     /// 表示中の褒める演出 (画面が閉じたら nil に戻す)
     var cheer: Cheer?
+    /// これまでに貯めた経験値の合計
+    private(set) var xp = 0
+    /// 卒業の演出を見せた (2 回は見せない)
+    private(set) var graduated = false
+
+    var level: LevelProgress { LevelTable.progress(forXP: xp) }
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let notifier = Notifier()
@@ -45,6 +57,8 @@ final class AppModel {
         static let tasks = "tasks"
         static let records = "records"
         static let session = "session"
+        static let xp = "xp"
+        static let graduated = "graduated"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -52,6 +66,8 @@ final class AppModel {
         tasks = load([StartTask].self, StoreKey.tasks) ?? []
         records = load([StartRecord].self, StoreKey.records) ?? []
         session = load(TimerSession.self, StoreKey.session)
+        xp = defaults.integer(forKey: StoreKey.xp)
+        graduated = defaults.bool(forKey: StoreKey.graduated)
         notifier.onStart = { [weak self] response in self?.handle(response) }
         notifier.onTimerChoice = { [weak self] outcome in
             switch outcome {
@@ -121,7 +137,10 @@ final class AppModel {
         guard session == nil, let task = task(id: taskID) else { return }
         let plan = task.plan(for: kind)
         let now = Date()
-        let record = StartRecord(taskID: task.id, taskTitle: task.title, promptedAt: promptDate, startedAt: now)
+        // 経験値は同じやることで 1 日 1 回まで
+        let earns = Experience.canEarn(records: records, taskID: task.id, now: now)
+        var record = StartRecord(taskID: task.id, taskTitle: task.title, promptedAt: promptDate, startedAt: now)
+        record.xpAwarded = earns ? true : nil
         records.append(record)
         if records.count > Self.maxRecords {
             records.removeFirst(records.count - Self.maxRecords)
@@ -130,13 +149,41 @@ final class AppModel {
                                    minutes: plan.minutes, startedAt: now)
         self.session = session
         ready = nil
-        cheer = Cheer(kind: .started)
+        cheer = earns ? gainXP() : Cheer(kind: .started)
         store(records, StoreKey.records)
         store(session, StoreKey.session)
         notifier.scheduleTimerEnd(at: session.endsAt, minutes: session.minutes)
         Task { await notifier.clearDeliveredPrompts(taskID: task.id) }
         // その日の再通知を取り消す
         refreshSchedule()
+    }
+
+    /// 経験値 +1。レベルが上がれば演出に載せ、レベル 100 に初めて達したら卒業の演出にする
+    private func gainXP() -> Cheer {
+        let before = level.level
+        xp += 1
+        defaults.set(xp, forKey: StoreKey.xp)
+        let after = level.level
+        if after >= LevelTable.maxLevel && !graduated {
+            graduated = true
+            defaults.set(true, forKey: StoreKey.graduated)
+            return Cheer(kind: .graduated, gainedXP: true, levelUp: after)
+        }
+        return Cheer(kind: .started, gainedXP: true, levelUp: after > before ? after : nil)
+    }
+
+    /// 時間の途中で「やめる」。始めた記録は残すが、増えた経験値はそっと取り消す (何も表示しない)
+    func quit() {
+        guard let session else { return }
+        if let record = records.first(where: { $0.id == session.recordID }), record.xpAwarded == true {
+            xp = max(0, xp - 1)
+            defaults.set(xp, forKey: StoreKey.xp)
+        }
+        updateRecord(session.recordID) {
+            $0.outcome = .quit
+            $0.xpAwarded = nil
+        }
+        finish()
     }
 
     /// 時間がたったあとも続ける。終わったら `finish()` を呼ぶ。
