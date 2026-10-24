@@ -83,10 +83,11 @@ struct DayLog: Identifiable, Equatable {
 
     var id: Date { day }
 
-    /// 記録とレベルアップを日ごとにまとめる (新しい日が先)
+    /// 記録とレベルアップを日ごとにまとめる (新しい日が先)。
+    /// 記録は経験値がたまったものだけ出す (同じやることは 1 日 1 回なので、同じ項目が同じ日に重ならない)
     static func build(records: [StartRecord], levelUps: [LevelUpEvent], calendar: Calendar = .current) -> [DayLog] {
         var days: [Date: DayLog] = [:]
-        for record in records.sorted(by: { $0.startedAt < $1.startedAt }) {
+        for record in records.filter({ $0.xpAwarded == true }).sorted(by: { $0.startedAt < $1.startedAt }) {
             let day = calendar.startOfDay(for: record.startedAt)
             days[day, default: DayLog(day: day, records: [], levelUps: [])].records.append(record)
         }
