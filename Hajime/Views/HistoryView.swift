@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 「これまでのつみあげ」。日ごとに始めたこととレベルアップを並べる。やらなかった日は出さない。
+/// 「これまでのつみあげ」。日ごとに、経験値がたまった記録とレベルアップを並べる。やらなかった日は出さない。
 struct HistoryView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -112,7 +112,7 @@ private struct RainbowLevelUp: View {
             let angle = Angle.degrees(t.truncatingRemainder(dividingBy: 4) / 4 * 360)
             let graduated = event.level >= LevelTable.maxLevel
             HStack(spacing: 12) {
-                Text(graduated ? "🎓" : "🌈")
+                Text(graduated ? "🎓" : "🏆")
                     .font(.system(size: 34))
                     .rotationEffect(.degrees(sin(t * 3) * 12))
                 VStack(alignment: .leading, spacing: 2) {

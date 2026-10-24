@@ -66,14 +66,18 @@ private struct TaskListView: View {
             .popBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
+                    // ツールバーの Label は文字が隠れてアイコンだけになることがあるので、アイコンと名前を自分で並べる
                     Button { showingHistory = true } label: {
-                        Label("つみあげ", systemImage: "square.stack.3d.up.fill")
-                            .labelStyle(.titleAndIcon)
-                            .font(.system(.subheadline, design: .rounded, weight: .heavy))
-                            .foregroundStyle(Pop.orange)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 7)
-                            .background(Capsule().fill(Pop.orange.opacity(0.15)))
+                        HStack(spacing: 5) {
+                            Image(systemName: "square.stack.3d.up.fill")
+                            Text("これまでのつみあげ")
+                                .fixedSize()
+                        }
+                        .font(.system(.caption, design: .rounded, weight: .heavy))
+                        .foregroundStyle(Pop.orange)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(Capsule().fill(Pop.orange.opacity(0.15)))
                     }
                     .accessibilityLabel("これまでのつみあげ")
                 }
