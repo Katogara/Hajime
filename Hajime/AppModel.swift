@@ -9,6 +9,17 @@ struct ReadyPrompt: Identifiable {
     var promptDate: Date?
 }
 
+/// 大げさに褒める演出。始めたときと、続けたときだけ出す (「ここまで」では出さない)
+struct Cheer: Identifiable, Equatable {
+    enum Kind {
+        case started
+        case continued
+    }
+
+    let id = UUID()
+    var kind: Kind
+}
+
 /// やること・記録・タイマーを持ち、通知の予約をそれに合わせる。
 @Observable
 @MainActor
@@ -19,6 +30,8 @@ final class AppModel {
     private(set) var session: TimerSession?
     /// 通知本体のタップで開いたときの一歩の画面
     var ready: ReadyPrompt?
+    /// 表示中の褒める演出 (画面が閉じたら nil に戻す)
+    var cheer: Cheer?
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let notifier = Notifier()
@@ -117,6 +130,7 @@ final class AppModel {
                                    minutes: plan.minutes, startedAt: now)
         self.session = session
         ready = nil
+        cheer = Cheer(kind: .started)
         store(records, StoreKey.records)
         store(session, StoreKey.session)
         notifier.scheduleTimerEnd(at: session.endsAt, minutes: session.minutes)
@@ -130,6 +144,7 @@ final class AppModel {
         guard var session else { return }
         session.continued = true
         self.session = session
+        cheer = Cheer(kind: .continued)
         store(session, StoreKey.session)
         updateRecord(session.recordID) { $0.outcome = .continued }
         notifier.cancelTimerEnd()
@@ -144,6 +159,8 @@ final class AppModel {
             $0.endedAt = now
         }
         self.session = nil
+        // 「ここまで」は褒めも責めもしない
+        cheer = nil
         store(TimerSession?.none, StoreKey.session)
         notifier.cancelTimerEnd()
     }

@@ -101,7 +101,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     func scheduleTimerEnd(at date: Date, minutes: Int) {
         let content = UNMutableNotificationContent()
         content.title = "\(minutes)分たちました"
-        content.body = "始められました。続けても、ここでやめても大丈夫。"
+        content.body = "続けても、ここでやめても大丈夫。"
         content.sound = .default
         content.categoryIdentifier = NotificationID.timerCategory
         center.add(UNNotificationRequest(
