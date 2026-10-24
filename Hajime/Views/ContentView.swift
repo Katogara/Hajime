@@ -4,11 +4,23 @@ struct ContentView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        // タイマーが動いている間は、画面全体をタイマーにする (アプリを開き直しても戻る)
-        if let session = model.session {
-            TimerView(session: session)
-        } else {
-            TaskListView()
+        ZStack {
+            // タイマーが動いている間は、画面全体をタイマーにする (アプリを開き直しても戻る)
+            if let session = model.session {
+                TimerView(session: session)
+            } else {
+                TaskListView()
+            }
+            if let cheer = model.cheer {
+                CheerView(cheer: cheer) {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        if model.cheer == cheer { model.cheer = nil }
+                    }
+                }
+                .id(cheer.id)
+                .transition(.opacity)
+                .zIndex(1)
+            }
         }
     }
 }

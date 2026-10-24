@@ -66,12 +66,14 @@ struct TimerView: View {
         }
     }
 
+    /// 時間がたったところ。「ここまで」を選ぶ人もいるので、ここでは褒めない
     private var finished: some View {
         VStack(spacing: 18) {
-            Celebration()
-            Text("始められた！")
-                .font(.system(size: 36, weight: .black, design: .rounded))
-                .foregroundStyle(Pop.orange)
+            Text("⏰")
+                .font(.system(size: 56))
+            Text("\(session.minutes)分たちました")
+                .font(.system(size: 32, weight: .black, design: .rounded))
+                .foregroundStyle(Pop.ink)
             Text("続けても、ここでやめても大丈夫。")
                 .font(.system(.subheadline, design: .rounded, weight: .semibold))
                 .foregroundStyle(Pop.ink.opacity(0.65))
@@ -118,23 +120,3 @@ struct TimerView: View {
     }
 }
 
-/// 時間がたったときに、絵文字がはねるお祝い
-private struct Celebration: View {
-    @State private var jump = false
-    private let emojis = ["🎉", "✨", "🙌", "✨", "🎊"]
-
-    var body: some View {
-        HStack(spacing: 6) {
-            ForEach(Array(emojis.enumerated()), id: \.offset) { index, emoji in
-                Text(emoji)
-                    .font(.system(size: index == 2 ? 56 : 34))
-                    .offset(y: jump ? -10 : 6)
-                    .animation(.spring(response: 0.45, dampingFraction: 0.35)
-                        .repeatForever(autoreverses: true)
-                        .delay(Double(index) * 0.08), value: jump)
-            }
-        }
-        .onAppear { jump = true }
-        .sensoryFeedback(.success, trigger: jump)
-    }
-}
