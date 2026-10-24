@@ -149,29 +149,29 @@ private struct TaskCard: View {
         // 候補の時刻と「今日は」の表示が古くならないよう、1 分ごとに作り直す
         TimelineView(.everyMinute) { context in
             let oneDay = task.oneDayTime(on: context.date)
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(task.title)
-                        .font(.system(.title3, design: .rounded, weight: .heavy))
-                        .foregroundStyle(Pop.ink)
-                    Text("👣 \(task.firstStep)")
-                        .font(.system(.subheadline, design: .rounded, weight: .medium))
-                        .foregroundStyle(Pop.ink.opacity(0.75))
-                    if let oneDay {
-                        HStack(spacing: 6) {
-                            PopChip(text: "今日は \(StartTask.timeText(oneDay)) から", color: Pop.orange)
-                            Text("いつもは \(task.scheduleText)")
-                                .font(.system(.caption2, design: .rounded))
-                                .foregroundStyle(Pop.ink.opacity(0.5))
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .center, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(task.title)
+                            .font(.system(.title3, design: .rounded, weight: .heavy))
+                            .foregroundStyle(Pop.ink)
+                        Text("👣 \(task.firstStep)")
+                            .font(.system(.subheadline, design: .rounded, weight: .medium))
+                            .foregroundStyle(Pop.ink.opacity(0.75))
+                        if let oneDay {
+                            HStack(spacing: 6) {
+                                PopChip(text: "今日は \(StartTask.timeText(oneDay)) から", color: Pop.orange)
+                                Text("いつもは \(task.scheduleText)")
+                                    .font(.system(.caption2, design: .rounded))
+                                    .foregroundStyle(Pop.ink.opacity(0.5))
+                            }
+                        } else {
+                            PopChip(text: "⏰ \(task.scheduleText)")
                         }
-                    } else {
-                        PopChip(text: "⏰ \(task.scheduleText)")
                     }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .onTapGesture(perform: onEdit)
-                VStack(spacing: 8) {
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: onEdit)
                     // 通知を待たずに、自分で気づいたときも 1 タップで始められる
                     Button(action: onStart) {
                         VStack(spacing: 0) {
@@ -183,26 +183,26 @@ private struct TaskCard: View {
                         .frame(width: 44, height: 44)
                     }
                     .buttonStyle(PopButtonStyle(depth: 4))
-                    // 日によって始めたい時刻が違うとき、メニューを開いて時刻を選ぶだけ (2 タップ) で今日だけ変える
-                    Menu {
-                        Section("今日だけ、何時から？") {
-                            ForEach(StartTask.oneDayChoices(now: context.date), id: \.self) { date in
-                                Button(StartTask.timeText(date)) { onOneDay(date) }
-                            }
+                }
+                // 日によって始めたい時刻が違うとき、メニューを開いて時刻を選ぶだけ (2 タップ) で今日だけ変える
+                Menu {
+                    Section("今日だけ、何時から？") {
+                        ForEach(StartTask.oneDayChoices(now: context.date), id: \.self) { date in
+                            Button(StartTask.timeText(date)) { onOneDay(date) }
                         }
-                        Button("時刻を指定…", systemImage: "clock", action: onPickTime)
-                        if oneDay != nil {
-                            Button("いつもの時刻に戻す", systemImage: "arrow.uturn.backward") { onOneDay(nil) }
-                        }
-                    } label: {
-                        Label("今日は？", systemImage: "clock.arrow.circlepath")
-                            .font(.system(.caption, design: .rounded, weight: .bold))
-                            .foregroundStyle(Pop.orange)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(Capsule().fill(Pop.orange.opacity(0.12)))
                     }
-                    .accessibilityLabel("今日の時刻を変える")
+                    Button("時刻を指定…", systemImage: "clock", action: onPickTime)
+                    if oneDay != nil {
+                        Button("いつもの時刻に戻す", systemImage: "arrow.uturn.backward") { onOneDay(nil) }
+                    }
+                } label: {
+                    Label(oneDay == nil ? "今日は別の時間にする？" : "今日の時間を変える・戻す",
+                          systemImage: "clock.arrow.circlepath")
+                        .font(.system(.subheadline, design: .rounded, weight: .bold))
+                        .foregroundStyle(Pop.orange)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Capsule().fill(Pop.orange.opacity(0.12)))
                 }
             }
             .popCard(tint: color)

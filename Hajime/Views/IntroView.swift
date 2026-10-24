@@ -63,7 +63,7 @@ struct IntroView: View {
             IntroStep(number: 3, text: "\(StartTask.firstMinutes)分たったら「続ける」か「ここまで」。どちらでも「始めた」ことになる")
             Text("始められなかったら、\(Int(ReminderSchedule.nudgeDelay / 60))分後にもっと小さな一歩で、もう一度だけ知らせます。")
                 .font(.system(.subheadline, design: .rounded))
-            Text("日によって始めたい時刻が違うときは、一覧の「今日は？」から時刻を選べます。")
+            Text("日によって始めたい時刻が違うときは、一覧の「今日は別の時間にする？」から時刻を選べます。")
                 .font(.system(.subheadline, design: .rounded))
         }
     }
