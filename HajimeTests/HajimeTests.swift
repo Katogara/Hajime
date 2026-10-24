@@ -125,6 +125,41 @@ final class ExperienceTests: XCTestCase {
     }
 }
 
+final class DayLogTests: XCTestCase {
+    func testGroupsByDayNewestFirst() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        func at(_ day: Int, _ hour: Int) -> Date {
+            calendar.date(from: DateComponents(year: 2026, month: 10, day: day, hour: hour))!
+        }
+        let task = UUID()
+        let records = [
+            StartRecord(taskID: task, taskTitle: "筋トレ", startedAt: at(19, 20)),
+            StartRecord(taskID: task, taskTitle: "掃除", startedAt: at(19, 8)),
+            StartRecord(taskID: task, taskTitle: "筋トレ", startedAt: at(21, 7)),
+        ]
+        let levelUps = [LevelUpEvent(level: 2, date: at(19, 8)), LevelUpEvent(level: 3, date: at(22, 9))]
+        let days = DayLog.build(records: records, levelUps: levelUps, calendar: calendar)
+        XCTAssertEqual(days.map(\.day), [calendar.startOfDay(for: at(22, 0)), calendar.startOfDay(for: at(21, 0)),
+                                         calendar.startOfDay(for: at(19, 0))])
+        XCTAssertEqual(days[0].records, [])
+        XCTAssertEqual(days[0].levelUps.map(\.level), [3])
+        // 同じ日の中は古い順
+        XCTAssertEqual(days[2].records.map(\.taskTitle), ["掃除", "筋トレ"])
+    }
+
+    func testOneDayTaskExpiresNextDay() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        let today = calendar.date(from: DateComponents(year: 2026, month: 10, day: 19))!
+        var task = StartTask(title: "歯医者の予約", firstStep: "電話を手に取る", minuteOfDay: 600, weekdays: [])
+        task.onlyOn = today
+        XCTAssertFalse(task.isExpired(now: today.addingTimeInterval(23 * 3600), calendar: calendar))
+        XCTAssertTrue(task.isExpired(now: today.addingTimeInterval(24 * 3600), calendar: calendar))
+        XCTAssertFalse(StartTask.draft().isExpired(now: today, calendar: calendar))
+    }
+}
+
 final class StartTaskTests: XCTestCase {
     func testPlanUsesSmallerStepForNudge() {
         var task = StartTask(title: "仕事", firstStep: "資料を開く", minuteOfDay: 540)
