@@ -23,6 +23,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.Hajime
         INFOPLIST_FILE: Hajime/Info.plist
         TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         CODE_SIGN_STYLE: Automatic
   HajimeTests:
     type: bundle.unit-test

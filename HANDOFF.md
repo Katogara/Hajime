@@ -52,6 +52,7 @@
 | `Hajime/ReminderSchedule.swift` | 促す通知の日時の計算 (UI に依存しない) |
 | `Hajime/Notifier.swift` | ローカル通知の予約・ボタン・タップの受け取り |
 | `Hajime/Views/` | 一覧 (`ContentView`)、説明 (`IntroView`)、登録 (`TaskEditView`)、一歩の画面 (`ReadyView`)、タイマー (`TimerView`)、記録 (`HistoryView`) |
+| `Hajime/Assets.xcassets` | アプリアイコン (1024x1024 を 1 枚だけ置き、各サイズは Xcode が作る) |
 | `HajimeTests/HajimeTests.swift` | 通知の日時、一歩の選び方、集計、表示のユニットテスト |
 | `.github/workflows/ios.yml` | macOS ランナーでテスト → 未署名 IPA をビルドし Artifact `Hajime-unsigned-ipa` として保存 |
 
@@ -63,7 +64,7 @@
 - [x] 初回の説明画面 (3 ページ、タイトルのタップで再表示)
 - [ ] 実機での確認 (通知のボタンから始める動き、タイマー終了の通知のボタン)
 - [ ] F6 ウィジェット (無料 Apple ID では拡張ごとに App ID を使うため後回し)、F7 場所で促す
-- [ ] アプリアイコン
+- [x] アプリアイコン (`Hajime/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png`。1024x1024 の PNG で、透明・角丸・外側の影なし。角丸は iOS がかける)
 
 ## 5. 注意点
 
