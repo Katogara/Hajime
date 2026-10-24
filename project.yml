@@ -10,10 +10,17 @@ settings:
     SWIFT_VERSION: "5.0"
     MARKETING_VERSION: "1.0"
     CURRENT_PROJECT_VERSION: "1"
+packages:
+  # 日本語を文節の切れ目で折り返す (Google の BudouX の Swift 版)
+  BudouX:
+    url: https://github.com/griffin-stewie/BudouX.swift
+    exactVersion: 0.10.0
 targets:
   Hajime:
     type: application
     platform: iOS
+    dependencies:
+      - package: BudouX
     sources:
       - path: Hajime
         excludes:
