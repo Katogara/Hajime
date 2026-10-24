@@ -20,6 +20,15 @@ struct StartTask: Codable, Identifiable, Equatable {
     var weekdays: Set<Int> = Set(1...7)
     /// その日だけの促す時刻。その日のいつもの時刻の代わりに使い、ほかの日には影響しない
     var oneDayTime: Date?
+    /// 今日だけのやることなら、その日の 0 時。翌日には一覧から消える (曜日は空にし、時刻は `oneDayTime` に入れる)
+    var onlyOn: Date?
+
+    var isOneDay: Bool { onlyOn != nil }
+
+    /// 今日だけのやることで、その日が過ぎた
+    func isExpired(now: Date, calendar: Calendar = .current) -> Bool {
+        onlyOn.map { $0 < calendar.startOfDay(for: now) } ?? false
+    }
 
     static func draft() -> StartTask {
         StartTask(title: "", firstStep: "", minuteOfDay: 9 * 60)
@@ -43,6 +52,9 @@ struct StartTask: Codable, Identifiable, Equatable {
 
     /// 一覧に出す「毎日 7:30」などの表示
     var scheduleText: String {
+        if isOneDay {
+            return oneDayTime.map { "今日だけ \(Self.timeText($0))" } ?? "今日だけ"
+        }
         let time = Self.timeText(minuteOfDay)
         if weekdays.count == 7 { return "毎日 \(time)" }
         let days = weekdays.sorted().map { Self.weekdaySymbols[$0 - 1] }.joined(separator: "・")
@@ -100,6 +112,8 @@ struct StartRecord: Codable, Identifiable, Equatable {
     var endedAt: Date?
     /// この記録で経験値 +1 をもらった (以前の記録にはないので省略可)
     var xpAwarded: Bool?
+    /// 今日だけのやることを始めた記録
+    var oneDay: Bool?
 
     /// 促されてから始めるまでの時間
     var delay: TimeInterval? {

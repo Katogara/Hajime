@@ -42,6 +42,8 @@ final class AppModel {
     private(set) var xp = 0
     /// 卒業の演出を見せた (2 回は見せない)
     private(set) var graduated = false
+    /// レベルが上がった記録
+    private(set) var levelUps: [LevelUpEvent] = []
 
     var level: LevelProgress { LevelTable.progress(forXP: xp) }
 
@@ -59,6 +61,7 @@ final class AppModel {
         static let session = "session"
         static let xp = "xp"
         static let graduated = "graduated"
+        static let levelUps = "levelUps"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -68,11 +71,15 @@ final class AppModel {
         session = load(TimerSession.self, StoreKey.session)
         xp = defaults.integer(forKey: StoreKey.xp)
         graduated = defaults.bool(forKey: StoreKey.graduated)
+        levelUps = load([LevelUpEvent].self, StoreKey.levelUps) ?? []
+        removeExpiredTasks()
         notifier.onStart = { [weak self] response in self?.handle(response) }
         notifier.onTimerChoice = { [weak self] outcome in
             switch outcome {
             case .continued: self?.continueSession()
             case .stopped: self?.finish()
+            // タイマー終了の通知からは来ない (時間の途中でやめるのはアプリの「やめる」だけ)
+            case .quit: self?.quit()
             }
         }
     }
@@ -88,6 +95,14 @@ final class AppModel {
         task.title = task.title.trimmingCharacters(in: .whitespacesAndNewlines)
         task.firstStep = task.firstStep.trimmingCharacters(in: .whitespacesAndNewlines)
         task.smallerStep = task.smallerStep.trimmingCharacters(in: .whitespacesAndNewlines)
+        if task.isOneDay {
+            // 今日だけのやることは、曜日を使わず、今日の決めた時刻だけ促す
+            let now = Date()
+            task.onlyOn = Calendar.current.startOfDay(for: now)
+            task.weekdays = []
+            task.oneDayTime = Calendar.current.date(bySettingHour: task.minuteOfDay / 60,
+                                                    minute: task.minuteOfDay % 60, second: 0, of: now)
+        }
         if let index = tasks.firstIndex(where: { $0.id == task.id }) {
             tasks[index] = task
         } else {
@@ -104,8 +119,26 @@ final class AppModel {
     func setOneDayTime(_ date: Date?, for taskID: UUID) {
         guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return }
         tasks[index].oneDayTime = date
+        if tasks[index].isOneDay, let date {
+            // 今日だけのやることは、編集画面の時刻もそろえる
+            let parts = Calendar.current.dateComponents([.hour, .minute], from: date)
+            tasks[index].minuteOfDay = (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+        }
         store(tasks, StoreKey.tasks)
         refreshSchedule()
+    }
+
+    /// 日が変わった「今日だけ」のやることを消す (始めた記録は残る)
+    private func removeExpiredTasks() {
+        let now = Date()
+        guard tasks.contains(where: { $0.isExpired(now: now) }) else { return }
+        tasks.removeAll { $0.isExpired(now: now) }
+        store(tasks, StoreKey.tasks)
+    }
+
+    /// このやることを今日もう始めた
+    func startedToday(_ task: StartTask, now: Date = .now) -> Bool {
+        records.contains { $0.taskID == task.id && Calendar.current.isDate($0.startedAt, inSameDayAs: now) }
     }
 
     func delete(_ task: StartTask) {
@@ -141,6 +174,7 @@ final class AppModel {
         let earns = Experience.canEarn(records: records, taskID: task.id, now: now)
         var record = StartRecord(taskID: task.id, taskTitle: task.title, promptedAt: promptDate, startedAt: now)
         record.xpAwarded = earns ? true : nil
+        record.oneDay = task.isOneDay ? true : nil
         records.append(record)
         if records.count > Self.maxRecords {
             records.removeFirst(records.count - Self.maxRecords)
@@ -164,6 +198,10 @@ final class AppModel {
         xp += 1
         defaults.set(xp, forKey: StoreKey.xp)
         let after = level.level
+        if after > before {
+            levelUps.append(LevelUpEvent(level: after, date: .now))
+            store(levelUps, StoreKey.levelUps)
+        }
         if after >= LevelTable.maxLevel && !graduated {
             graduated = true
             defaults.set(true, forKey: StoreKey.graduated)
@@ -178,6 +216,12 @@ final class AppModel {
         if let record = records.first(where: { $0.id == session.recordID }), record.xpAwarded == true {
             xp = max(0, xp - 1)
             defaults.set(xp, forKey: StoreKey.xp)
+            // その +1 で上がったレベルも、つみあげからそっと消す
+            let current = level.level
+            if levelUps.contains(where: { $0.level > current }) {
+                levelUps.removeAll { $0.level > current }
+                store(levelUps, StoreKey.levelUps)
+            }
         }
         updateRecord(session.recordID) {
             $0.outcome = .quit
@@ -222,6 +266,7 @@ final class AppModel {
 
     /// 促す通知を予約し直す (7 日分なので、アプリを開くたびに先へ延ばす)
     func refreshSchedule() {
+        removeExpiredTasks()
         let prompts = ReminderSchedule.prompts(for: tasks, startedDays: ReminderSchedule.startedDays(records), now: .now)
         let tasks = tasks
         let previous = scheduling

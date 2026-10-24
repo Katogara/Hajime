@@ -66,6 +66,38 @@ struct LevelProgress: Equatable {
     var fraction: Double { needed == 0 ? 1 : Double(current) / Double(needed) }
 }
 
+/// レベルが上がった記録 (「これまでのつみあげ」に出す)
+struct LevelUpEvent: Codable, Equatable {
+    var level: Int
+    var date: Date
+}
+
+/// 「これまでのつみあげ」の 1 日分
+struct DayLog: Identifiable, Equatable {
+    /// その日の 0 時
+    var day: Date
+    /// その日に始めた記録 (古い順)
+    var records: [StartRecord]
+    /// その日に上がったレベル (古い順)
+    var levelUps: [LevelUpEvent]
+
+    var id: Date { day }
+
+    /// 記録とレベルアップを日ごとにまとめる (新しい日が先)
+    static func build(records: [StartRecord], levelUps: [LevelUpEvent], calendar: Calendar = .current) -> [DayLog] {
+        var days: [Date: DayLog] = [:]
+        for record in records.sorted(by: { $0.startedAt < $1.startedAt }) {
+            let day = calendar.startOfDay(for: record.startedAt)
+            days[day, default: DayLog(day: day, records: [], levelUps: [])].records.append(record)
+        }
+        for event in levelUps.sorted(by: { $0.date < $1.date }) {
+            let day = calendar.startOfDay(for: event.date)
+            days[day, default: DayLog(day: day, records: [], levelUps: [])].levelUps.append(event)
+        }
+        return days.values.sorted { $0.day > $1.day }
+    }
+}
+
 enum Experience {
     /// このやることで、今日まだ経験値をもらっていなければ true (同じやることは 1 日 1 回まで)
     static func canEarn(records: [StartRecord], taskID: UUID, now: Date, calendar: Calendar = .current) -> Bool {
