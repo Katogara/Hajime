@@ -9,7 +9,7 @@ struct ReadyPrompt: Identifiable {
     var promptDate: Date?
 }
 
-/// 大げさに褒める演出。始めたときと、続けたときだけ出す (「ここまで」では出さない)
+/// 大げさに褒める演出。始めたときと「最初の一歩やりました！」のときだけ出す (「やっぱりやめます」では出さない)
 struct Cheer: Identifiable, Equatable {
     enum Kind {
         case started
@@ -74,14 +74,6 @@ final class AppModel {
         levelUps = load([LevelUpEvent].self, StoreKey.levelUps) ?? []
         removeExpiredTasks()
         notifier.onStart = { [weak self] response in self?.handle(response) }
-        notifier.onTimerChoice = { [weak self] outcome in
-            switch outcome {
-            case .continued: self?.continueSession()
-            case .stopped: self?.finish()
-            // タイマー終了の通知からは来ない (時間の途中でやめるのはアプリの「やめる」だけ)
-            case .quit: self?.quit()
-            }
-        }
     }
 
     func task(id: UUID) -> StartTask? {
@@ -210,7 +202,7 @@ final class AppModel {
         return Cheer(kind: .started, gainedXP: true, levelUp: after > before ? after : nil)
     }
 
-    /// 時間の途中で「やめる」。始めた記録は残すが、増えた経験値はそっと取り消す (何も表示しない)
+    /// 「やっぱりやめます」。始めた記録は残すが、増えた経験値はそっと取り消す (何も表示しない)
     func quit() {
         guard let session else { return }
         if let record = records.first(where: { $0.id == session.recordID }), record.xpAwarded == true {
@@ -230,18 +222,26 @@ final class AppModel {
         finish()
     }
 
-    /// 時間がたったあとも続ける。終わったら `finish()` を呼ぶ。
-    func continueSession() {
-        guard var session else { return }
+    /// 「最初の一歩やりました！続きをやります」。終わったら `finish()` を呼ぶ。
+    /// - Parameter auto: 時間がたったので、代わりに押しておいた (本人は見ていないかもしれないので褒める演出は出さない)
+    func continueSession(auto: Bool = false) {
+        guard var session, !session.continued else { return }
         session.continued = true
+        session.autoContinued = auto ? true : nil
         self.session = session
-        cheer = Cheer(kind: .continued)
+        if !auto { cheer = Cheer(kind: .continued) }
         store(session, StoreKey.session)
         updateRecord(session.recordID) { $0.outcome = .continued }
         notifier.cancelTimerEnd()
     }
 
-    /// タイマーを閉じる。続けていなければ「やめた」として記録する。
+    /// 時間がたっていれば「続きをやります」を押しておく (アプリを閉じていたあいだの分も、開いたときに)
+    func autoContinueIfDue(now: Date = .now) {
+        guard let session, !session.continued, now >= session.endsAt else { return }
+        continueSession(auto: true)
+    }
+
+    /// タイマーを閉じる (「おわる」)。
     func finish() {
         guard let session else { return }
         let now = Date()
@@ -250,7 +250,7 @@ final class AppModel {
             $0.endedAt = now
         }
         self.session = nil
-        // 「ここまで」は褒めも責めもしない
+        // 閉じるときは褒めも責めもしない
         cheer = nil
         store(TimerSession?.none, StoreKey.session)
         notifier.cancelTimerEnd()
@@ -267,6 +267,7 @@ final class AppModel {
     /// 促す通知を予約し直す (7 日分なので、アプリを開くたびに先へ延ばす)
     func refreshSchedule() {
         removeExpiredTasks()
+        autoContinueIfDue()
         let prompts = ReminderSchedule.prompts(for: tasks, startedDays: ReminderSchedule.startedDays(records), now: .now)
         let tasks = tasks
         let previous = scheduling

@@ -11,8 +11,6 @@ private enum NotificationID {
     static let promptCategory = "startPrompt"
     static let startAction = "startNow"
     static let timerCategory = "timerEnd"
-    static let continueAction = "continue"
-    static let stopAction = "stop"
     static let promptPrefix = "prompt-"
     static let timerEnd = "timerEnd"
     static func prompt(_ prompt: Prompt) -> String {
@@ -34,8 +32,6 @@ struct PromptResponse {
 final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     /// 促す通知の「始める」が押されたとき・通知がタップされたとき
     var onStart: (@MainActor (PromptResponse) -> Void)?
-    /// タイマー終了の通知で「続ける」「ここまで」が押されたとき
-    var onTimerChoice: (@MainActor (StartRecord.Outcome) -> Void)?
 
     private let center = UNUserNotificationCenter.current()
 
@@ -43,11 +39,10 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         super.init()
         // 促した瞬間に迷わせないよう、促す通知のボタンは「始める」の 1 つだけにする
         let start = UNNotificationAction(identifier: NotificationID.startAction, title: "始める", options: [.foreground])
-        let keepGoing = UNNotificationAction(identifier: NotificationID.continueAction, title: "続ける", options: [])
-        let stop = UNNotificationAction(identifier: NotificationID.stopAction, title: "ここまで", options: [])
         center.setNotificationCategories([
             UNNotificationCategory(identifier: NotificationID.promptCategory, actions: [start], intentIdentifiers: []),
-            UNNotificationCategory(identifier: NotificationID.timerCategory, actions: [keepGoing, stop], intentIdentifiers: []),
+            // 時間がたったら自動で「続きをやります」にするので、ボタンは置かない
+            UNNotificationCategory(identifier: NotificationID.timerCategory, actions: [], intentIdentifiers: []),
         ])
         center.delegate = self
     }
@@ -71,9 +66,9 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
             content.title = task.title
             switch prompt.kind {
             case .first:
-                content.body = "「\(plan.step)」から。\(plan.minutes)分でやめていい。"
+                content.body = "「\(plan.step)」から。はじめるだけでいい。"
             case .nudge:
-                content.body = "「\(plan.step)」だけでいい。\(plan.minutes)分でやめていい。"
+                content.body = "「\(plan.step)」だけでいい。はじめるだけでいい。"
             }
             content.sound = .default
             content.categoryIdentifier = NotificationID.promptCategory
@@ -97,11 +92,11 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         center.removeDeliveredNotifications(withIdentifiers: ids)
     }
 
-    /// タイマーが終わる時刻の通知。アプリを閉じていても「続ける」「ここまで」を選べる。
+    /// 時間がたったときの通知。続きに夢中になっているかもしれないので、「続きをやります」にしておいたと知らせる。
     func scheduleTimerEnd(at date: Date, minutes: Int) {
         let content = UNMutableNotificationContent()
         content.title = "\(minutes)分たちました"
-        content.body = "続けても、ここでやめても大丈夫。"
+        content.body = "「続きをやります」を押しておきました。終わったら、アプリで「おわる」を押してください。"
         content.sound = .default
         content.categoryIdentifier = NotificationID.timerCategory
         center.add(UNNotificationRequest(
@@ -133,12 +128,6 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
                 let response = PromptResponse(taskID: parsed.0, kind: parsed.1, promptDate: parsed.2,
                                               startNow: action == NotificationID.startAction)
                 Task { @MainActor in self.onStart?(response) }
-            }
-        case NotificationID.timerCategory:
-            if action == NotificationID.continueAction {
-                Task { @MainActor in self.onTimerChoice?(.continued) }
-            } else if action == NotificationID.stopAction {
-                Task { @MainActor in self.onTimerChoice?(.stopped) }
             }
         default:
             break
