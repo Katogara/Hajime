@@ -52,15 +52,20 @@ struct IntroView: View {
     private var purpose: some View {
         IntroPage(emoji: "😮‍💨", color: Pop.orange, title: "始める直前が、\nいちばんつらい") {
             Text("やらなきゃと思うほど、なかなか始められない。でも始めてしまえば、意外とすんなり進む。")
-            Text("このアプリが手伝うのは「始めること」だけです。終わらせることも、管理することもしません。")
+            Text("このアプリはあなたの「はじめる」を応援します！")
+                .font(.system(.title3, design: .rounded, weight: .black))
+                .foregroundStyle(Pop.orange)
+            Text("手伝うのは「始めること」だけ。やることの管理はしませんし、終わらせなくていいアプリです。")
         }
     }
 
     private var usage: some View {
         IntroPage(emoji: "👆", color: Pop.yellow, title: "使い方") {
             IntroStep(number: 1, text: "やることと、すぐ終わる「最初の一歩」を登録する\n（例：筋トレ →「ウェアに着替える」）")
-            IntroStep(number: 2, text: "決めた時刻に通知が届いたら、長押しして「始める」。\(StartTask.firstMinutes)分のタイマーが動き出す")
-            IntroStep(number: 3, text: "\(StartTask.firstMinutes)分たったら「続ける」か「ここまで」。どちらでも「始めた」ことになる")
+            IntroStep(number: 2, text: "決めた時刻に通知が届いたら、長押しして「始める」。まずはたっぷり褒めます")
+            IntroStep(number: 3, text: "一歩をやったら「最初の一歩やりました！続きをやります」。やらなかったら「やっぱりやめます」")
+            Text("続きに夢中で押し忘れても大丈夫。\(StartTask.firstMinutes)分たったら、1つ目のボタンを押しておきます。")
+                .font(.system(.subheadline, design: .rounded))
             Text("始められなかったら、\(Int(ReminderSchedule.nudgeDelay / 60))分後にもっと小さな一歩で、もう一度だけ知らせます。")
                 .font(.system(.subheadline, design: .rounded))
             Text("日によって始めたい時刻が違うときは、一覧の「今日は別の時間にする？」から時刻を選べます。")

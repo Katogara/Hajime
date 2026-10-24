@@ -131,7 +131,7 @@ private struct TaskListView: View {
             Text("なかなか始められないこと、\nありますか？")
                 .font(.system(.title3, design: .rounded, weight: .heavy))
                 .foregroundStyle(Pop.ink)
-            Text("決めた時刻に、最初の一歩だけを通知でお知らせします。「始める」を押せば、\(StartTask.firstMinutes)分のタイマーがスタート。")
+            Text("決めた時刻に、最初の一歩だけを通知でお知らせします。「はじめる」を押したら、たっぷり褒めます。")
                 .font(.system(.subheadline, design: .rounded))
                 .foregroundStyle(Pop.ink.opacity(0.7))
             Button("やることを追加") { editing = .draft() }

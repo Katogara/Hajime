@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// 始めてからの画面。主役は時間ではなく「最初の一歩」。時間は下に小さく出す。
-/// 完了ではなく「始めたこと」を成功とし、時間がたったら続けるかやめるかを選ぶだけ。
+/// 「はじめる」を押したあとの画面。主役は時間ではなく「最初の一歩」。
+/// 選ぶのは「最初の一歩やりました！続きをやります」か「やっぱりやめます」の 2 つだけ。
+/// 時間 (5 分) は、続きに夢中になっているかもしれない人のために、1 つ目を代わりに押しておく補助。
 struct TimerView: View {
     @Environment(AppModel.self) private var model
     let session: TimerSession
@@ -9,91 +10,80 @@ struct TimerView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 1)) { context in
             let now = context.date
-            let counting = !session.continued && now < session.endsAt
-            VStack(spacing: 20) {
-                LevelBadge(progress: model.level)
-                Spacer(minLength: 0)
-                Text(session.title)
-                    .font(.system(.headline, design: .rounded, weight: .bold))
-                    .foregroundStyle(Pop.ink.opacity(0.55))
-                WaitingStep(step: session.step, beckoning: counting)
-                Spacer(minLength: 0)
-                if session.continued {
-                    continuing(now: now)
-                } else if counting {
-                    countingFooter(now: now)
-                } else {
-                    finished
+            ScrollView {
+                VStack(spacing: 18) {
+                    LevelBadge(progress: model.level)
+                    ConceptBanner()
+                    Text(session.title)
+                        .font(.system(.headline, design: .rounded, weight: .bold))
+                        .foregroundStyle(Pop.ink.opacity(0.55))
+                        .padding(.top, 4)
+                    WaitingStep(step: session.step, beckoning: !session.continued)
+                    if session.continued {
+                        continuing(now: now)
+                    } else {
+                        choosing(now: now)
+                    }
                 }
+                .padding(24)
             }
-            .padding(24)
             .frame(maxWidth: .infinity)
             .popBackground()
         }
+        // 時間がたったら「続きをやります」を押しておく
+        .task(id: session.recordID) {
+            let wait = session.endsAt.timeIntervalSinceNow
+            if wait > 0 { try? await Task.sleep(for: .seconds(wait)) }
+            if !Task.isCancelled { model.autoContinueIfDue() }
+        }
     }
 
-    /// 時間は脇役。細いバーと小さな数字だけ
-    private func countingFooter(now: Date) -> some View {
-        let total = TimeInterval(session.minutes * 60)
+    /// 一歩をやったか、やっぱりやめるか
+    private func choosing(now: Date) -> some View {
         let remaining = max(0, session.endsAt.timeIntervalSince(now))
         return VStack(spacing: 14) {
-            HStack(spacing: 10) {
-                GeometryReader { proxy in
-                    ZStack(alignment: .leading) {
-                        Capsule().fill(Pop.orange.opacity(0.15))
-                        Capsule().fill(Pop.orange)
-                            .frame(width: max(8, proxy.size.width * (1 - remaining / total)))
-                            .animation(.linear(duration: 1), value: remaining)
-                    }
+            Button { model.continueSession() } label: {
+                VStack(spacing: 2) {
+                    Text("最初の一歩やりました！")
+                        .font(.system(.title3, design: .rounded, weight: .black))
+                    Text("続きをやります")
+                        .font(.system(.subheadline, design: .rounded, weight: .heavy))
                 }
-                .frame(height: 8)
-                Text("のこり \(Self.clock(remaining))")
-                    .font(.system(.caption, design: .rounded, weight: .bold))
-                    .monospacedDigit()
-                    .foregroundStyle(Pop.ink.opacity(0.55))
+                .frame(maxWidth: .infinity, minHeight: 52)
             }
-            Text("終わらせなくていい。始めるだけ。")
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(Pop.ink.opacity(0.65))
-            // 途中でやめても「始めた」記録は残る (経験値はそっと取り消す)
-            Button("やめる") { model.quit() }
-                .buttonStyle(PopButtonStyle.plain)
-        }
-    }
-
-    /// 時間がたったところ。「ここまで」を選ぶ人もいるので、ここでは褒めない
-    private var finished: some View {
-        VStack(spacing: 14) {
-            Text("⏰ \(session.minutes)分たちました")
-                .font(.system(.title3, design: .rounded, weight: .heavy))
-                .foregroundStyle(Pop.ink)
-            Text("続けても、ここでやめても大丈夫。")
-                .font(.system(.subheadline, design: .rounded, weight: .semibold))
-                .foregroundStyle(Pop.ink.opacity(0.65))
-            HStack(spacing: 14) {
-                Button { model.finish() } label: {
-                    Text("ここまで").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(PopButtonStyle.plain)
-                Button { model.continueSession() } label: {
-                    Text("続ける").frame(maxWidth: .infinity)
-                }
-                .buttonStyle(PopButtonStyle(color: Pop.green, shade: Pop.greenDeep))
+            .buttonStyle(PopButtonStyle(color: Pop.green, shade: Pop.greenDeep, depth: 6))
+            // 一歩もやらなかったとき。始めた記録は残し、経験値はそっと取り消す
+            Button { model.quit() } label: {
+                Text("やっぱりやめます").frame(maxWidth: .infinity)
             }
+            .buttonStyle(PopButtonStyle.plain)
+            Text("⏰ \(session.minutes)分たったら、1つ目のボタンを押しておきますね（のこり \(Self.clock(remaining))）")
+                .font(.system(.caption, design: .rounded, weight: .semibold))
+                .monospacedDigit()
+                .multilineTextAlignment(.center)
+                .foregroundStyle(Pop.ink.opacity(0.55))
         }
+        .padding(.top, 6)
     }
 
     private func continuing(now: Date) -> some View {
         VStack(spacing: 14) {
-            Text("🔥 続けています  \(Self.clock(now.timeIntervalSince(session.startedAt)))")
+            if session.autoContinued == true {
+                Text("\(session.minutes)分たったので、「続きをやります」にしておきました")
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Pop.ink.opacity(0.55))
+            }
+            Text("🔥 続きをやっています  \(Self.clock(now.timeIntervalSince(session.startedAt)))")
                 .font(.system(.headline, design: .rounded, weight: .heavy))
                 .monospacedDigit()
                 .foregroundStyle(Pop.orange)
             Button { model.finish() } label: {
-                Text("おわる").frame(minWidth: 120)
+                Text("おわる").frame(minWidth: 140)
             }
             .buttonStyle(PopButtonStyle())
         }
+        .padding(.top, 6)
     }
 
     /// 「4:59」「1:02:03」のような表示
@@ -103,5 +93,27 @@ struct TimerView: View {
             return String(format: "%d:%02d:%02d", seconds / 3600, seconds / 60 % 60, seconds % 60)
         }
         return String(format: "%d:%02d", seconds / 60, seconds % 60)
+    }
+}
+
+/// アプリの考え方。管理アプリではなく「はじめる」を応援するアプリだと、始めた画面ではっきり伝える
+struct ConceptBanner: View {
+    var body: some View {
+        VStack(spacing: 6) {
+            Text("📣 このアプリはあなたの\n「はじめる」を応援します！")
+                .font(.system(.title3, design: .rounded, weight: .black))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white)
+            Text("やることの管理はしません。終わらせなくていい。\n始めたあなたを、ただ応援します。")
+                .font(.system(.caption, design: .rounded, weight: .bold))
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.white.opacity(0.9))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .padding(.horizontal, 12)
+        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Pop.orange))
+        .background(RoundedRectangle(cornerRadius: 22, style: .continuous).fill(Pop.orangeDeep).offset(y: 5))
+        .padding(.bottom, 5)
     }
 }
