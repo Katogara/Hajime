@@ -18,12 +18,8 @@ struct TimerView: View {
                         .font(.system(.headline, design: .rounded, weight: .bold))
                         .foregroundStyle(Pop.ink.opacity(0.55))
                         .padding(.top, 4)
-                    WaitingStep(step: session.step, beckoning: !session.continued)
-                    if session.continued {
-                        continuing(now: now)
-                    } else {
-                        choosing(now: now)
-                    }
+                    WaitingStep(step: session.step)
+                    choosing(now: now)
                 }
                 .padding(24)
             }
@@ -59,26 +55,6 @@ struct TimerView: View {
             }
             .buttonStyle(PopButtonStyle.plain)
             .padding(.top, 6)
-        }
-        .padding(.top, 6)
-    }
-
-    private func continuing(now: Date) -> some View {
-        VStack(spacing: 14) {
-            if session.autoContinued == true {
-                PhraseText("\(session.minutes)分たったので、代わりに「やりました！」を押しておきました")
-                    .font(.system(.caption, design: .rounded, weight: .semibold))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(Pop.ink.opacity(0.55))
-            }
-            Text("🔥 続きをやっています  \(Self.clock(now.timeIntervalSince(session.startedAt)))")
-                .font(.system(.headline, design: .rounded, weight: .heavy))
-                .monospacedDigit()
-                .foregroundStyle(Pop.orange)
-            Button { model.finish() } label: {
-                Text("おわる").frame(minWidth: 140)
-            }
-            .buttonStyle(PopButtonStyle())
         }
         .padding(.top, 6)
     }

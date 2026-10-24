@@ -156,21 +156,16 @@ private struct RecordRow: View {
         if let delay = record.delay {
             parts.append("通知から\(StartStats.format(delay))")
         }
-        switch record.outcome {
-        case .continued?: parts.append("続けた")
-        case .stopped?: parts.append("ここまで")
-        // 途中でやめたことは書かない (責めない)
-        case .quit?, nil: break
-        }
-        if let ended = record.endedAt, record.outcome != .quit {
-            parts.append("\(StartStats.format(ended.timeIntervalSince(record.startedAt)))取り組んだ")
+        // 取り組んだ時間は数えない (管理はしない)。やめたことも書かない (責めない)
+        if record.outcome == .continued {
+            parts.append("やりました")
         }
         return parts.joined(separator: "・")
     }
 
     var body: some View {
         HStack(spacing: 12) {
-            Text(record.outcome == .continued ? "🔥" : "✅")
+            Text(record.outcome == .continued ? "🎉" : "✅")
                 .font(.system(size: 26))
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
