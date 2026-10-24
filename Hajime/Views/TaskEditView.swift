@@ -15,7 +15,17 @@ struct TaskEditView: View {
     private var canSave: Bool {
         !task.title.trimmingCharacters(in: .whitespaces).isEmpty
             && !task.firstStep.trimmingCharacters(in: .whitespaces).isEmpty
-            && !task.weekdays.isEmpty
+            && (task.isOneDay || !task.weekdays.isEmpty)
+    }
+
+    /// いつもやること / 今日だけやること
+    private var oneDay: Binding<Bool> {
+        Binding {
+            task.isOneDay
+        } set: { isOn in
+            task.onlyOn = isOn ? Calendar.current.startOfDay(for: .now) : nil
+            if !isOn && task.weekdays.isEmpty { task.weekdays = Set(1...7) }
+        }
     }
 
     private var time: Binding<Date> {
@@ -31,6 +41,18 @@ struct TaskEditView: View {
     var body: some View {
         NavigationStack {
             Form {
+                Section {
+                    Picker("種類", selection: oneDay) {
+                        Text("いつもやること").tag(false)
+                        Text("今日だけやること").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .listRowBackground(Color.clear)
+                } footer: {
+                    if task.isOneDay {
+                        Text("今日だけのやることは、始めたあともキラキラのカードで残り、明日になると消えます。")
+                    }
+                }
                 Section("やること") {
                     TextField("例: 筋トレ", text: $task.title)
                 }
@@ -41,9 +63,11 @@ struct TaskEditView: View {
                 } footer: {
                     Text("失敗しようのない、すぐ終わる行動にします。通知にはこの一歩だけが出ます。")
                 }
-                Section("促す時刻") {
+                Section(task.isOneDay ? "今日、何時に促す？" : "促す時刻") {
                     DatePicker("時刻", selection: time, displayedComponents: .hourAndMinute)
-                    WeekdayPicker(weekdays: $task.weekdays)
+                    if !task.isOneDay {
+                        WeekdayPicker(weekdays: $task.weekdays)
+                    }
                 }
                 Section {
                     TextField("例: 靴下を履く", text: $task.smallerStep)

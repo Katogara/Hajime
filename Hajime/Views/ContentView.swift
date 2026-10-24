@@ -45,8 +45,11 @@ private struct TaskListView: View {
                     if model.tasks.isEmpty {
                         emptyCard
                     }
-                    ForEach(Array(model.tasks.enumerated()), id: \.element.id) { index, task in
-                        TaskCard(task: task, color: Pop.taskColor(index)) {
+                    // 日が変わった「今日だけ」のやることは出さない (次に開いたときに消える)
+                    let tasks = model.tasks.filter { !$0.isExpired(now: .now) }
+                    ForEach(Array(tasks.enumerated()), id: \.element.id) { index, task in
+                        TaskCard(task: task, color: Pop.taskColor(index),
+                                 done: task.isOneDay && model.startedToday(task)) {
                             editing = task
                         } onStart: {
                             model.start(taskID: task.id)
@@ -63,7 +66,16 @@ private struct TaskListView: View {
             .popBackground()
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    RoundIconButton(systemImage: "chart.bar.fill", label: "記録") { showingHistory = true }
+                    Button { showingHistory = true } label: {
+                        Label("つみあげ", systemImage: "square.stack.3d.up.fill")
+                            .labelStyle(.titleAndIcon)
+                            .font(.system(.subheadline, design: .rounded, weight: .heavy))
+                            .foregroundStyle(Pop.orange)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 7)
+                            .background(Capsule().fill(Pop.orange.opacity(0.15)))
+                    }
+                    .accessibilityLabel("これまでのつみあげ")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     RoundIconButton(systemImage: "plus", label: "追加", filled: true) { editing = .draft() }
@@ -152,6 +164,8 @@ private struct RoundIconButton: View {
 private struct TaskCard: View {
     let task: StartTask
     let color: Color
+    /// 今日だけのやることを、もう始めた (カードをキラキラさせて褒め続ける)
+    var done = false
     let onEdit: () -> Void
     let onStart: () -> Void
     /// 今日だけの時刻を決める (nil でいつもの時刻に戻す)
@@ -171,7 +185,9 @@ private struct TaskCard: View {
                         Text("👣 \(task.firstStep)")
                             .font(.system(.subheadline, design: .rounded, weight: .medium))
                             .foregroundStyle(Pop.ink.opacity(0.75))
-                        if let oneDay {
+                        if task.isOneDay {
+                            PopChip(text: "🌟 \(task.scheduleText)", color: Pop.pink)
+                        } else if let oneDay {
                             HStack(spacing: 6) {
                                 PopChip(text: "今日は \(StartTask.timeText(oneDay)) から", color: Pop.orange)
                                 Text("いつもは \(task.scheduleText)")
@@ -186,39 +202,117 @@ private struct TaskCard: View {
                     .contentShape(Rectangle())
                     .onTapGesture(perform: onEdit)
                     // 通知を待たずに、自分で気づいたときも 1 タップで始められる
-                    Button(action: onStart) {
-                        VStack(spacing: 2) {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 18, weight: .black))
-                            Text("はじめる")
-                                .font(.system(.subheadline, design: .rounded, weight: .heavy))
+                    if !done {
+                        Button(action: onStart) {
+                            VStack(spacing: 2) {
+                                Image(systemName: "play.fill")
+                                    .font(.system(size: 18, weight: .black))
+                                Text("はじめる")
+                                    .font(.system(.subheadline, design: .rounded, weight: .heavy))
+                            }
                         }
+                        .buttonStyle(PopButtonStyle(depth: 4))
+                        .accessibilityLabel("\(task.title)をはじめる")
                     }
-                    .buttonStyle(PopButtonStyle(depth: 4))
-                    .accessibilityLabel("\(task.title)をはじめる")
                 }
-                // 日によって始めたい時刻が違うとき、メニューを開いて時刻を選ぶだけ (2 タップ) で今日だけ変える
-                Menu {
-                    Section("今日だけ、何時から？") {
-                        ForEach(StartTask.oneDayChoices(now: context.date), id: \.self) { date in
-                            Button(StartTask.timeText(date)) { onOneDay(date) }
-                        }
-                    }
-                    Button("時刻を指定…", systemImage: "clock", action: onPickTime)
-                    if oneDay != nil {
-                        Button("いつもの時刻に戻す", systemImage: "arrow.uturn.backward") { onOneDay(nil) }
-                    }
-                } label: {
-                    Label(oneDay == nil ? "今日は別の時間にする？" : "今日の時間を変える・戻す",
-                          systemImage: "clock.arrow.circlepath")
-                        .font(.system(.subheadline, design: .rounded, weight: .bold))
-                        .foregroundStyle(Pop.orange)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Capsule().fill(Pop.orange.opacity(0.12)))
+                if done {
+                    DonePraise(onAgain: onStart)
+                } else {
+                    timeMenu(oneDay: oneDay, now: context.date)
                 }
             }
-            .popCard(tint: color)
+            .popCard(tint: done ? Pop.yellow : color)
+            .overlay {
+                if done { Sparkles().allowsHitTesting(false) }
+            }
+        }
+    }
+
+    /// 日によって始めたい時刻が違うとき、メニューを開いて時刻を選ぶだけ (2 タップ) で今日だけ変える
+    private func timeMenu(oneDay: Date?, now: Date) -> some View {
+        Menu {
+            Section("今日だけ、何時から？") {
+                ForEach(StartTask.oneDayChoices(now: now), id: \.self) { date in
+                    Button(StartTask.timeText(date)) { onOneDay(date) }
+                }
+            }
+            Button("時刻を指定…", systemImage: "clock", action: onPickTime)
+            // 今日だけのやることには「いつもの時刻」がない
+            if oneDay != nil && !task.isOneDay {
+                Button("いつもの時刻に戻す", systemImage: "arrow.uturn.backward") { onOneDay(nil) }
+            }
+        } label: {
+            Label(menuTitle(oneDay: oneDay), systemImage: "clock.arrow.circlepath")
+                .font(.system(.subheadline, design: .rounded, weight: .bold))
+                .foregroundStyle(Pop.orange)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
+                .background(Capsule().fill(Pop.orange.opacity(0.12)))
+        }
+    }
+
+    private func menuTitle(oneDay: Date?) -> String {
+        if task.isOneDay { return "別の時間にする？" }
+        return oneDay == nil ? "今日は別の時間にする？" : "今日の時間を変える・戻す"
+    }
+}
+
+/// 今日だけのやることを始めたあと、カードに出し続ける褒め言葉
+private struct DonePraise: View {
+    let onAgain: () -> Void
+    @State private var bounce = false
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text("🎉")
+                .font(.system(size: 30))
+                .scaleEffect(bounce ? 1.15 : 0.9)
+                .rotationEffect(.degrees(bounce ? 10 : -10))
+                .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: bounce)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("できた！えらすぎる！")
+                    .font(.system(.headline, design: .rounded, weight: .black))
+                    .foregroundStyle(Pop.orange)
+                Text("今日のぶん、ちゃんと始められました")
+                    .font(.system(.caption, design: .rounded, weight: .semibold))
+                    .foregroundStyle(Pop.ink.opacity(0.6))
+            }
+            Spacer(minLength: 0)
+            Button("もう一回", action: onAgain)
+                .font(.system(.caption, design: .rounded, weight: .bold))
+                .buttonStyle(PopButtonStyle.plain)
+        }
+        .padding(12)
+        .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Pop.yellow.opacity(0.25)))
+        .onAppear { bounce = true }
+    }
+}
+
+/// カードの上でまたたくキラキラ
+private struct Sparkles: View {
+    private let spots: [(x: CGFloat, y: CGFloat, size: CGFloat, delay: Double)] = [
+        (0.08, 0.12, 18, 0), (0.92, 0.10, 22, 0.4), (0.70, 0.30, 14, 0.9),
+        (0.18, 0.80, 16, 1.3), (0.88, 0.78, 20, 0.6), (0.50, 0.06, 12, 1.1),
+    ]
+
+    var body: some View {
+        GeometryReader { proxy in
+            TimelineView(.animation) { context in
+                let t = context.date.timeIntervalSinceReferenceDate
+                ZStack {
+                    ForEach(spots.indices, id: \.self) { index in
+                        let spot = spots[index]
+                        // 0〜1 を行き来する。ずらしてばらばらにまたたかせる
+                        let wave = (sin((t + spot.delay) * 3) + 1) / 2
+                        Text("✨")
+                            .font(.system(size: spot.size))
+                            .scaleEffect(0.5 + wave * 0.7)
+                            .opacity(0.25 + wave * 0.75)
+                            .rotationEffect(.degrees(wave * 40))
+                            .position(x: proxy.size.width * spot.x, y: proxy.size.height * spot.y)
+                    }
+                }
+            }
         }
     }
 }
