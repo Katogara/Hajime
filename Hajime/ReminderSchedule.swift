@@ -44,10 +44,19 @@ enum ReminderSchedule {
         for offset in 0..<days {
             guard let day = calendar.date(byAdding: .day, value: offset, to: today) else { continue }
             let weekday = calendar.component(.weekday, from: day)
-            for task in tasks where task.weekdays.contains(weekday) {
+            for task in tasks {
                 if startedDays.contains(DayKey(taskID: task.id, day: day)) { continue }
-                guard let first = calendar.date(bySettingHour: task.minuteOfDay / 60, minute: task.minuteOfDay % 60,
-                                                second: 0, of: day) else { continue }
+                let first: Date
+                if let oneDay = task.oneDayTime(on: day, calendar: calendar) {
+                    // その日だけの時刻は、いつもは促さない曜日でも使う
+                    first = oneDay
+                } else if task.weekdays.contains(weekday),
+                          let regular = calendar.date(bySettingHour: task.minuteOfDay / 60,
+                                                      minute: task.minuteOfDay % 60, second: 0, of: day) {
+                    first = regular
+                } else {
+                    continue
+                }
                 let nudge = first.addingTimeInterval(nudgeDelay)
                 if first > now {
                     result.append(Prompt(taskID: task.id, kind: .first, date: first, promptDate: first))

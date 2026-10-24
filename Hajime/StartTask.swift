@@ -18,6 +18,8 @@ struct StartTask: Codable, Identifiable, Equatable {
     var minuteOfDay: Int
     /// 促す曜日 (Calendar の weekday: 1 = 日曜 … 7 = 土曜)
     var weekdays: Set<Int> = Set(1...7)
+    /// その日だけの促す時刻。その日のいつもの時刻の代わりに使い、ほかの日には影響しない
+    var oneDayTime: Date?
 
     static func draft() -> StartTask {
         StartTask(title: "", firstStep: "", minuteOfDay: 9 * 60)
@@ -34,12 +36,44 @@ struct StartTask: Codable, Identifiable, Equatable {
         }
     }
 
+    /// `day` と同じ日に決めた、その日だけの促す時刻
+    func oneDayTime(on day: Date, calendar: Calendar = .current) -> Date? {
+        oneDayTime.flatMap { calendar.isDate($0, inSameDayAs: day) ? $0 : nil }
+    }
+
     /// 一覧に出す「毎日 7:30」などの表示
     var scheduleText: String {
-        let time = String(format: "%d:%02d", minuteOfDay / 60, minuteOfDay % 60)
+        let time = Self.timeText(minuteOfDay)
         if weekdays.count == 7 { return "毎日 \(time)" }
         let days = weekdays.sorted().map { Self.weekdaySymbols[$0 - 1] }.joined(separator: "・")
         return "\(days) \(time)"
+    }
+
+    /// 「7:05」のような表示
+    static func timeText(_ minuteOfDay: Int) -> String {
+        String(format: "%d:%02d", minuteOfDay / 60, minuteOfDay % 60)
+    }
+
+    static func timeText(_ date: Date, calendar: Calendar = .current) -> String {
+        let parts = calendar.dateComponents([.hour, .minute], from: date)
+        return timeText((parts.hour ?? 0) * 60 + (parts.minute ?? 0))
+    }
+
+    /// 「今日は何時から」の候補。少なくとも 15 分先の 30 分刻みから 4 つ、そのあとは毎時 0 分で、今日の 23 時まで
+    static func oneDayChoices(now: Date, calendar: Calendar = .current) -> [Date] {
+        let today = calendar.startOfDay(for: now)
+        guard let end = calendar.date(bySettingHour: 23, minute: 0, second: 0, of: today) else { return [] }
+        let earliest = now.addingTimeInterval(15 * 60)
+        var choices: [Date] = []
+        var minute = 0
+        while let date = calendar.date(byAdding: .minute, value: minute, to: today), date <= end {
+            let halfHourly = choices.count < 4
+            if date >= earliest, halfHourly || calendar.component(.minute, from: date) == 0 {
+                choices.append(date)
+            }
+            minute += 30
+        }
+        return choices
     }
 
     static let weekdaySymbols = ["日", "月", "火", "水", "木", "金", "土"]

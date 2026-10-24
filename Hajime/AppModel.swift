@@ -71,6 +71,14 @@ final class AppModel {
         }
     }
 
+    /// 今日だけ促す時刻を変える (nil でいつもの時刻に戻す)
+    func setOneDayTime(_ date: Date?, for taskID: UUID) {
+        guard let index = tasks.firstIndex(where: { $0.id == taskID }) else { return }
+        tasks[index].oneDayTime = date
+        store(tasks, StoreKey.tasks)
+        refreshSchedule()
+    }
+
     func delete(_ task: StartTask) {
         tasks.removeAll { $0.id == task.id }
         store(tasks, StoreKey.tasks)
