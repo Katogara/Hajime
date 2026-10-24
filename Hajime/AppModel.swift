@@ -74,6 +74,8 @@ final class AppModel {
         levelUps = load([LevelUpEvent].self, StoreKey.levelUps) ?? []
         removeExpiredTasks()
         notifier.onStart = { [weak self] response in self?.handle(response) }
+        // 以前の版で「続きをやっています」のまま残っていたら閉じる
+        if session?.continued == true { finish() }
     }
 
     func task(id: UUID) -> StartTask? {
@@ -222,27 +224,23 @@ final class AppModel {
         finish()
     }
 
-    /// 「やりました！」。終わったら `finish()` を呼ぶ。
+    /// 「やりました！」。一歩をやった時点でアプリの役目は終わりなので、褒めて一覧に戻る (続きの時間は数えない)
     /// - Parameter auto: 時間がたったので、代わりに押しておいた (本人は見ていないかもしれないので褒める演出は出さない)
     func continueSession(auto: Bool = false) {
-        guard var session, !session.continued else { return }
-        session.continued = true
-        session.autoContinued = auto ? true : nil
-        self.session = session
-        if !auto { cheer = Cheer(kind: .continued) }
-        store(session, StoreKey.session)
+        guard let session else { return }
         updateRecord(session.recordID) { $0.outcome = .continued }
-        notifier.cancelTimerEnd()
+        finish()
+        if !auto { cheer = Cheer(kind: .continued) }
     }
 
     /// 時間がたっていれば「やりました！」を押しておく (アプリを閉じていたあいだの分も、開いたときに)
     func autoContinueIfDue(now: Date = .now) {
-        guard let session, !session.continued, now >= session.endsAt else { return }
+        guard let session, now >= session.endsAt else { return }
         continueSession(auto: true)
     }
 
-    /// タイマーを閉じる (「おわる」)。
-    func finish() {
+    /// 「はじめる」のあとの画面を閉じて一覧に戻る。褒めも責めもしない
+    private func finish() {
         guard let session else { return }
         let now = Date()
         updateRecord(session.recordID) {

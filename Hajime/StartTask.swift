@@ -129,10 +129,8 @@ struct TimerSession: Codable, Equatable {
     var step: String
     var minutes: Int
     var startedAt: Date
-    /// 「やりました！」を押した (時間がたつと自動で押す)
+    /// 以前の版で「続きをやっています」の画面にいた (今は「やりました！」で画面を閉じるので使わない。読み込んだら閉じる)
     var continued = false
-    /// 時間がたったので、アプリが代わりに押しておいた
-    var autoContinued: Bool?
 
     var endsAt: Date { startedAt.addingTimeInterval(TimeInterval(minutes * 60)) }
 }
