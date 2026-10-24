@@ -49,6 +49,41 @@ final class ReminderScheduleTests: XCTestCase {
         XCTAssertEqual(prompts.filter { $0.kind == .first }.map(\.date), [date(19, 7, 30), date(23, 7, 30)])
     }
 
+    func testOneDayTimeReplacesOnlyThatDay() {
+        var task = task(at: 7)
+        task.oneDayTime = date(19, 20, 30)
+        let prompts = ReminderSchedule.prompts(for: [task], startedDays: [], now: date(19, 6), calendar: calendar)
+        XCTAssertEqual(prompts[0], Prompt(taskID: task.id, kind: .first, date: date(19, 20, 30), promptDate: date(19, 20, 30)))
+        XCTAssertEqual(prompts[1], Prompt(taskID: task.id, kind: .nudge, date: date(19, 20, 45), promptDate: date(19, 20, 30)))
+        // 翌日からはいつもの時刻
+        XCTAssertEqual(prompts[2].date, date(20, 7))
+        XCTAssertEqual(prompts.count, 14)
+    }
+
+    func testOneDayTimeWorksOnUnscheduledWeekday() {
+        // 金曜 (6) だけのやることを、月曜の今日だけ促す
+        var task = task(at: 7, weekdays: [6])
+        task.oneDayTime = date(19, 21)
+        let prompts = ReminderSchedule.prompts(for: [task], startedDays: [], now: date(19, 9), calendar: calendar)
+        XCTAssertEqual(prompts.filter { $0.kind == .first }.map(\.date), [date(19, 21), date(23, 7)])
+    }
+
+    func testPastDayOneDayTimeIsIgnored() {
+        var task = task(at: 7)
+        task.oneDayTime = date(18, 21)
+        let prompts = ReminderSchedule.prompts(for: [task], startedDays: [], now: date(19, 6), calendar: calendar)
+        XCTAssertEqual(prompts.first?.date, date(19, 7))
+        XCTAssertEqual(task.oneDayTime(on: date(19, 6), calendar: calendar), nil)
+    }
+
+    func testOneDayChoices() {
+        let choices = StartTask.oneDayChoices(now: date(19, 14, 50), calendar: calendar)
+        // 15 分以上先の 30 分刻みから 4 つ、そのあとは毎時 0 分で 23 時まで
+        XCTAssertEqual(choices, [date(19, 15, 30), date(19, 16), date(19, 16, 30), date(19, 17),
+                                 date(19, 18), date(19, 19), date(19, 20), date(19, 21), date(19, 22), date(19, 23)])
+        XCTAssertEqual(StartTask.oneDayChoices(now: date(19, 22, 50), calendar: calendar), [])
+    }
+
     func testCapsPendingNotifications() {
         let tasks = (0..<6).map { task(at: 8 + $0) }
         let prompts = ReminderSchedule.prompts(for: tasks, startedDays: [], now: date(19, 0), calendar: calendar)
