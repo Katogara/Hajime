@@ -41,7 +41,7 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         let start = UNNotificationAction(identifier: NotificationID.startAction, title: "始める", options: [.foreground])
         center.setNotificationCategories([
             UNNotificationCategory(identifier: NotificationID.promptCategory, actions: [start], intentIdentifiers: []),
-            // 時間がたったら自動で「続きをやります」にするので、ボタンは置かない
+            // 時間がたったら自動で「やりました！」にするので、ボタンは置かない
             UNNotificationCategory(identifier: NotificationID.timerCategory, actions: [], intentIdentifiers: []),
         ])
         center.delegate = self
@@ -66,9 +66,9 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
             content.title = task.title
             switch prompt.kind {
             case .first:
-                content.body = "「\(plan.step)」から。はじめるだけでいい。"
+                content.body = Phrases.wrapped("「\(plan.step)」から。はじめるだけでいい。")
             case .nudge:
-                content.body = "「\(plan.step)」だけでいい。はじめるだけでいい。"
+                content.body = Phrases.wrapped("「\(plan.step)」だけでいい。はじめるだけでいい。")
             }
             content.sound = .default
             content.categoryIdentifier = NotificationID.promptCategory
@@ -92,11 +92,11 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         center.removeDeliveredNotifications(withIdentifiers: ids)
     }
 
-    /// 時間がたったときの通知。続きに夢中になっているかもしれないので、「続きをやります」にしておいたと知らせる。
+    /// 時間がたったときの通知。続きに夢中になっているかもしれないので、代わりに「やりました！」を押しておいたと知らせる。
     func scheduleTimerEnd(at date: Date, minutes: Int) {
         let content = UNMutableNotificationContent()
         content.title = "\(minutes)分たちました"
-        content.body = "「続きをやります」を押しておきました。終わったら、アプリで「おわる」を押してください。"
+        content.body = Phrases.wrapped("代わりに「やりました！」を押しておきました。終わったら、アプリで「おわる」を押してください。")
         content.sound = .default
         content.categoryIdentifier = NotificationID.timerCategory
         center.add(UNNotificationRequest(

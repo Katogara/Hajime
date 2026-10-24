@@ -9,7 +9,7 @@ struct ReadyPrompt: Identifiable {
     var promptDate: Date?
 }
 
-/// 大げさに褒める演出。始めたときと「最初の一歩やりました！」のときだけ出す (「やっぱりやめます」では出さない)
+/// 大げさに褒める演出。始めたときと「やりました！」のときだけ出す (「やっぱりやめます」では出さない)
 struct Cheer: Identifiable, Equatable {
     enum Kind {
         case started
@@ -222,7 +222,7 @@ final class AppModel {
         finish()
     }
 
-    /// 「最初の一歩やりました！続きをやります」。終わったら `finish()` を呼ぶ。
+    /// 「やりました！」。終わったら `finish()` を呼ぶ。
     /// - Parameter auto: 時間がたったので、代わりに押しておいた (本人は見ていないかもしれないので褒める演出は出さない)
     func continueSession(auto: Bool = false) {
         guard var session, !session.continued else { return }
@@ -235,7 +235,7 @@ final class AppModel {
         notifier.cancelTimerEnd()
     }
 
-    /// 時間がたっていれば「続きをやります」を押しておく (アプリを閉じていたあいだの分も、開いたときに)
+    /// 時間がたっていれば「やりました！」を押しておく (アプリを閉じていたあいだの分も、開いたときに)
     func autoContinueIfDue(now: Date = .now) {
         guard let session, !session.continued, now >= session.endsAt else { return }
         continueSession(auto: true)
