@@ -92,6 +92,39 @@ final class ReminderScheduleTests: XCTestCase {
     }
 }
 
+final class ExperienceTests: XCTestCase {
+    func testLevelTable() {
+        XCTAssertEqual(LevelTable.progress(forXP: 0), LevelProgress(level: 1, current: 0, needed: 1))
+        // 最初の 1 回でもう Lv.2
+        XCTAssertEqual(LevelTable.progress(forXP: 1), LevelProgress(level: 2, current: 0, needed: 1))
+        XCTAssertEqual(LevelTable.progress(forXP: 3), LevelProgress(level: 3, current: 1, needed: 2))
+        // Lv.10 までに 25
+        XCTAssertEqual(LevelTable.progress(forXP: 25), LevelProgress(level: 10, current: 0, needed: 4))
+        XCTAssertEqual(LevelTable.totalToGraduate, 905)
+        XCTAssertEqual(LevelTable.progress(forXP: 904).level, 99)
+        XCTAssertTrue(LevelTable.progress(forXP: 905).graduated)
+        XCTAssertTrue(LevelTable.progress(forXP: 5000).graduated)
+    }
+
+    func testOncePerTaskPerDay() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        let morning = calendar.date(from: DateComponents(year: 2026, month: 10, day: 19, hour: 8))!
+        let evening = morning.addingTimeInterval(10 * 3600)
+        let nextDay = morning.addingTimeInterval(24 * 3600)
+        let task = UUID()
+        var earned = StartRecord(taskID: task, taskTitle: "筋トレ", startedAt: morning)
+        earned.xpAwarded = true
+        XCTAssertFalse(Experience.canEarn(records: [earned], taskID: task, now: evening, calendar: calendar))
+        XCTAssertTrue(Experience.canEarn(records: [earned], taskID: UUID(), now: evening, calendar: calendar))
+        XCTAssertTrue(Experience.canEarn(records: [earned], taskID: task, now: nextDay, calendar: calendar))
+        // やめて取り消した分は、その日にもう一度もらえる
+        var quit = earned
+        quit.xpAwarded = nil
+        XCTAssertTrue(Experience.canEarn(records: [quit], taskID: task, now: evening, calendar: calendar))
+    }
+}
+
 final class StartTaskTests: XCTestCase {
     func testPlanUsesSmallerStepForNudge() {
         var task = StartTask(title: "仕事", firstStep: "資料を開く", minuteOfDay: 540)
