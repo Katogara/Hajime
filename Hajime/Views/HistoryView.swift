@@ -10,6 +10,7 @@ struct HistoryView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
+                    LevelBadge(progress: model.level)
                     Text("この7日間")
                         .font(.system(.headline, design: .rounded, weight: .heavy))
                         .foregroundStyle(Pop.ink)
@@ -83,7 +84,8 @@ private struct RecordRow: View {
         switch record.outcome {
         case .continued?: parts.append("続けた")
         case .stopped?: parts.append("ここまで")
-        case nil: break
+        // 途中でやめたことは書かない (責めない)
+        case .quit?, nil: break
         }
         if let ended = record.endedAt {
             parts.append("\(StartStats.format(ended.timeIntervalSince(record.startedAt)))取り組んだ")

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 通知本体をタップして開いたときの画面。最初の一歩だけを見せ、「スタート」1 つで始める。
+/// 通知本体をタップして開いたときの画面。最初の一歩だけを見せ、「はじめる！」1 つで始める。
 struct ReadyView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -11,6 +11,7 @@ struct ReadyView: View {
         if let task = model.task(id: prompt.taskID) {
             let plan = task.plan(for: prompt.kind)
             VStack(spacing: 20) {
+                LevelBadge(progress: model.level)
                 Spacer()
                 Text("👟")
                     .font(.system(size: 72))
@@ -38,7 +39,7 @@ struct ReadyView: View {
                 Button {
                     model.start(taskID: task.id, kind: prompt.kind, promptDate: prompt.promptDate)
                 } label: {
-                    Text("スタート！")
+                    Text("はじめる！")
                         .font(.system(.title2, design: .rounded, weight: .black))
                         .frame(maxWidth: .infinity, minHeight: 40)
                 }

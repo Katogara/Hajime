@@ -41,6 +41,7 @@ private struct TaskListView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     header
+                    LevelBadge(progress: model.level)
                     if model.tasks.isEmpty {
                         emptyCard
                     }
@@ -186,15 +187,15 @@ private struct TaskCard: View {
                     .onTapGesture(perform: onEdit)
                     // 通知を待たずに、自分で気づいたときも 1 タップで始められる
                     Button(action: onStart) {
-                        VStack(spacing: 0) {
+                        VStack(spacing: 2) {
                             Image(systemName: "play.fill")
                                 .font(.system(size: 18, weight: .black))
-                            Text("\(StartTask.firstMinutes)分")
+                            Text("はじめる")
                                 .font(.system(.subheadline, design: .rounded, weight: .heavy))
                         }
-                        .frame(width: 44, height: 44)
                     }
                     .buttonStyle(PopButtonStyle(depth: 4))
+                    .accessibilityLabel("\(task.title)をはじめる")
                 }
                 // 日によって始めたい時刻が違うとき、メニューを開いて時刻を選ぶだけ (2 タップ) で今日だけ変える
                 Menu {

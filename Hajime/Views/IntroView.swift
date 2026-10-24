@@ -71,6 +71,7 @@ struct IntroView: View {
     private var future: some View {
         IntroPage(emoji: "🏃", color: Pop.green, title: "考える前に、\nもう始めている") {
             Text("迷っている時間とストレスが減り、通知から始めるまでの時間が少しずつ短くなっていきます。")
+            Text("始めるたびに経験値 +1（同じやることは1日1回まで）。レベル\(LevelTable.maxLevel)になったら卒業です。そのころには、もうアプリがなくても始められるはず。")
             Text("記録に残るのは、始めた回数と始めるまでの時間だけ。やらなかった日を責めることはありません。")
         }
     }
