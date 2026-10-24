@@ -61,6 +61,8 @@ struct TaskEditView: View {
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .popBackground()
             .navigationTitle(isNew ? "やることを追加" : "編集")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -90,10 +92,10 @@ private struct WeekdayPicker: View {
                     if isOn { weekdays.remove(day) } else { weekdays.insert(day) }
                 } label: {
                     Text(StartTask.weekdaySymbols[day - 1])
-                        .font(.subheadline.bold())
+                        .font(.system(.subheadline, design: .rounded, weight: .heavy))
                         .frame(width: 36, height: 36)
-                        .background(isOn ? Color.accentColor : Color(.systemGray5), in: Circle())
-                        .foregroundStyle(isOn ? Color.white : Color.primary)
+                        .background(isOn ? Pop.orange : Pop.orange.opacity(0.12), in: Circle())
+                        .foregroundStyle(isOn ? Color.white : Pop.ink)
                 }
                 .buttonStyle(.plain)
                 .frame(maxWidth: .infinity)

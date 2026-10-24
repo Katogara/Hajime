@@ -26,58 +26,34 @@ private struct TaskListView: View {
     var body: some View {
         @Bindable var model = model
         NavigationStack {
-            List {
-                if model.tasks.isEmpty {
-                    Section {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("始められないことを登録しましょう")
-                                .font(.headline)
-                            Text("決めた時刻に、最初の一歩だけを通知で促します。通知の「始める」を押せば、5分のタイマーが動き出します。")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    header
+                    if model.tasks.isEmpty {
+                        emptyCard
+                    }
+                    ForEach(Array(model.tasks.enumerated()), id: \.element.id) { index, task in
+                        TaskCard(task: task, color: Pop.taskColor(index)) {
+                            editing = task
+                        } onStart: {
+                            model.start(taskID: task.id)
+                        } onOneDay: { date in
+                            model.setOneDayTime(date, for: task.id)
+                        } onPickTime: {
+                            pickingTime = task
                         }
-                        .padding(.vertical, 4)
-                        Button("やることを追加") { editing = .draft() }
                     }
                 }
-                ForEach(model.tasks) { task in
-                    TaskRow(task: task) {
-                        editing = task
-                    } onStart: {
-                        model.start(taskID: task.id)
-                    } onOneDay: { date in
-                        model.setOneDayTime(date, for: task.id)
-                    } onPickTime: {
-                        pickingTime = task
-                    }
-                }
-                .onDelete { model.delete(at: $0) }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 32)
             }
-            .navigationTitle("はじめる")
-            .navigationBarTitleDisplayMode(.inline)
+            .popBackground()
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Button { showingIntro = true } label: {
-                        HStack(spacing: 4) {
-                            Text("はじめる")
-                                .font(.headline)
-                            Image(systemName: "questionmark.circle")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-                        .foregroundStyle(.primary)
-                    }
-                    .accessibilityHint("アプリの説明を表示します")
-                }
                 ToolbarItem(placement: .topBarLeading) {
-                    Button { showingHistory = true } label: {
-                        Label("記録", systemImage: "chart.bar")
-                    }
+                    RoundIconButton(systemImage: "chart.bar.fill", label: "記録") { showingHistory = true }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button { editing = .draft() } label: {
-                        Label("追加", systemImage: "plus")
-                    }
+                    RoundIconButton(systemImage: "plus", label: "追加", filled: true) { editing = .draft() }
                 }
             }
             .sheet(item: $editing) { task in
@@ -100,10 +76,69 @@ private struct TaskListView: View {
             }
         }
     }
+
+    /// タイトルをタップすると、いつでも説明を見られる
+    private var header: some View {
+        Button { showingIntro = true } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text("はじめる")
+                        .font(.system(size: 40, weight: .black, design: .rounded))
+                        .foregroundStyle(Pop.orange)
+                    Image(systemName: "questionmark.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(Pop.orange.opacity(0.45))
+                }
+                Text("ちょっとだけ、やってみよ。")
+                    .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                    .foregroundStyle(Pop.ink.opacity(0.6))
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityHint("アプリの説明を表示します")
+        .padding(.top, 4)
+    }
+
+    private var emptyCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("🌱")
+                .font(.system(size: 48))
+            Text("なかなか始められないこと、\nありますか？")
+                .font(.system(.title3, design: .rounded, weight: .heavy))
+                .foregroundStyle(Pop.ink)
+            Text("決めた時刻に、最初の一歩だけを通知でお知らせします。「始める」を押せば、\(StartTask.firstMinutes)分のタイマーがスタート。")
+                .font(.system(.subheadline, design: .rounded))
+                .foregroundStyle(Pop.ink.opacity(0.7))
+            Button("やることを追加") { editing = .draft() }
+                .buttonStyle(PopButtonStyle())
+                .padding(.top, 4)
+        }
+        .popCard(tint: Pop.orange)
+    }
 }
 
-private struct TaskRow: View {
+/// ツールバーの丸いボタン
+private struct RoundIconButton: View {
+    let systemImage: String
+    let label: String
+    var filled = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 15, weight: .heavy))
+                .foregroundStyle(filled ? Color.white : Pop.orange)
+                .frame(width: 34, height: 34)
+                .background(Circle().fill(filled ? Pop.orange : Pop.orange.opacity(0.15)))
+        }
+        .accessibilityLabel(label)
+    }
+}
+
+private struct TaskCard: View {
     let task: StartTask
+    let color: Color
     let onEdit: () -> Void
     let onStart: () -> Void
     /// 今日だけの時刻を決める (nil でいつもの時刻に戻す)
@@ -114,50 +149,63 @@ private struct TaskRow: View {
         // 候補の時刻と「今日は」の表示が古くならないよう、1 分ごとに作り直す
         TimelineView(.everyMinute) { context in
             let oneDay = task.oneDayTime(on: context.date)
-            HStack(spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 12) {
+                VStack(alignment: .leading, spacing: 8) {
                     Text(task.title)
-                        .font(.headline)
-                    Text(task.firstStep)
-                        .font(.subheadline)
+                        .font(.system(.title3, design: .rounded, weight: .heavy))
+                        .foregroundStyle(Pop.ink)
+                    Text("👣 \(task.firstStep)")
+                        .font(.system(.subheadline, design: .rounded, weight: .medium))
+                        .foregroundStyle(Pop.ink.opacity(0.75))
                     if let oneDay {
-                        Text("今日は \(StartTask.timeText(oneDay)) から")
-                            .font(.caption.bold())
-                            .foregroundStyle(Color.accentColor)
-                        + Text("（いつもは \(task.scheduleText)）")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        HStack(spacing: 6) {
+                            PopChip(text: "今日は \(StartTask.timeText(oneDay)) から", color: Pop.orange)
+                            Text("いつもは \(task.scheduleText)")
+                                .font(.system(.caption2, design: .rounded))
+                                .foregroundStyle(Pop.ink.opacity(0.5))
+                        }
                     } else {
-                        Text(task.scheduleText)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        PopChip(text: "⏰ \(task.scheduleText)")
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture(perform: onEdit)
-                // 日によって始めたい時刻が違うとき、メニューを開いて時刻を選ぶだけ (2 タップ) で今日だけ変える
-                Menu {
-                    Section("今日だけ、何時から？") {
-                        ForEach(StartTask.oneDayChoices(now: context.date), id: \.self) { date in
-                            Button(StartTask.timeText(date)) { onOneDay(date) }
+                VStack(spacing: 8) {
+                    // 通知を待たずに、自分で気づいたときも 1 タップで始められる
+                    Button(action: onStart) {
+                        VStack(spacing: 0) {
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 18, weight: .black))
+                            Text("\(StartTask.firstMinutes)分")
+                                .font(.system(.subheadline, design: .rounded, weight: .heavy))
                         }
+                        .frame(width: 44, height: 44)
                     }
-                    Button("時刻を指定…", systemImage: "clock", action: onPickTime)
-                    if oneDay != nil {
-                        Button("いつもの時刻に戻す", systemImage: "arrow.uturn.backward") { onOneDay(nil) }
+                    .buttonStyle(PopButtonStyle(depth: 4))
+                    // 日によって始めたい時刻が違うとき、メニューを開いて時刻を選ぶだけ (2 タップ) で今日だけ変える
+                    Menu {
+                        Section("今日だけ、何時から？") {
+                            ForEach(StartTask.oneDayChoices(now: context.date), id: \.self) { date in
+                                Button(StartTask.timeText(date)) { onOneDay(date) }
+                            }
+                        }
+                        Button("時刻を指定…", systemImage: "clock", action: onPickTime)
+                        if oneDay != nil {
+                            Button("いつもの時刻に戻す", systemImage: "arrow.uturn.backward") { onOneDay(nil) }
+                        }
+                    } label: {
+                        Label("今日は？", systemImage: "clock.arrow.circlepath")
+                            .font(.system(.caption, design: .rounded, weight: .bold))
+                            .foregroundStyle(Pop.orange)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(Capsule().fill(Pop.orange.opacity(0.12)))
                     }
-                } label: {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .accessibilityLabel("今日の時刻を変える")
+                    .accessibilityLabel("今日の時刻を変える")
                 }
-                .menuStyle(.button)
-                .buttonStyle(.bordered)
-                // 通知を待たずに、自分で気づいたときも 1 タップで始められる
-                Button("\(StartTask.firstMinutes)分", action: onStart)
-                    .buttonStyle(.borderedProminent)
             }
-            .padding(.vertical, 4)
+            .popCard(tint: color)
         }
     }
 }
@@ -173,22 +221,28 @@ private struct OneDayTimeSheet: View {
         let now = Date()
         let endOfDay = Calendar.current.date(bySettingHour: 23, minute: 59, second: 0, of: now) ?? now
         NavigationStack {
-            DatePicker("時刻", selection: $time, in: now...max(now, endOfDay), displayedComponents: .hourAndMinute)
-                .datePickerStyle(.wheel)
-                .labelsHidden()
-                .navigationTitle("今日の\(task.title)は何時から")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("キャンセル") { dismiss() }
-                    }
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("決定") {
-                            onSave(time)
-                            dismiss()
-                        }
-                    }
+            VStack(spacing: 16) {
+                Text("今日の「\(task.title)」は\n何時から？")
+                    .font(.system(.title3, design: .rounded, weight: .heavy))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(Pop.ink)
+                DatePicker("時刻", selection: $time, in: now...max(now, endOfDay), displayedComponents: .hourAndMinute)
+                    .datePickerStyle(.wheel)
+                    .labelsHidden()
+                Button("この時刻にする") {
+                    onSave(time)
+                    dismiss()
                 }
+                .buttonStyle(PopButtonStyle())
+            }
+            .padding(.top, 8)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .popBackground()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("キャンセル") { dismiss() }
+                }
+            }
         }
         .presentationDetents([.medium])
         .onAppear {
