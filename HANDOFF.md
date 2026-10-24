@@ -1,6 +1,6 @@
 # 引き継ぎメモ: はじめる (Hajime)
 
-最終更新: 2026-10-23
+最終更新: 2026-10-24
 
 ## 1. 要件
 
@@ -26,6 +26,8 @@
 
 一覧の各行の「5分」ボタンで、通知を待たずに 1 タップで始めることもできる。
 
+初回起動時に 3 ページの説明 (`IntroView`: 目的・使い方・この先) を全画面で出す。一度閉じたら `introSeen` を保存して自動では出さず、一覧上部のタイトル「はじめる」をタップするといつでも見られる。
+
 ### 通知の予約 (`ReminderSchedule`, `Notifier`)
 
 - 曜日ごとに具体的な日時で 7 日分を予約し (`UNCalendarNotificationTrigger`、繰り返しなし)、アプリが前面に来るたび・やることを変えたとき・始めたときに予約し直す
@@ -49,7 +51,7 @@
 | `Hajime/StartTask.swift` | やること、始めた記録、タイマー、7 日間の集計 |
 | `Hajime/ReminderSchedule.swift` | 促す通知の日時の計算 (UI に依存しない) |
 | `Hajime/Notifier.swift` | ローカル通知の予約・ボタン・タップの受け取り |
-| `Hajime/Views/` | 一覧 (`ContentView`)、登録 (`TaskEditView`)、一歩の画面 (`ReadyView`)、タイマー (`TimerView`)、記録 (`HistoryView`) |
+| `Hajime/Views/` | 一覧 (`ContentView`)、説明 (`IntroView`)、登録 (`TaskEditView`)、一歩の画面 (`ReadyView`)、タイマー (`TimerView`)、記録 (`HistoryView`) |
 | `HajimeTests/HajimeTests.swift` | 通知の日時、一歩の選び方、集計、表示のユニットテスト |
 | `.github/workflows/ios.yml` | macOS ランナーでテスト → 未署名 IPA をビルドし Artifact `Hajime-unsigned-ipa` として保存 |
 
@@ -57,7 +59,8 @@
 
 - [x] F1 やることと最初の一歩の登録、F2 時刻の通知、F3 通知から 2 タップ以内で着手、F4 5 分タイマー
 - [x] F5 さらに小さい一歩での再通知 (1 日 1 回)、F8 始めた回数と始めるまでの時間の記録
-- [ ] GitHub への登録と CI でのビルド・テスト
+- [x] GitHub への登録と CI でのビルド・テスト (公開リポジトリ Katogara/Hajime)
+- [x] 初回の説明画面 (3 ページ、タイトルのタップで再表示)
 - [ ] 実機での確認 (通知のボタンから始める動き、タイマー終了の通知のボタン)
 - [ ] F6 ウィジェット (無料 Apple ID では拡張ごとに App ID を使うため後回し)、F7 場所で促す
 - [ ] アプリアイコン
