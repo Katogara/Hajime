@@ -46,10 +46,11 @@ private struct TaskListView: View {
                         emptyCard
                     }
                     // 日が変わった「今日だけ」のやることは出さない (次に開いたときに消える)
-                    let tasks = model.tasks.filter { !$0.isExpired(now: .now) }
-                    ForEach(Array(tasks.enumerated()), id: \.element.id) { index, task in
-                        TaskCard(task: task, color: Pop.taskColor(index),
-                                 done: task.isOneDay && model.startedToday(task)) {
+                    let tasks = model.tasks.enumerated().filter { !$0.element.isExpired(now: .now) }
+                    // 今日はじめたものは、キラキラさせたまま下へ (色は元の並びで決め、動いても変えない)
+                    let ordered = tasks.filter { !model.doneToday($0.element) } + tasks.filter { model.doneToday($0.element) }
+                    ForEach(ordered, id: \.element.id) { index, task in
+                        TaskCard(task: task, color: Pop.taskColor(index), done: model.doneToday(task)) {
                             editing = task
                         } onStart: {
                             model.start(taskID: task.id)
@@ -60,6 +61,7 @@ private struct TaskListView: View {
                         }
                     }
                 }
+                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: model.records.count)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 32)
             }
