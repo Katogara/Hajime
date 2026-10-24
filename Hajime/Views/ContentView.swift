@@ -58,10 +58,13 @@ private struct TaskListView: View {
                             model.setOneDayTime(date, for: task.id)
                         } onPickTime: {
                             pickingTime = task
+                        } onUndo: {
+                            model.undoDone(task)
                         }
                     }
                 }
-                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: model.records.count)
+                // はじめた (経験値が増えた) ときと、取り消した (減った) ときに、カードが動く様子を見せる
+                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: model.xp)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 32)
             }
@@ -177,6 +180,8 @@ private struct TaskCard: View {
     /// 今日だけの時刻を決める (nil でいつもの時刻に戻す)
     let onOneDay: (Date?) -> Void
     let onPickTime: () -> Void
+    /// まちがえて押した「やりました！」を取り消す
+    let onUndo: () -> Void
 
     var body: some View {
         // 候補の時刻と「今日は」の表示が古くならないよう、1 分ごとに作り直す
@@ -222,7 +227,7 @@ private struct TaskCard: View {
                     }
                 }
                 if done {
-                    DonePraise(onAgain: onStart)
+                    DonePraise(onAgain: onStart, onUndo: onUndo)
                 } else {
                     timeMenu(oneDay: oneDay, now: context.date)
                 }
@@ -263,12 +268,31 @@ private struct TaskCard: View {
     }
 }
 
-/// 今日だけのやることを始めたあと、カードに出し続ける褒め言葉
+/// 今日はじめたあと、カードに出し続ける褒め言葉。まちがえて「やりました！」を押したときは取り消せる
 private struct DonePraise: View {
     let onAgain: () -> Void
+    let onUndo: () -> Void
     @State private var bounce = false
+    @State private var confirmingUndo = false
 
     var body: some View {
+        VStack(alignment: .trailing, spacing: 6) {
+            praise
+            // 目立たせず、押しまちがえないよう確認してから取り消す
+            Button("まちがえて押した？") { confirmingUndo = true }
+                .font(.system(.caption2, design: .rounded, weight: .semibold))
+                .foregroundStyle(Pop.ink.opacity(0.45))
+                .confirmationDialog("「やりました！」を取り消しますか？", isPresented: $confirmingUndo,
+                                    titleVisibility: .visible) {
+                    Button("取り消す", role: .destructive, action: onUndo)
+                    Button("そのままにする", role: .cancel) {}
+                } message: {
+                    Text("今日の経験値が元に戻り、カードも元の位置に戻ります。")
+                }
+        }
+    }
+
+    private var praise: some View {
         HStack(spacing: 10) {
             Text("🎉")
                 .font(.system(size: 30))
