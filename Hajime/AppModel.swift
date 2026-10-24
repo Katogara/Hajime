@@ -130,9 +130,11 @@ final class AppModel {
         store(tasks, StoreKey.tasks)
     }
 
-    /// このやることを今日もう始めた
-    func startedToday(_ task: StartTask, now: Date = .now) -> Bool {
-        records.contains { $0.taskID == task.id && Calendar.current.isDate($0.startedAt, inSameDayAs: now) }
+    /// このやることを今日はじめた (経験値がたまった。「やっぱりやめます」は含めない)
+    func doneToday(_ task: StartTask, now: Date = .now) -> Bool {
+        records.contains {
+            $0.taskID == task.id && $0.xpAwarded == true && Calendar.current.isDate($0.startedAt, inSameDayAs: now)
+        }
     }
 
     func delete(_ task: StartTask) {
