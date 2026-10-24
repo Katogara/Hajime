@@ -1,0 +1,113 @@
+import Foundation
+
+/// 着手を促す「やること」。登録は初回だけで、通常の運用ではここに入力しない。
+struct StartTask: Codable, Identifiable, Equatable {
+    /// 最初の通知で始めるときの長さ
+    static let firstMinutes = 5
+    /// 再通知 (さらに小さい一歩) で始めるときの長さ
+    static let nudgeMinutes = 1
+
+    var id = UUID()
+    /// やること (例: 筋トレ)
+    var title: String
+    /// 失敗しようのない最初の一歩 (例: ウェアに着替える)
+    var firstStep: String
+    /// 始めないまま再通知するときの、さらに小さい一歩 (空なら最初の一歩を短い時間で促す)
+    var smallerStep: String = ""
+    /// 促す時刻 (0 時からの分)
+    var minuteOfDay: Int
+    /// 促す曜日 (Calendar の weekday: 1 = 日曜 … 7 = 土曜)
+    var weekdays: Set<Int> = Set(1...7)
+
+    static func draft() -> StartTask {
+        StartTask(title: "", firstStep: "", minuteOfDay: 9 * 60)
+    }
+
+    /// 促しの種類ごとに、見せる一歩と時間を決める。通知とアプリの画面で同じものを使う。
+    func plan(for kind: Prompt.Kind) -> (step: String, minutes: Int) {
+        switch kind {
+        case .first:
+            return (step: firstStep, minutes: Self.firstMinutes)
+        case .nudge:
+            let smaller = smallerStep.trimmingCharacters(in: .whitespaces)
+            return (step: smaller.isEmpty ? firstStep : smaller, minutes: Self.nudgeMinutes)
+        }
+    }
+
+    /// 一覧に出す「毎日 7:30」などの表示
+    var scheduleText: String {
+        let time = String(format: "%d:%02d", minuteOfDay / 60, minuteOfDay % 60)
+        if weekdays.count == 7 { return "毎日 \(time)" }
+        let days = weekdays.sorted().map { Self.weekdaySymbols[$0 - 1] }.joined(separator: "・")
+        return "\(days) \(time)"
+    }
+
+    static let weekdaySymbols = ["日", "月", "火", "水", "木", "金", "土"]
+}
+
+/// 始めた記録。始めたこと自体を成功とし、やらなかった日は記録しない。
+struct StartRecord: Codable, Identifiable, Equatable {
+    enum Outcome: String, Codable {
+        /// 時間がたっても続けた
+        case continued
+        /// 時間で (または途中で) やめた
+        case stopped
+    }
+
+    var id = UUID()
+    var taskID: UUID
+    var taskTitle: String
+    /// 通知で促した時刻 (通知から始めたときだけ。再通知から始めても最初の通知の時刻)
+    var promptedAt: Date?
+    var startedAt: Date
+    var outcome: Outcome?
+    var endedAt: Date?
+
+    /// 促されてから始めるまでの時間
+    var delay: TimeInterval? {
+        promptedAt.map { max(0, startedAt.timeIntervalSince($0)) }
+    }
+}
+
+/// 動いているタイマー。アプリが終了されても戻れるよう保存する。
+struct TimerSession: Codable, Equatable {
+    var recordID: UUID
+    var taskID: UUID
+    var title: String
+    var step: String
+    var minutes: Int
+    var startedAt: Date
+    /// 時間がたったあと「続ける」を選んだ
+    var continued = false
+
+    var endsAt: Date { startedAt.addingTimeInterval(TimeInterval(minutes * 60)) }
+}
+
+/// この 7 日間の振り返り (F8)
+struct StartStats: Equatable {
+    var count: Int
+    /// 通知から始めるまでの時間の中央値 (通知から始めた記録がなければ nil)
+    var medianDelay: TimeInterval?
+
+    init(records: [StartRecord], now: Date, days: Int = 7) {
+        let since = now.addingTimeInterval(-TimeInterval(days) * 86_400)
+        let recent = records.filter { $0.startedAt > since && $0.startedAt <= now }
+        count = recent.count
+        let delays = recent.compactMap(\.delay).sorted()
+        if delays.isEmpty {
+            medianDelay = nil
+        } else if delays.count.isMultiple(of: 2) {
+            medianDelay = (delays[delays.count / 2 - 1] + delays[delays.count / 2]) / 2
+        } else {
+            medianDelay = delays[delays.count / 2]
+        }
+    }
+
+    /// 「3分」「1時間5分」のような表示
+    static func format(_ delay: TimeInterval) -> String {
+        let minutes = Int(delay / 60)
+        if minutes < 1 { return "1分未満" }
+        if minutes < 60 { return "\(minutes)分" }
+        return minutes % 60 == 0 ? "\(minutes / 60)時間" : "\(minutes / 60)時間\(minutes % 60)分"
+    }
+}
