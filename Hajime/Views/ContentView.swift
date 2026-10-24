@@ -17,6 +17,9 @@ private struct TaskListView: View {
     @Environment(AppModel.self) private var model
     @State private var editing: StartTask?
     @State private var showingHistory = false
+    @State private var showingIntro = false
+    /// 説明を一度見たら、次からは自動で出さない (タイトルのタップでいつでも見られる)
+    @AppStorage("introSeen") private var introSeen = false
 
     var body: some View {
         @Bindable var model = model
@@ -41,7 +44,21 @@ private struct TaskListView: View {
                 .onDelete { model.delete(at: $0) }
             }
             .navigationTitle("はじめる")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Button { showingIntro = true } label: {
+                        HStack(spacing: 4) {
+                            Text("はじめる")
+                                .font(.headline)
+                            Image(systemName: "questionmark.circle")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        .foregroundStyle(.primary)
+                    }
+                    .accessibilityHint("アプリの説明を表示します")
+                }
                 ToolbarItem(placement: .topBarLeading) {
                     Button { showingHistory = true } label: {
                         Label("記録", systemImage: "chart.bar")
@@ -61,6 +78,12 @@ private struct TaskListView: View {
             }
             .sheet(item: $model.ready) { prompt in
                 ReadyView(prompt: prompt)
+            }
+            .fullScreenCover(isPresented: $showingIntro, onDismiss: { introSeen = true }) {
+                IntroView()
+            }
+            .onAppear {
+                if !introSeen { showingIntro = true }
             }
         }
     }
