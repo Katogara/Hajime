@@ -17,7 +17,7 @@ struct HistoryView: View {
                         StatCard(emoji: "⚡️", value: stats.medianDelay.map(StartStats.format) ?? "—",
                                  label: "通知から始めるまで", color: Pop.yellow)
                     }
-                    PhraseText("通知から始めるまでの時間は、この7日間に通知から始めた分の中央値です。")
+                    PhraseText("通知から始めるまでの時間は、この7日間に通知から始めた分の中央値です。人に見せたくないものは、記録を長押しすると秘密❤️にできます。")
                         .font(.system(.caption, design: .rounded))
                         .foregroundStyle(Pop.ink.opacity(0.55))
                     if days.isEmpty {
@@ -148,8 +148,12 @@ private struct RainbowLevelUp: View {
     }
 }
 
+/// 始めた記録の行。長押しで秘密❤️にでき、秘密❤️のやることは名前を出さない
 private struct RecordRow: View {
+    @Environment(AppModel.self) private var model
     let record: StartRecord
+
+    private var secret: Bool { model.secretTaskIDs.contains(record.taskID) }
 
     private var detail: String {
         var parts: [String] = []
@@ -169,10 +173,10 @@ private struct RecordRow: View {
                 .font(.system(size: 26))
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
-                    PhraseText(record.taskTitle)
+                    PhraseText(record.displayTitle(secretTaskIDs: model.secretTaskIDs))
                         .font(.system(.body, design: .rounded, weight: .bold))
                         .foregroundStyle(Pop.ink)
-                    if record.oneDay == true {
+                    if record.oneDay == true && !secret {
                         PopChip(text: "🌟 今日だけ", color: Pop.pink)
                     }
                     Spacer()
@@ -188,5 +192,12 @@ private struct RecordRow: View {
             }
         }
         .popCard()
+        .contextMenu {
+            if secret {
+                Button("秘密❤️を解除する") { model.setSecret(false, taskID: record.taskID) }
+            } else {
+                Button("秘密❤️にする") { model.setSecret(true, taskID: record.taskID) }
+            }
+        }
     }
 }
