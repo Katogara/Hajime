@@ -119,6 +119,14 @@ struct StartRecord: Codable, Identifiable, Equatable {
     var delay: TimeInterval? {
         promptedAt.map { max(0, startedAt.timeIntervalSince($0)) }
     }
+
+    /// 秘密❤️にしたやることの、名前の代わりに出す言葉
+    static let secretTitle = "秘密❤️"
+
+    /// つみあげに出す名前 (秘密❤️にしたやることは名前を出さない)
+    func displayTitle(secretTaskIDs: Set<UUID>) -> String {
+        secretTaskIDs.contains(taskID) ? Self.secretTitle : taskTitle
+    }
 }
 
 /// 動いているタイマー。アプリが終了されても戻れるよう保存する。

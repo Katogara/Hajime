@@ -44,6 +44,8 @@ final class AppModel {
     private(set) var graduated = false
     /// レベルが上がった記録
     private(set) var levelUps: [LevelUpEvent] = []
+    /// つみあげで名前を「秘密❤️」にしているやること (解除するまで。やることを消しても残す)
+    private(set) var secretTaskIDs: Set<UUID> = []
 
     var level: LevelProgress { LevelTable.progress(forXP: xp) }
 
@@ -62,6 +64,7 @@ final class AppModel {
         static let xp = "xp"
         static let graduated = "graduated"
         static let levelUps = "levelUps"
+        static let secretTasks = "secretTasks"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -72,6 +75,7 @@ final class AppModel {
         xp = defaults.integer(forKey: StoreKey.xp)
         graduated = defaults.bool(forKey: StoreKey.graduated)
         levelUps = load([LevelUpEvent].self, StoreKey.levelUps) ?? []
+        secretTaskIDs = load(Set<UUID>.self, StoreKey.secretTasks) ?? []
         removeExpiredTasks()
         notifier.onStart = { [weak self] response in self?.handle(response) }
         // 以前の版で「続きをやっています」のまま残っていたら閉じる
@@ -147,6 +151,18 @@ final class AppModel {
         tasks.remove(atOffsets: offsets)
         store(tasks, StoreKey.tasks)
         refreshSchedule()
+    }
+
+    // MARK: - 秘密❤️
+
+    /// つみあげを人に見せるとき、このやることの記録をすべて「秘密❤️」と出す (解除するまでそのまま)
+    func setSecret(_ secret: Bool, taskID: UUID) {
+        if secret {
+            secretTaskIDs.insert(taskID)
+        } else {
+            secretTaskIDs.remove(taskID)
+        }
+        store(secretTaskIDs, StoreKey.secretTasks)
     }
 
     // MARK: - 始める
