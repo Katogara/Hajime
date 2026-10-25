@@ -24,6 +24,14 @@ struct Cheer: Identifiable, Equatable {
     var gainedXP = false
     /// レベルが上がったときの新しいレベル
     var levelUp: Int?
+    /// 始めたやること (褒め言葉に一歩や名前を差し込む)
+    var taskID: UUID?
+}
+
+/// 「やっぱりやめます」のあとに、ワンのすけが画面の下で「わかった、またね」と言う
+struct Farewell: Identifiable, Equatable {
+    let id = UUID()
+    var line: String
 }
 
 /// やること・記録・タイマーを持ち、通知の予約をそれに合わせる。
@@ -50,12 +58,24 @@ final class AppModel {
     private(set) var avatar: AvatarBody?
     /// 最初の「どっちのきみで始める？」を出した
     private(set) var avatarAsked = false
+    /// ワンのすけからもらったおみやげ (もらった順)
+    private(set) var souvenirs: [Souvenir] = []
+    /// 今もらったおみやげ。褒める演出が終わってから見せ、見せたら nil に戻す
+    var newSouvenir: Souvenir?
+    /// 「やっぱりやめます」のあとの、ワンのすけのひとこと (少しすると消す)
+    var farewell: Farewell?
+    /// 久しぶりに開いた日 (その日のうちだけ「おかえり」を出す。閉じたら nil)
+    private(set) var welcomeDay: Date?
+
+    var showsWelcome: Bool { welcomeDay.map(Calendar.current.isDateInToday) ?? false }
 
     var level: LevelProgress { LevelTable.progress(forXP: xp) }
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let notifier = Notifier()
     private var avatarStore: AvatarStore { AvatarStore(defaults: defaults) }
+    /// アプリを開いた (起動か、バックグラウンドから戻った) ときに「おかえり」を判定する
+    @ObservationIgnored private var needsWelcomeCheck = true
     /// 予約し直しを順番に行う (前の予約の途中で次が混ざらないように)
     @ObservationIgnored private var scheduling: Task<Void, Never>?
 
@@ -70,6 +90,9 @@ final class AppModel {
         static let graduated = "graduated"
         static let levelUps = "levelUps"
         static let secretTasks = "secretTasks"
+        static let souvenirs = "souvenirs"
+        static let lastActive = "lastActive"
+        static let welcomeDay = "welcomeDay"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -83,6 +106,8 @@ final class AppModel {
         secretTaskIDs = load(Set<UUID>.self, StoreKey.secretTasks) ?? []
         avatar = avatarStore.body
         avatarAsked = avatarStore.asked
+        souvenirs = load([Souvenir].self, StoreKey.souvenirs) ?? []
+        welcomeDay = defaults.object(forKey: StoreKey.welcomeDay) as? Date
         removeExpiredTasks()
         notifier.onStart = { [weak self] response in self?.handle(response) }
         // 以前の版で「続きをやっています」のまま残っていたら閉じる
@@ -206,6 +231,11 @@ final class AppModel {
         let now = Date()
         // 経験値は同じやることで 1 日 1 回まで
         let earns = Experience.canEarn(records: records, taskID: task.id, now: now)
+        // おみやげの判定に使う (今回の記録を足す前に見る)
+        let firstUse = records.map(\.startedAt).min() ?? now
+        let startedEarlierToday = records.contains {
+            $0.xpAwarded == true && Calendar.current.isDate($0.startedAt, inSameDayAs: now)
+        }
         var record = StartRecord(taskID: task.id, taskTitle: task.title, promptedAt: promptDate, startedAt: now)
         record.xpAwarded = earns ? true : nil
         record.oneDay = task.isOneDay ? true : nil
@@ -217,7 +247,12 @@ final class AppModel {
                                    minutes: plan.minutes, startedAt: now)
         self.session = session
         ready = nil
-        cheer = earns ? gainXP() : Cheer(kind: .started)
+        var cheer = earns ? gainXP() : Cheer(kind: .started)
+        cheer.taskID = task.id
+        self.cheer = cheer
+        if earns {
+            giveSouvenirIfLucky(now: now, firstUse: firstUse, startedEarlierToday: startedEarlierToday)
+        }
         store(records, StoreKey.records)
         store(session, StoreKey.session)
         notifier.scheduleTimerEnd(at: session.endsAt, minutes: session.minutes)
@@ -244,7 +279,7 @@ final class AppModel {
         return Cheer(kind: .started, gainedXP: true, levelUp: after > before ? after : nil)
     }
 
-    /// 「やっぱりやめます」。始めた記録は残すが、増えた経験値はそっと取り消す (何も表示しない)
+    /// 「やっぱりやめます」。始めた記録は残すが、増えた経験値はそっと取り消す (責めも褒めもせず、ワンのすけが「またね」と言う)
     func quit() {
         guard let session else { return }
         if let record = records.first(where: { $0.id == session.recordID }), record.xpAwarded == true {
@@ -255,6 +290,8 @@ final class AppModel {
             $0.xpAwarded = nil
         }
         finish()
+        // 責めも褒めもせず、ふだんと同じ明るさで見送る
+        farewell = Farewell(line: WanLines.farewell.randomElement()!)
     }
 
     /// まちがえて「やりました！」を押したときの取り消し。「やっぱりやめます」を押したのと同じにする
@@ -290,7 +327,45 @@ final class AppModel {
         guard let session else { return }
         updateRecord(session.recordID) { $0.outcome = .continued }
         finish()
-        if !auto { cheer = Cheer(kind: .continued) }
+        if !auto { cheer = Cheer(kind: .continued, taskID: session.taskID) }
+    }
+
+    // MARK: - ワンのすけ
+
+    /// その日の最初の「はじめた」で、ときどきおみやげを拾ってくる (予告しない。使った日にだけ)
+    private func giveSouvenirIfLucky(now: Date, firstUse: Date, startedEarlierToday: Bool) {
+        guard Souvenir.shouldGive(now: now, firstUse: firstUse, last: souvenirs.last?.date,
+                                  startedEarlierToday: startedEarlierToday, roll: Double.random(in: 0..<1))
+        else { return }
+        var random = SystemRandomNumberGenerator()
+        let souvenir = Souvenir(kind: Souvenir.pickKind(owned: souvenirs, using: &random), date: now)
+        souvenirs.append(souvenir)
+        store(souvenirs, StoreKey.souvenirs)
+        newSouvenir = souvenir
+    }
+
+    /// アプリが前面に来た。起動したときと、バックグラウンドから戻ったときだけ「おかえり」を判定する
+    /// (通知センターや共有シートから戻っただけのときは判定しない)
+    func sceneBecameActive(now: Date = .now) {
+        guard needsWelcomeCheck else { return }
+        needsWelcomeCheck = false
+        let lastActive = defaults.object(forKey: StoreKey.lastActive) as? Date
+        if WelcomeBack.isReturning(lastActive: lastActive, now: now) {
+            welcomeDay = now
+            defaults.set(now, forKey: StoreKey.welcomeDay)
+        }
+        defaults.set(now, forKey: StoreKey.lastActive)
+    }
+
+    func sceneEnteredBackground(now: Date = .now) {
+        needsWelcomeCheck = true
+        defaults.set(now, forKey: StoreKey.lastActive)
+    }
+
+    /// 「おかえり」を閉じた (その日はもう出さない)
+    func dismissWelcome() {
+        welcomeDay = nil
+        defaults.removeObject(forKey: StoreKey.welcomeDay)
     }
 
     /// 時間がたっていれば「やりました！」を押しておく (アプリを閉じていたあいだの分も、開いたときに)

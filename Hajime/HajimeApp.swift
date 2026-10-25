@@ -17,6 +17,9 @@ struct HajimeApp: App {
             // 促す通知を予約し直す (7 日分なので、アプリを開くたびに先へ延ばす)
             if phase == .active {
                 model.refreshSchedule()
+                model.sceneBecameActive()
+            } else if phase == .background {
+                model.sceneEnteredBackground()
             }
         }
     }
