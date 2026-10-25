@@ -12,6 +12,10 @@ struct HistoryView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 16) {
                     LevelBadge(progress: model.level)
+                    // もらったものだけを並べる (まだもらっていない品の枠は出さない)
+                    if !model.souvenirs.isEmpty {
+                        SouvenirShelf(souvenirs: model.souvenirs)
+                    }
                     HStack(spacing: 12) {
                         StatCard(emoji: "🔥", value: "\(stats.count)回", label: "この7日間に始めた", color: Pop.orange)
                         StatCard(emoji: "⚡️", value: stats.medianDelay.map(StartStats.format) ?? "—",
@@ -41,6 +45,47 @@ struct HistoryView: View {
                 }
             }
         }
+    }
+}
+
+/// ワンのすけからもらったおみやげ。新しいものから横に並べる
+private struct SouvenirShelf: View {
+    let souvenirs: [Souvenir]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                WanImage(pose: .wave)
+                    .frame(width: 40, height: 40)
+                Text("ワンのすけのおみやげ")
+                    .font(.system(.headline, design: .rounded, weight: .heavy))
+                    .foregroundStyle(Pop.ink)
+            }
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(souvenirs.reversed()) { souvenir in
+                        if let item = souvenir.item {
+                            VStack(spacing: 4) {
+                                Text(item.emoji)
+                                    .font(.system(size: 34))
+                                Text(item.name)
+                                    .font(.system(.caption, design: .rounded, weight: .bold))
+                                    .foregroundStyle(Pop.ink)
+                                Text(souvenir.date, format: .dateTime.month().day())
+                                    .font(.system(.caption2, design: .rounded))
+                                    .foregroundStyle(Pop.ink.opacity(0.5))
+                            }
+                            .frame(minWidth: 72)
+                            .padding(.vertical, 8)
+                            .background(RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(Pop.yellow.opacity(0.2)))
+                            .accessibilityElement(children: .combine)
+                        }
+                    }
+                }
+            }
+        }
+        .popCard(tint: Pop.yellow)
     }
 }
 

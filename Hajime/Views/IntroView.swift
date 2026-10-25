@@ -50,7 +50,8 @@ struct IntroView: View {
     // MARK: - ページ
 
     private var purpose: some View {
-        IntroPage(emoji: "😮‍💨", color: Pop.orange, title: "始める直前が、いちばんつらい") {
+        IntroPage(pose: .wave, line: "ぼく、ワンのすけ。あなたの「はじめる」を応援する柴犬だよ",
+                  title: "始める直前が、いちばんつらい") {
             PhraseText("やらなきゃと思うほど、なかなか始められない。でも始めてしまえば、意外とすんなり進む。")
             PhraseText("このアプリはあなたの「はじめる」を応援します！")
                 .font(.system(.title3, design: .rounded, weight: .black))
@@ -60,7 +61,7 @@ struct IntroView: View {
     }
 
     private var usage: some View {
-        IntroPage(emoji: "👆", color: Pop.yellow, title: "使い方") {
+        IntroPage(pose: .clap, line: "通知が来たら、2回タップするだけ。それでもう、はじめてるよ", title: "使い方") {
             IntroStep(number: 1, text: "やることと、すぐ終わる「最初の一歩」を登録する（例：筋トレなら「ウェアに着替える」）")
             IntroStep(number: 2, text: "決めた時刻に通知が届いたら、長押しして「始める」。まずはたっぷり褒めます")
             IntroStep(number: 3, text: "一歩をやったら「やりました！」。やらなかったら「やっぱりやめます」")
@@ -74,7 +75,8 @@ struct IntroView: View {
     }
 
     private var future: some View {
-        IntroPage(emoji: "🏃", color: Pop.green, title: "考える前に、もう始めている") {
+        IntroPage(pose: .banzai, line: "やめる日があっても大丈夫。はじめたら、ぼくが思いきり褒めるね",
+                  title: "考える前に、もう始めている") {
             PhraseText("迷っている時間とストレスが減り、通知から始めるまでの時間が少しずつ短くなっていきます。")
             PhraseText("始めるたびに経験値 +1（同じやることは1日1回まで）。レベル\(LevelTable.maxLevel)になったら卒業です。そのころには、もうアプリがなくても始められるはず。")
             PhraseText("記録に残るのは、始めた回数と始めるまでの時間だけ。やらなかった日を責めることはありません。")
@@ -82,9 +84,11 @@ struct IntroView: View {
     }
 }
 
+/// 説明の 1 ページ。ワンのすけが吹き出しで話しかけ、その下に説明を置く
 private struct IntroPage<Content: View>: View {
-    let emoji: String
-    let color: Color
+    let pose: WanPose
+    /// ワンのすけのひとこと (2 行まで)
+    let line: String
     let title: String
     @ViewBuilder let content: Content
     @State private var appeared = false
@@ -92,15 +96,22 @@ private struct IntroPage<Content: View>: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
-                Text(emoji)
-                    .font(.system(size: 76))
-                    .frame(width: 150, height: 150)
-                    .background(Circle().fill(color.opacity(0.25)))
-                    .scaleEffect(appeared ? 1 : 0.6)
-                    .rotationEffect(.degrees(appeared ? 0 : -12))
-                    .animation(.spring(response: 0.5, dampingFraction: 0.45), value: appeared)
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 24)
+                HStack(spacing: 12) {
+                    WanImage(pose: pose)
+                        .frame(width: 120, height: 120)
+                        .scaleEffect(appeared ? 1 : 0.6)
+                        .rotationEffect(.degrees(appeared ? 0 : -12))
+                        .animation(.spring(response: 0.5, dampingFraction: 0.45), value: appeared)
+                    SpeechBubble(tail: .leading) {
+                        PhraseText(line)
+                            .font(.system(.subheadline, design: .rounded, weight: .bold))
+                            .foregroundStyle(Pop.brown)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .opacity(appeared ? 1 : 0)
+                    .animation(.easeOut(duration: 0.4).delay(0.2), value: appeared)
+                }
+                .padding(.top, 24)
                 HeadlineText(title)
                     .font(.system(.largeTitle, design: .rounded, weight: .black))
                     .foregroundStyle(Pop.ink)

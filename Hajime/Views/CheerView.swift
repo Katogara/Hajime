@@ -5,40 +5,34 @@ import SwiftUI
 struct CheerView: View {
     @Environment(AppModel.self) private var model
     let cheer: Cheer
+    /// 「ふつう」なら飾りを減らして短くする (「控えめ」はこの画面を出さず、帯で褒める)
+    var style: CheerStyle = .big
     let onDone: () -> Void
 
     @State private var burst = false
     @State private var showingLevelUp = false
-    @State private var phrase: (title: String, sub: String)
+    /// ワンのすけのせりふ
+    @State private var phrase: WanLines.Line
 
-    /// 表示しておく時間
-    static let duration: Duration = .seconds(2.8)
-
-    init(cheer: Cheer, onDone: @escaping () -> Void) {
+    /// - Parameters:
+    ///   - step: 差し込む最初の一歩 (やることが消えているときや秘密❤️のときは nil)
+    ///   - title: 差し込むやることの名前
+    init(cheer: Cheer, style: CheerStyle = .big, step: String? = nil, title: String? = nil,
+         onDone: @escaping () -> Void) {
         self.cheer = cheer
+        self.style = style
         self.onDone = onDone
-        _phrase = State(initialValue: Self.phrases(for: cheer.kind).randomElement()!)
+        _phrase = State(initialValue: Self.line(for: cheer.kind, step: step, title: title))
     }
 
-    static func phrases(for kind: Cheer.Kind) -> [(title: String, sub: String)] {
-        switch kind {
-        case .started:
-            return [
-                ("はじめた！天才！", "いちばん難しいところを、もう越えました"),
-                ("すごい！始められた！", "これができる人は、ほんとうに強い"),
-                ("えらすぎる！", "腰が重いのに動いた。最高です"),
-                ("最高のスタート！", "始めた時点で、今日はもう勝ち"),
-            ]
-        case .continued:
-            return [
-                ("一歩やった！すごすぎる！", "その勢いで、続きもいこう"),
-                ("できてる！最高！", "もう完全に動き出してます"),
-                ("やったね！かっこいい！", "始めた自分に感謝しよう"),
-            ]
-        case .graduated:
-            return [("卒業おめでとう！", "もうあなたは、1人で何でもできます")]
-        }
+    static func line(for kind: Cheer.Kind, step: String?, title: String?) -> WanLines.Line {
+        var random = SystemRandomNumberGenerator()
+        let lines = kind == .continued ? WanLines.continued : WanLines.started
+        return WanLines.pick(from: lines, step: step, title: title, using: &random)
     }
+
+    /// 表示しておく時間 (せりふを読めるよう、少し長め)
+    private var duration: Duration { style == .normal ? .seconds(2.4) : .seconds(3.4) }
 
     /// 始めたときはばんざい、「やりました！」のときは拍手
     private var wanPose: WanPose { cheer.kind == .started ? .banzai : .clap }
@@ -56,7 +50,7 @@ struct CheerView: View {
         ZStack {
             Pop.cream.ignoresSafeArea()
             // 中心から広がる光の輪
-            ForEach(0..<3) { ring in
+            ForEach(0..<(style == .normal ? 1 : 3), id: \.self) { ring in
                 Circle()
                     .stroke(accent.opacity(0.18), lineWidth: 18)
                     .scaleEffect(burst ? 2.6 + Double(ring) * 0.6 : 0.2)
@@ -64,21 +58,25 @@ struct CheerView: View {
                     .animation(.easeOut(duration: 1.2).delay(Double(ring) * 0.15), value: burst)
                     .frame(width: 200, height: 200)
             }
-            Confetti(burst: burst)
-            VStack(spacing: 18) {
+            Confetti(burst: burst, count: style == .normal ? 20 : 56)
+            VStack(spacing: 22) {
                 CheerStage(avatar: model.avatar, wanPose: wanPose, appeared: burst)
-                HeadlineText(phrase.title)
-                    .font(.system(size: 42, weight: .black, design: .rounded))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(accent)
-                    .scaleEffect(burst ? 1 : 0.5)
-                    .opacity(burst ? 1 : 0)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.5).delay(0.1), value: burst)
-                PhraseText(phrase.sub)
-                    .font(.system(.headline, design: .rounded, weight: .bold))
-                    .foregroundStyle(Pop.brown)
-                    .opacity(burst ? 1 : 0)
-                    .animation(.easeOut(duration: 0.4).delay(0.4), value: burst)
+                // 褒め言葉はワンのすけのせりふ。ワンのすけは右下にいるので、吹き出しは下に置き、しっぽを右上に出す
+                SpeechBubble(tail: .top(model.avatar == nil ? 0.5 : 0.75)) {
+                    VStack(spacing: 6) {
+                        HeadlineText(phrase.title)
+                            .font(.system(size: 34, weight: .black, design: .rounded))
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(accent)
+                        PhraseText(phrase.sub)
+                            .font(.system(.headline, design: .rounded, weight: .bold))
+                            .multilineTextAlignment(.center)
+                            .foregroundStyle(Pop.brown)
+                    }
+                }
+                .scaleEffect(burst ? 1 : 0.5)
+                .opacity(burst ? 1 : 0)
+                .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.15), value: burst)
                 if cheer.gainedXP {
                     Text("+1 EXP")
                         .font(.system(.title2, design: .rounded, weight: .black))
@@ -90,7 +88,8 @@ struct CheerView: View {
                         .animation(.spring(response: 0.4, dampingFraction: 0.45).delay(0.6), value: burst)
                 }
             }
-            .padding(24)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 24)
             // レベルが上がったときは、続けてレベルアップを別の画面でしっかり褒める
             if let level = cheer.levelUp, showingLevelUp {
                 LevelUpStage(level: level, avatar: model.avatar)
@@ -102,7 +101,7 @@ struct CheerView: View {
         .sensoryFeedback(.success, trigger: burst)
         .onAppear { burst = true }
         .task {
-            try? await Task.sleep(for: Self.duration)
+            try? await Task.sleep(for: duration)
             guard cheer.levelUp != nil else { return onDone() }
             advance()
             try? await Task.sleep(for: LevelUpStage.duration)
@@ -125,12 +124,7 @@ private struct LevelUpStage: View {
     let level: Int
     let avatar: AvatarBody?
     @State private var appeared = false
-    @State private var phrase = [
-        "積み上げてきた証拠！ほんとうにすごい！",
-        "一歩ずつが、ちゃんと力になってる！",
-        "成長が止まらない！かっこいい！",
-        "昨日の自分より、確実に強い！",
-    ].randomElement()!
+    @State private var phrase = WanLines.levelUp.randomElement()!
 
     static let duration: Duration = .seconds(3.6)
 
@@ -165,15 +159,18 @@ private struct LevelUpStage: View {
                     .foregroundStyle(Pop.brown)
                     .opacity(appeared ? 1 : 0)
                     .animation(.easeOut(duration: 0.4).delay(0.5), value: appeared)
-                HeadlineText(phrase)
-                    .font(.system(.title2, design: .rounded, weight: .black))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(Pop.pink)
-                    .opacity(appeared ? 1 : 0)
-                    .offset(y: appeared ? 0 : 20)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.7), value: appeared)
+                SpeechBubble(tail: .top(avatar == nil ? 0.5 : 0.75)) {
+                    PhraseText(phrase)
+                        .font(.system(.title3, design: .rounded, weight: .black))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(Pop.pink)
+                }
+                .opacity(appeared ? 1 : 0)
+                .offset(y: appeared ? 0 : 20)
+                .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.7), value: appeared)
             }
-            .padding(24)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 24)
         }
         .sensoryFeedback(.levelChange, trigger: appeared)
         .onAppear { appeared = true }
@@ -182,6 +179,7 @@ private struct LevelUpStage: View {
 
 /// レベル 100 の卒業式。紙吹雪が何度も上がり、送り出す。自動では閉じず、ボタンで出発する。
 private struct GraduationView: View {
+    @Environment(AppModel.self) private var model
     let onDone: () -> Void
     @State private var appeared = false
     /// 紙吹雪を打ち上げ直すたびに増やす
@@ -207,10 +205,13 @@ private struct GraduationView: View {
             ScrollView {
                 VStack(spacing: 18) {
                     Text("🎓")
-                        .font(.system(size: 130))
+                        .font(.system(size: 80))
                         .scaleEffect(appeared ? 1 : 0.1)
                         .rotationEffect(.degrees(appeared ? 0 : 360))
                         .animation(.spring(response: 0.8, dampingFraction: 0.45), value: appeared)
+                    // 分身が主役で、ワンのすけは手を振って見送る
+                    CheerStage(avatar: model.avatar, wanPose: .wave, appeared: appeared, size: 190)
+                        .background(Circle().fill(Pop.cream.opacity(0.85)).padding(-12))
                     Text("Lv.\(LevelTable.maxLevel)")
                         .font(.system(size: 64, weight: .black, design: .rounded))
                         .foregroundStyle(.white)
@@ -263,6 +264,11 @@ private struct ConfettiBurst: View {
 private struct Confetti: View {
     let burst: Bool
 
+    init(burst: Bool, count: Int = 56) {
+        self.burst = burst
+        _pieces = State(initialValue: Self.makePieces(count))
+    }
+
     private struct Piece {
         var angle: Double
         var distance: CGFloat
@@ -273,16 +279,20 @@ private struct Confetti: View {
         var delay: Double
     }
 
-    @State private var pieces: [Piece] = (0..<56).map { index in
-        let colors: [Color] = [.white, Pop.yellow, Pop.pink, Pop.green, Pop.orangeDeep]
-        let emojis = ["✨", "⭐️", "💥", "🎊"]
-        return Piece(angle: Double.random(in: 0..<(2 * .pi)),
-                     distance: CGFloat.random(in: 140...420),
-                     spin: Double.random(in: -540...540),
-                     size: CGFloat.random(in: 8...16),
-                     color: colors[index % colors.count],
-                     emoji: index % 7 == 0 ? emojis.randomElement() : nil,
-                     delay: Double.random(in: 0...0.15))
+    @State private var pieces: [Piece]
+
+    private static func makePieces(_ count: Int) -> [Piece] {
+        (0..<count).map { index in
+            let colors: [Color] = [Pop.orange, Pop.yellow, Pop.pink, Pop.green, Pop.orangeDeep]
+            let emojis = ["✨", "⭐️", "💥", "🎊"]
+            return Piece(angle: Double.random(in: 0..<(2 * .pi)),
+                         distance: CGFloat.random(in: 140...420),
+                         spin: Double.random(in: -540...540),
+                         size: CGFloat.random(in: 8...16),
+                         color: colors[index % colors.count],
+                         emoji: index % 7 == 0 ? emojis.randomElement() : nil,
+                         delay: Double.random(in: 0...0.15))
+        }
     }
 
     var body: some View {

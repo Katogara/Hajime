@@ -2,8 +2,14 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// 褒める演出の強さ (設定で選ぶ)
+    @AppStorage("cheerStyle") private var cheerStyleRaw = ""
+
+    private var cheerStyle: CheerStyle { CheerStyle.resolve(cheerStyleRaw, reduceMotion: reduceMotion) }
 
     var body: some View {
+        @Bindable var model = model
         ZStack {
             // タイマーが動いている間は、画面全体をタイマーにする (アプリを開き直しても戻る)
             if let session = model.session {
@@ -12,16 +18,53 @@ struct ContentView: View {
                 TaskListView()
             }
             if let cheer = model.cheer {
-                CheerView(cheer: cheer) {
-                    withAnimation(.easeOut(duration: 0.3)) {
-                        if model.cheer == cheer { model.cheer = nil }
+                if cheerStyle == .small && cheer.kind != .graduated {
+                    // 控えめ: 全画面にせず、画面の下の帯で褒める
+                    Color.clear
+                        .wanBand($model.cheer) { cheer in
+                            CheerBand(cheer: cheer, step: words(for: cheer)?.step, title: words(for: cheer)?.title)
+                        }
+                        .zIndex(1)
+                } else {
+                    CheerView(cheer: cheer, style: cheerStyle, step: words(for: cheer)?.step,
+                              title: words(for: cheer)?.title) {
+                        withAnimation(.easeOut(duration: 0.3)) {
+                            if model.cheer == cheer { model.cheer = nil }
+                        }
                     }
+                    .id(cheer.id)
+                    .transition(.opacity)
+                    .zIndex(1)
                 }
-                .id(cheer.id)
-                .transition(.opacity)
-                .zIndex(1)
+            } else if let souvenir = model.newSouvenir {
+                // おみやげは褒める演出が終わってから見せる
+                if cheerStyle == .small {
+                    Color.clear
+                        .wanBand($model.newSouvenir, seconds: 4) { souvenir in
+                            SouvenirBand(souvenir: souvenir)
+                        }
+                        .zIndex(1)
+                } else {
+                    SouvenirView(souvenir: souvenir) {
+                        withAnimation(.easeOut(duration: 0.3)) { model.newSouvenir = nil }
+                    }
+                    .transition(.opacity)
+                    .zIndex(1)
+                }
             }
         }
+        // 「やっぱりやめます」のあと、ワンのすけがふだんと同じ明るさで見送る
+        .wanBand($model.farewell) { farewell in
+            WanBand(pose: .wave, text: farewell.line)
+        }
+    }
+
+    /// 褒め言葉に差し込む一歩と名前。やることが消えているときと、秘密❤️のときは差し込まない
+    private func words(for cheer: Cheer) -> (step: String, title: String)? {
+        guard let id = cheer.taskID, !model.secretTaskIDs.contains(id), let task = model.task(id: id) else {
+            return nil
+        }
+        return (task.firstStep, task.title)
     }
 }
 
@@ -30,6 +73,7 @@ private struct TaskListView: View {
     @State private var editing: StartTask?
     @State private var showingHistory = false
     @State private var showingIntro = false
+    @State private var showingSettings = false
     /// 分身の姿を選ぶ画面
     @State private var choosingAvatar: AvatarChoiceMode?
     /// 「今日は何時から」を候補以外の時刻にするとき
@@ -43,6 +87,10 @@ private struct TaskListView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     header
+                    if model.showsWelcome {
+                        WelcomeBubble { withAnimation { model.dismissWelcome() } }
+                            .transition(.opacity)
+                    }
                     HStack(spacing: 10) {
                         AvatarFaceButton(avatar: model.avatar) { choosingAvatar = .again }
                         LevelBadge(progress: model.level)
@@ -57,7 +105,8 @@ private struct TaskListView: View {
                     // 今日はじめたものは、キラキラさせたまま下へ (色は元の並びで決め、動いても変えない)
                     let ordered = tasks.filter { !model.doneToday($0.element) } + tasks.filter { model.doneToday($0.element) }
                     ForEach(ordered, id: \.element.id) { index, task in
-                        TaskCard(task: task, color: Pop.taskColor(index), done: model.doneToday(task)) {
+                        TaskCard(task: task, color: Pop.taskColor(index), done: model.doneToday(task),
+                                 shareable: !model.secretTaskIDs.contains(task.id), avatar: model.avatar) {
                             editing = task
                         } onStart: {
                             model.start(taskID: task.id)
@@ -93,7 +142,8 @@ private struct TaskListView: View {
                     }
                     .accessibilityLabel("これまでのつみあげ")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    RoundIconButton(systemImage: "gearshape.fill", label: "設定") { showingSettings = true }
                     RoundIconButton(systemImage: "plus", label: "追加", filled: true) { editing = .draft() }
                 }
             }
@@ -102,6 +152,9 @@ private struct TaskListView: View {
             }
             .sheet(isPresented: $showingHistory) {
                 HistoryView()
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
             }
             .sheet(item: $model.ready) { prompt in
                 ReadyView(prompt: prompt)
@@ -204,6 +257,9 @@ private struct TaskCard: View {
     let color: Color
     /// 今日だけのやることを、もう始めた (カードをキラキラさせて褒め続ける)
     var done = false
+    /// 今日はじめたことをシェアできる (秘密❤️にしたやることは出さない)
+    var shareable = false
+    var avatar: AvatarBody?
     let onEdit: () -> Void
     let onStart: () -> Void
     /// 今日だけの時刻を決める (nil でいつもの時刻に戻す)
@@ -256,7 +312,8 @@ private struct TaskCard: View {
                     }
                 }
                 if done {
-                    DonePraise(onAgain: onStart, onUndo: onUndo)
+                    DonePraise(shareCard: shareable ? ShareCard(step: task.firstStep, avatar: avatar) : nil,
+                               onAgain: onStart, onUndo: onUndo)
                 } else {
                     timeMenu(oneDay: oneDay, now: context.date)
                 }
@@ -299,25 +356,48 @@ private struct TaskCard: View {
 
 /// 今日はじめたあと、カードに出し続ける褒め言葉。まちがえて「やりました！」を押したときは取り消せる
 private struct DonePraise: View {
+    /// シェア用のカード (秘密❤️のやることでは nil にして、ボタンを出さない)
+    let shareCard: ShareCard?
     let onAgain: () -> Void
     let onUndo: () -> Void
     @State private var confirmingUndo = false
+    @State private var sharing: SharedImage?
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 6) {
             praise
-            // 目立たせず、押しまちがえないよう確認してから取り消す
-            Button("まちがえて押した？") { confirmingUndo = true }
-                .font(.system(.caption2, design: .rounded, weight: .semibold))
-                .foregroundStyle(Pop.ink.opacity(0.45))
-                .confirmationDialog("「やりました！」を取り消しますか？", isPresented: $confirmingUndo,
-                                    titleVisibility: .visible) {
-                    Button("取り消す", role: .destructive, action: onUndo)
-                    Button("そのままにする", role: .cancel) {}
-                } message: {
-                    Text("今日の経験値が元に戻り、カードも元の位置に戻ります。")
+            HStack(spacing: 14) {
+                // 押したときだけ画像を作る。押すかどうかは本人しだいなので、目立たせない
+                if let shareCard {
+                    Button {
+                        if let image = shareCard.render() { sharing = SharedImage(image: image) }
+                    } label: {
+                        Label("シェア", systemImage: "square.and.arrow.up")
+                    }
+                    .font(.system(.caption2, design: .rounded, weight: .semibold))
+                    .foregroundStyle(Pop.ink.opacity(0.55))
                 }
+                // 目立たせず、押しまちがえないよう確認してから取り消す
+                undoButton
+            }
         }
+        .sheet(item: $sharing) { shared in
+            ShareSheet(image: shared.image)
+                .presentationDetents([.medium, .large])
+        }
+    }
+
+    private var undoButton: some View {
+        Button("まちがえて押した？") { confirmingUndo = true }
+            .font(.system(.caption2, design: .rounded, weight: .semibold))
+            .foregroundStyle(Pop.ink.opacity(0.45))
+            .confirmationDialog("「やりました！」を取り消しますか？", isPresented: $confirmingUndo,
+                                titleVisibility: .visible) {
+                Button("取り消す", role: .destructive, action: onUndo)
+                Button("そのままにする", role: .cancel) {}
+            } message: {
+                Text("今日の経験値が元に戻り、カードも元の位置に戻ります。")
+            }
     }
 
     private var praise: some View {
@@ -326,10 +406,11 @@ private struct DonePraise: View {
             // 画面の外とカードの間を行き来してしまうため)
             TimelineView(.animation) { context in
                 let wave = sin(context.date.timeIntervalSinceReferenceDate * 5)
-                Text("🎉")
-                    .font(.system(size: 30))
-                    .scaleEffect(1.02 + 0.12 * wave)
-                    .rotationEffect(.degrees(10 * wave))
+                // ワンのすけが拍手で褒め続ける
+                WanImage(pose: .clap)
+                    .frame(width: 52, height: 52)
+                    .scaleEffect(1.02 + 0.06 * wave)
+                    .rotationEffect(.degrees(6 * wave))
             }
             VStack(alignment: .leading, spacing: 2) {
                 HeadlineText("できた！えらすぎる！")
