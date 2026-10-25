@@ -19,12 +19,35 @@ enum AvatarBody: String, CaseIterable, Codable {
     }
 }
 
+/// 絵のキャラクターが顔と体を向けている方向 (見る人から見た左右)。
+/// 絵を差し替えたら、その絵の向きに合わせて `WanPose.facing` / `AvatarPose.facing` を必ず直す。
+/// 並べるときは、置く場所から相手のほうを向くよう、向きが逆の絵だけ左右を反転する
+enum Facing {
+    case left
+    case right
+    /// 正面 (反転しない)
+    case front
+
+    /// `wanted` の向きにするために、左右を反転するか
+    func needsFlip(toFace wanted: Facing) -> Bool {
+        (self == .left && wanted == .right) || (self == .right && wanted == .left)
+    }
+}
+
 /// アバターの表情
 enum AvatarPose: String, CaseIterable {
     case normal
     case smile
     /// 両手を上げて跳ぶ大喜び。褒める画面の主役
     case joy
+
+    /// 絵の向き。男女とも同じ向きで描く (大喜びは「見る人の右へ少し向ける」と指示して描かせた)
+    var facing: Facing {
+        switch self {
+        case .normal, .smile: return .front
+        case .joy: return .right
+        }
+    }
 }
 
 /// ワンのすけの表情とポーズ。機嫌はユーザーの行動に左右されないので、悲しむ・待つ表情はない
@@ -39,7 +62,7 @@ enum WanPose: String, CaseIterable {
     case wow
     /// しっぽにつまずいて「てへ」(アプリ側の失敗を引き受けるとき)
     case tehe
-    /// 穏やかにうなずく (「やめます」への返事。仮素材は目が線なのでまだ使わない)
+    /// 穏やかにうなずく (「やめます」への返事。目は開けたまま)
     case nod
     /// おみやげを差し出す
     case gift
@@ -47,6 +70,14 @@ enum WanPose: String, CaseIterable {
     case blink
 
     var imageName: String { "wan_\(rawValue)" }
+
+    /// 絵の向き。仮素材 (2026-10-25 のゆるかわ版) は、Gemini にすべて「見る人の左へ少し向ける」と指示して描かせ、
+    /// できた絵でも確かめた (どれもしっぽが右に見えている = 左を向いている)
+    var facing: Facing {
+        switch self {
+        case .wave, .banzai, .clap, .wow, .tehe, .nod, .gift, .blink: return .left
+        }
+    }
 }
 
 /// アバターの選択を UserDefaults に保存する。まだ選んでいなければ nil (ワンのすけだけで褒める)
