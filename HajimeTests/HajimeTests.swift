@@ -1,3 +1,4 @@
+import UIKit
 import XCTest
 @testable import Hajime
 
@@ -272,5 +273,59 @@ final class StartStatsTests: XCTestCase {
         XCTAssertEqual(TimerView.clock(299.2), "5:00")
         XCTAssertEqual(TimerView.clock(59), "0:59")
         XCTAssertEqual(TimerView.clock(3723), "1:02:03")
+    }
+}
+
+final class AvatarTests: XCTestCase {
+    private var defaults: UserDefaults!
+    private let suite = "AvatarTests"
+
+    override func setUp() {
+        defaults = UserDefaults(suiteName: suite)
+        defaults.removePersistentDomain(forName: suite)
+    }
+
+    override func tearDown() {
+        defaults.removePersistentDomain(forName: suite)
+    }
+
+    func testNotChosenYet() {
+        let store = AvatarStore(defaults: defaults)
+        XCTAssertNil(store.body)
+        XCTAssertFalse(store.asked)
+    }
+
+    func testChooseAndChooseAgain() {
+        AvatarStore(defaults: defaults).choose(.female)
+        XCTAssertEqual(AvatarStore(defaults: defaults).body, .female)
+        XCTAssertTrue(AvatarStore(defaults: defaults).asked)
+        // 選び直しは上書きする
+        AvatarStore(defaults: defaults).choose(.male)
+        XCTAssertEqual(AvatarStore(defaults: defaults).body, .male)
+    }
+
+    func testSkipKeepsNoAvatar() {
+        let store = AvatarStore(defaults: defaults)
+        store.markAsked()
+        XCTAssertTrue(store.asked)
+        XCTAssertNil(store.body)
+    }
+
+    func testUnknownValueIsNotChosen() {
+        defaults.set("robot", forKey: "avatarBody")
+        XCTAssertNil(AvatarStore(defaults: defaults).body)
+    }
+
+    func testAllImagesExist() {
+        let bundle = Bundle(for: AppModel.self)
+        for pose in WanPose.allCases {
+            XCTAssertNotNil(UIImage(named: pose.imageName, in: bundle, compatibleWith: nil), pose.imageName)
+        }
+        for figure in AvatarBody.allCases {
+            for pose in AvatarPose.allCases {
+                let name = figure.imageName(pose)
+                XCTAssertNotNil(UIImage(named: name, in: bundle, compatibleWith: nil), name)
+            }
+        }
     }
 }
