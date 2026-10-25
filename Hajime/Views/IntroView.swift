@@ -97,7 +97,7 @@ private struct IntroPage<Content: View>: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 HStack(spacing: 12) {
-                    WanImage(pose: pose)
+                    WanImage(pose: pose, facing: .right)
                         .frame(width: 120, height: 120)
                         .scaleEffect(appeared ? 1 : 0.6)
                         .rotationEffect(.degrees(appeared ? 0 : -12))

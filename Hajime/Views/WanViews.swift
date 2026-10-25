@@ -64,7 +64,8 @@ struct WanBand: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            WanImage(pose: pose)
+            // 吹き出しのほうを向く
+            WanImage(pose: pose, facing: .right)
                 .frame(width: 76, height: 76)
                 .hopping(height: 4, period: 1.2)
             SpeechBubble(tail: .leading) {
@@ -189,7 +190,7 @@ struct SouvenirView: View {
                         .animation(.easeOut(duration: 0.4).delay(0.9), value: opened)
                 }
                 HStack(alignment: .center, spacing: 10) {
-                    WanImage(pose: .wave)
+                    WanImage(pose: .wave, facing: .right)
                         .frame(width: 120, height: 120)
                         .hopping(height: 8, period: 1)
                     SpeechBubble(tail: .leading) {
@@ -226,7 +227,7 @@ struct WelcomeBubble: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            WanImage(pose: .wave)
+            WanImage(pose: .wave, facing: .right)
                 .frame(width: 80, height: 80)
             SpeechBubble(tail: .leading) {
                 HStack(alignment: .top) {
@@ -266,11 +267,12 @@ struct ShareCard: View {
             Spacer(minLength: 0)
             HStack(alignment: .bottom, spacing: -24) {
                 if let avatar {
-                    AvatarImage(figure: avatar, pose: .joy)
+                    // 記念写真のように寄り添う (アバターはワンのすけのほう、ワンのすけはアバターのほうを向く)
+                    AvatarImage(figure: avatar, pose: .joy, facing: .right)
                         .frame(width: 170, height: 170)
                 }
-                WanImage(pose: .banzai)
-                    .frame(width: avatar == nil ? 170 : 120, height: avatar == nil ? 170 : 120)
+                WanImage(pose: .banzai, facing: avatar == nil ? nil : .left)
+                    .frame(width: avatar == nil ? 170 : 105, height: avatar == nil ? 170 : 105)
             }
             HeadlineText("\(step)から、はじめました")
                 .font(.system(size: 24, weight: .black, design: .rounded))

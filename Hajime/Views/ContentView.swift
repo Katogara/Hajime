@@ -55,7 +55,7 @@ struct ContentView: View {
         }
         // 「やっぱりやめます」のあと、ワンのすけがふだんと同じ明るさで見送る
         .wanBand($model.farewell) { farewell in
-            WanBand(pose: .wave, text: farewell.line)
+            WanBand(pose: .nod, text: farewell.line)
         }
     }
 
@@ -407,7 +407,7 @@ private struct DonePraise: View {
             TimelineView(.animation) { context in
                 let wave = sin(context.date.timeIntervalSinceReferenceDate * 5)
                 // ワンのすけが拍手で褒め続ける
-                WanImage(pose: .clap)
+                WanImage(pose: .clap, facing: .right)
                     .frame(width: 52, height: 52)
                     .scaleEffect(1.02 + 0.06 * wave)
                     .rotationEffect(.degrees(6 * wave))

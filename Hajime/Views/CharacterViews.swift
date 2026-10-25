@@ -12,11 +12,14 @@ private func characterImage(_ name: String) -> Image {
 /// ワンのすけ
 struct WanImage: View {
     let pose: WanPose
+    /// 向かせたい方向 (相手や吹き出しのほう)。nil なら絵のまま
+    var facing: Facing?
 
     var body: some View {
         characterImage(pose.imageName)
             .resizable()
             .scaledToFit()
+            .scaleEffect(x: facing.map(pose.facing.needsFlip) == true ? -1 : 1, y: 1)
             .accessibilityLabel("ワンのすけ")
     }
 }
@@ -25,37 +28,45 @@ struct WanImage: View {
 struct AvatarImage: View {
     let figure: AvatarBody
     let pose: AvatarPose
+    /// 向かせたい方向 (ワンのすけのほう)。nil なら絵のまま
+    var facing: Facing?
 
     var body: some View {
         characterImage(figure.imageName(pose))
             .resizable()
             .scaledToFit()
+            .scaleEffect(x: facing.map(pose.facing.needsFlip) == true ? -1 : 1, y: 1)
             .accessibilityLabel("あなたの分身")
     }
 }
 
 /// 褒める画面の主役。アバターが真ん中で大喜びし、ワンのすけが右下で一緒に喜ぶ。
+/// 2 人が向き合って喜ぶよう、アバターは右 (ワンのすけのほう)、ワンのすけは左 (アバターのほう) を向かせる。
 /// アバターをまだ選んでいなければ、ワンのすけだけで褒める
 struct CheerStage: View {
     let avatar: AvatarBody?
     let wanPose: WanPose
     /// 出てくるときの動き
     let appeared: Bool
-    /// アバターの絵の大きさ (正方形)。ワンのすけはその 0.7 倍
+    /// アバターの絵の大きさ (正方形)。ワンのすけはその 0.6 倍 (背丈がアバターの腰のあたり)
     var size: CGFloat = 220
+
+    private static let wanScale: CGFloat = 0.6
+    /// 足元の高さ (絵の中で 920/1024)。ワンのすけの足元をアバターにそろえるのに使う
+    private static let foot: CGFloat = 920.0 / 1024
 
     var body: some View {
         ZStack {
             if let avatar {
-                AvatarImage(figure: avatar, pose: .joy)
+                AvatarImage(figure: avatar, pose: .joy, facing: .right)
                     .frame(width: size, height: size)
                     .hopping(height: 14, period: 0.9)
                     .offset(x: -size * 0.12)
                 // 足元の高さをアバターにそろえ、少し右に寄せて並べる
-                WanImage(pose: wanPose)
-                    .frame(width: size * 0.7, height: size * 0.7)
+                WanImage(pose: wanPose, facing: .left)
+                    .frame(width: size * Self.wanScale, height: size * Self.wanScale)
                     .hopping(height: 10, period: 0.9, phase: 0.45)
-                    .offset(x: size * 0.25, y: size * 0.12)
+                    .offset(x: size * 0.25, y: size * (Self.foot - 0.5) * (1 - Self.wanScale))
             } else {
                 WanImage(pose: wanPose)
                     .frame(width: size, height: size)

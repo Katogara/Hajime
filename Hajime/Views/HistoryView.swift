@@ -55,7 +55,7 @@ private struct SouvenirShelf: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 8) {
-                WanImage(pose: .wave)
+                WanImage(pose: .wave, facing: .right)
                     .frame(width: 40, height: 40)
                 Text("ワンのすけのおみやげ")
                     .font(.system(.headline, design: .rounded, weight: .heavy))
