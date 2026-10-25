@@ -50,6 +50,13 @@ struct StartTask: Codable, Identifiable, Equatable {
         oneDayTime.flatMap { calendar.isDate($0, inSameDayAs: day) ? $0 : nil }
     }
 
+    /// `day` に促す時刻 (0 時からの分)。その日だけの時刻があればそちらを使う。一覧はこの早い順に並べる
+    func promptMinute(on day: Date, calendar: Calendar = .current) -> Int {
+        guard let date = oneDayTime(on: day, calendar: calendar) else { return minuteOfDay }
+        let parts = calendar.dateComponents([.hour, .minute], from: date)
+        return (parts.hour ?? 0) * 60 + (parts.minute ?? 0)
+    }
+
     /// 一覧に出す「毎日 7:30」などの表示
     var scheduleText: String {
         if isOneDay {
