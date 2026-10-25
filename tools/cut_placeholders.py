@@ -21,15 +21,33 @@ FIGURE_HEIGHT = CANVAS * 760 // 1024
 
 # 一覧画像ごとの、左上から右下への並び順の名前と、塗りつぶして消す範囲 (取り込んだときのマウスの矢印)
 SHEETS = {
+    # 名前が "_" で始まるものは使わない (Gemini が同じポーズを 2 つ描いたときなど)
     "wan_expressions.png": {
-        "names": ["wan_wave", "wan_banzai", "wan_clap", "wan_wow",
+        "names": ["wan_banzai", "_wan_banzai2", "wan_clap", "wan_wow",
                   "wan_tehe", "wan_nod", "wan_gift", "wan_blink"],
-        "erase": [(402, 338, 430, 378)],
+        "erase": [],
+        # 立ち姿 (うなずき) の背の高さを基準にする。跳んでいる絵は少し大きくなる
+        "reference": {name: "wan_nod" for name in ["wan_banzai", "_wan_banzai2", "wan_clap", "wan_wow",
+                                                   "wan_tehe", "wan_nod", "wan_gift", "wan_blink"]},
+    },
+    # 目を開けて手を振る絵は、一覧に入らなかったので 1 体だけ別に作った
+    "wan_wave.png": {
+        "names": ["wan_wave"],
+        "erase": [],
     },
     "avatar_expressions.png": {
         "names": ["avatar_male_normal", "avatar_male_smile", "avatar_male_joy",
                   "avatar_female_normal", "avatar_female_smile", "avatar_female_joy"],
         "erase": [],
+        # 男女とも、ふつうの立ち姿の背の高さを基準にして同じ身長にそろえる
+        "reference": {
+            "avatar_male_normal": "avatar_male_normal",
+            "avatar_male_smile": "avatar_male_normal",
+            "avatar_male_joy": "avatar_male_normal",
+            "avatar_female_normal": "avatar_female_normal",
+            "avatar_female_smile": "avatar_female_normal",
+            "avatar_female_joy": "avatar_female_normal",
+        },
     },
 }
 
@@ -152,11 +170,17 @@ def main():
         figures = in_reading_order(figures)
         if len(figures) != len(spec["names"]):
             raise SystemExit(f"{sheet}: {len(figures)} 体見つかりました ({len(spec['names'])} 体のはず)")
-        # 同じ一覧の中では大きさをそろえる (いちばん背の高い体を基準にする)
+        # 大きさをそろえる。基準の絵 (立ち姿) の背の高さを FIGURE_HEIGHT にし、同じ組の絵は同じ倍率にする。
+        # 男女の立ち姿をそれぞれ基準にするので、生成した絵で男女の背が違っていても、アプリでは同じ身長になる
         margin = 12
-        tallest = max(box[3] - box[1] for _, box in figures)
+        boxes = dict(zip(spec["names"], (box for _, box in figures)))
+        tallest = max(box[3] - box[1] for box in boxes.values())
         for name, figure in zip(spec["names"], figures):
-            place(cut_out(image, labels, found, figure, margin), tallest + margin) \
+            if name.startswith("_"):
+                continue
+            reference = spec.get("reference", {}).get(name)
+            height = boxes[reference][3] - boxes[reference][1] if reference else tallest
+            place(cut_out(image, labels, found, figure, margin), height + margin) \
                 .save(os.path.join(OUT, f"{name}.png"))
             print(name, figure[1])
 
