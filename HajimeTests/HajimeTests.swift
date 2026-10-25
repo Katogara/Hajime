@@ -186,6 +186,16 @@ final class DayLogTests: XCTestCase {
         XCTAssertEqual(days[2].records.map(\.taskTitle), ["掃除", "筋トレ"])
     }
 
+    func testSecretTaskHidesTitle() {
+        let secret = UUID()
+        let shown = StartRecord(taskID: UUID(), taskTitle: "筋トレ", startedAt: .now)
+        let hidden = StartRecord(taskID: secret, taskTitle: "転職活動", startedAt: .now)
+        XCTAssertEqual(shown.displayTitle(secretTaskIDs: [secret]), "筋トレ")
+        XCTAssertEqual(hidden.displayTitle(secretTaskIDs: [secret]), "秘密❤️")
+        // 解除すれば名前が戻る
+        XCTAssertEqual(hidden.displayTitle(secretTaskIDs: []), "転職活動")
+    }
+
     func testOneDayTaskExpiresNextDay() {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(identifier: "Asia/Tokyo")!
