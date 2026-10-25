@@ -46,7 +46,9 @@ private struct TaskListView: View {
                         emptyCard
                     }
                     // 日が変わった「今日だけ」のやることは出さない (次に開いたときに消える)
+                    // 今日促す時刻の早い順 (同じ時刻なら登録順)
                     let tasks = model.tasks.enumerated().filter { !$0.element.isExpired(now: .now) }
+                        .sorted { ($0.element.promptMinute(on: .now), $0.offset) < ($1.element.promptMinute(on: .now), $1.offset) }
                     // 今日はじめたものは、キラキラさせたまま下へ (色は元の並びで決め、動いても変えない)
                     let ordered = tasks.filter { !model.doneToday($0.element) } + tasks.filter { model.doneToday($0.element) }
                     ForEach(ordered, id: \.element.id) { index, task in
