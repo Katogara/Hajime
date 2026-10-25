@@ -276,6 +276,94 @@ final class StartStatsTests: XCTestCase {
     }
 }
 
+final class WanTests: XCTestCase {
+    private var calendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        return calendar
+    }()
+
+    private func day(_ day: Int, _ hour: Int = 9) -> Date {
+        calendar.date(from: DateComponents(year: 2026, month: 10, day: day, hour: hour))!
+    }
+
+    /// 毎回同じ並びになる乱数 (テスト用)
+    private struct FixedRandom: RandomNumberGenerator {
+        var state: UInt64
+        mutating func next() -> UInt64 {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            return state
+        }
+    }
+
+    func testSouvenirWaitsAfterFirstUse() {
+        // 使い始めて 7 日たつまでは渡さない
+        XCTAssertFalse(Souvenir.shouldGive(now: day(7), firstUse: day(1), last: nil, startedEarlierToday: false,
+                                           roll: 0, calendar: calendar))
+        XCTAssertTrue(Souvenir.shouldGive(now: day(8), firstUse: day(1), last: nil, startedEarlierToday: false,
+                                          roll: 0, calendar: calendar))
+    }
+
+    func testSouvenirInterval() {
+        XCTAssertFalse(Souvenir.shouldGive(now: day(20), firstUse: day(1), last: day(1),
+                                           startedEarlierToday: false, roll: 0, calendar: calendar))
+        XCTAssertTrue(Souvenir.shouldGive(now: day(21), firstUse: day(1), last: day(1),
+                                          startedEarlierToday: false, roll: 0, calendar: calendar))
+        // 時計を戻されても渡さない
+        XCTAssertFalse(Souvenir.shouldGive(now: day(1), firstUse: day(1), last: day(21),
+                                           startedEarlierToday: false, roll: 0, calendar: calendar))
+    }
+
+    func testSouvenirOnlyFirstStartOfDayAndByChance() {
+        XCTAssertFalse(Souvenir.shouldGive(now: day(21), firstUse: day(1), last: nil, startedEarlierToday: true,
+                                           roll: 0, calendar: calendar))
+        XCTAssertFalse(Souvenir.shouldGive(now: day(21), firstUse: day(1), last: nil, startedEarlierToday: false,
+                                           roll: 0.5, calendar: calendar))
+        XCTAssertFalse(Souvenir.shouldGive(now: day(21), firstUse: nil, last: nil, startedEarlierToday: false,
+                                           roll: 0, calendar: calendar))
+    }
+
+    func testSouvenirPrefersNewKinds() {
+        var random = FixedRandom(state: 1)
+        let owned = Souvenir.items.dropLast().map { Souvenir(kind: $0.kind, date: day(1)) }
+        XCTAssertEqual(Souvenir.pickKind(owned: owned, using: &random), Souvenir.items.last!.kind)
+        // 全部持っていれば、どれでもよい
+        let all = Souvenir.items.map { Souvenir(kind: $0.kind, date: day(1)) }
+        XCTAssertNotNil(Souvenir.items.first { $0.kind == Souvenir.pickKind(owned: all, using: &random) })
+    }
+
+    func testWelcomeBackAfterThreeDays() {
+        XCTAssertFalse(WelcomeBack.isReturning(lastActive: nil, now: day(10), calendar: calendar))
+        XCTAssertFalse(WelcomeBack.isReturning(lastActive: day(8, 23), now: day(10, 1), calendar: calendar))
+        XCTAssertTrue(WelcomeBack.isReturning(lastActive: day(7, 23), now: day(10, 1), calendar: calendar))
+    }
+
+    func testLinesFillStepAndTitle() {
+        let line = WanLines.Line("{title}、始まった！", "{step}から")
+        XCTAssertEqual(line.filled(step: "ウェアに着替える", title: "筋トレ"),
+                       WanLines.Line("筋トレ、始まった！", "ウェアに着替えるから"))
+    }
+
+    func testLinesWithoutTaskSkipPlaceholders() {
+        var random = FixedRandom(state: 7)
+        for _ in 0..<50 {
+            let line = WanLines.pick(from: WanLines.started, step: nil, title: nil, using: &random)
+            XCTAssertFalse((line.title + line.sub).contains("{"))
+        }
+        for _ in 0..<50 {
+            let line = WanLines.pick(from: WanLines.continued, step: "着替える", title: "筋トレ", using: &random)
+            XCTAssertFalse((line.title + line.sub).contains("{"))
+        }
+    }
+
+    func testCheerStyleDefault() {
+        XCTAssertEqual(CheerStyle.resolve("", reduceMotion: false), .big)
+        XCTAssertEqual(CheerStyle.resolve("", reduceMotion: true), .small)
+        XCTAssertEqual(CheerStyle.resolve("normal", reduceMotion: true), .normal)
+        XCTAssertEqual(CheerStyle.resolve("loud", reduceMotion: false), .big)
+    }
+}
+
 final class AvatarTests: XCTestCase {
     private var defaults: UserDefaults!
     private let suite = "AvatarTests"
