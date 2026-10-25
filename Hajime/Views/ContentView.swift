@@ -232,7 +232,7 @@ private struct TaskCard: View {
                     timeMenu(oneDay: oneDay, now: context.date)
                 }
             }
-            .popCard(tint: done ? Pop.yellow : color)
+            .popCard(tint: done ? Pop.yellow : color, shimmer: done)
             .overlay {
                 if done { Sparkles().allowsHitTesting(false) }
             }
@@ -272,7 +272,6 @@ private struct TaskCard: View {
 private struct DonePraise: View {
     let onAgain: () -> Void
     let onUndo: () -> Void
-    @State private var bounce = false
     @State private var confirmingUndo = false
 
     var body: some View {
@@ -294,11 +293,15 @@ private struct DonePraise: View {
 
     private var praise: some View {
         HStack(spacing: 10) {
-            Text("🎉")
-                .font(.system(size: 30))
-                .scaleEffect(bounce ? 1.15 : 0.9)
-                .rotationEffect(.degrees(bounce ? 10 : -10))
-                .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: bounce)
+            // 揺れは時刻から計算する (repeatForever のアニメーションだと、カードの並び替えの動きまで巻き込んで
+            // 画面の外とカードの間を行き来してしまうため)
+            TimelineView(.animation) { context in
+                let wave = sin(context.date.timeIntervalSinceReferenceDate * 5)
+                Text("🎉")
+                    .font(.system(size: 30))
+                    .scaleEffect(1.02 + 0.12 * wave)
+                    .rotationEffect(.degrees(10 * wave))
+            }
             VStack(alignment: .leading, spacing: 2) {
                 HeadlineText("できた！えらすぎる！")
                     .font(.system(.headline, design: .rounded, weight: .black))
@@ -314,7 +317,6 @@ private struct DonePraise: View {
         }
         .padding(12)
         .background(RoundedRectangle(cornerRadius: 18, style: .continuous).fill(Pop.yellow.opacity(0.25)))
-        .onAppear { bounce = true }
     }
 }
 

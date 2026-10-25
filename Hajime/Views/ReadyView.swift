@@ -5,7 +5,6 @@ struct ReadyView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     let prompt: ReadyPrompt
-    @State private var bounce = false
 
     var body: some View {
         if let task = model.task(id: prompt.taskID) {
@@ -13,11 +12,12 @@ struct ReadyView: View {
             VStack(spacing: 20) {
                 LevelBadge(progress: model.level)
                 Spacer()
-                Text("👟")
-                    .font(.system(size: 72))
-                    .scaleEffect(bounce ? 1.08 : 0.94)
-                    .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: bounce)
-                    .onAppear { bounce = true }
+                // 揺れは時刻から計算する (repeatForever は位置の変化まで巻き込んで揺れるため)
+                TimelineView(.animation) { context in
+                    Text("👟")
+                        .font(.system(size: 72))
+                        .scaleEffect(1.01 + 0.07 * sin(context.date.timeIntervalSinceReferenceDate * 4))
+                }
                 PhraseText(task.title)
                     .font(.system(.headline, design: .rounded, weight: .bold))
                     .foregroundStyle(Pop.orange)

@@ -71,11 +71,16 @@ extension PopButtonStyle {
 /// 角の丸いカード。下にうっすら段をつけて、シールのように見せる。
 struct PopCard: ViewModifier {
     var tint: Color = Pop.ink
+    /// カードの色そのものをキラキラさせる (今日はじめたカード)
+    var shimmer = false
 
     func body(content: Content) -> some View {
         content
             .padding(18)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                if shimmer { ShimmerFill(cornerRadius: 26) }
+            }
             .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(Pop.card))
             .background(RoundedRectangle(cornerRadius: 26, style: .continuous)
                 .fill(tint.opacity(0.35)).offset(y: 6))
@@ -84,13 +89,50 @@ struct PopCard: ViewModifier {
 }
 
 extension View {
-    func popCard(tint: Color = Pop.ink) -> some View {
-        modifier(PopCard(tint: tint))
+    func popCard(tint: Color = Pop.ink, shimmer: Bool = false) -> some View {
+        modifier(PopCard(tint: tint, shimmer: shimmer))
     }
 
     /// 画面全体の背景をクリーム色にする
     func popBackground() -> some View {
         background(Pop.background.ignoresSafeArea())
+    }
+}
+
+/// キラキラするカードの地。明るい色がゆっくり流れ、光の帯がときどき横切る。
+/// 動きは時刻から計算する (`repeatForever` のアニメーションは、並び替えなどの位置の変化まで巻き込んで揺れるため使わない)
+struct ShimmerFill: View {
+    var cornerRadius: CGFloat = 26
+
+    private static let colors: [Color] = [
+        Pop.yellow.opacity(0.45), Pop.pink.opacity(0.3), Pop.orange.opacity(0.35),
+        Pop.green.opacity(0.3), Pop.yellow.opacity(0.45),
+    ]
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        TimelineView(.animation) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            // 色の流れ (0〜1 を行き来する)
+            let flow = (sin(t * 0.8) + 1) / 2
+            // 光の帯 (2.8 秒ごとに左から右へ)
+            let sweep = t.truncatingRemainder(dividingBy: 2.8) / 2.8
+            shape
+                .fill(LinearGradient(colors: Self.colors,
+                                     startPoint: UnitPoint(x: -0.5 + flow, y: 0),
+                                     endPoint: UnitPoint(x: 0.5 + flow, y: 1)))
+                .overlay {
+                    GeometryReader { proxy in
+                        LinearGradient(colors: [.clear, .white.opacity(0.65), .clear],
+                                       startPoint: .leading, endPoint: .trailing)
+                            .frame(width: proxy.size.width * 0.3, height: proxy.size.height * 1.8)
+                            .rotationEffect(.degrees(20))
+                            .offset(x: (sweep * 1.8 - 0.5) * proxy.size.width, y: -proxy.size.height * 0.4)
+                    }
+                }
+                .clipShape(shape)
+        }
+        .allowsHitTesting(false)
     }
 }
 
