@@ -219,6 +219,18 @@ final class StartTaskTests: XCTestCase {
         XCTAssertEqual(task.plan(for: .nudge).step, "PCを開く")
     }
 
+    func testMinuteOfDayUsesOneDayTime() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Asia/Tokyo")!
+        let today = calendar.date(from: DateComponents(year: 2026, month: 10, day: 19, hour: 8))!
+        var task = StartTask(title: "筋トレ", firstStep: "着替える", minuteOfDay: 7 * 60)
+        XCTAssertEqual(task.promptMinute(on: today, calendar: calendar), 7 * 60)
+        task.oneDayTime = calendar.date(bySettingHour: 20, minute: 30, second: 0, of: today)
+        XCTAssertEqual(task.promptMinute(on: today, calendar: calendar), 20 * 60 + 30)
+        // 翌日はいつもの時刻
+        XCTAssertEqual(task.promptMinute(on: today.addingTimeInterval(86_400), calendar: calendar), 7 * 60)
+    }
+
     func testScheduleText() {
         var task = StartTask(title: "筋トレ", firstStep: "着替える", minuteOfDay: 7 * 60 + 5)
         XCTAssertEqual(task.scheduleText, "毎日 7:05")
