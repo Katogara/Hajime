@@ -46,11 +46,16 @@ final class AppModel {
     private(set) var levelUps: [LevelUpEvent] = []
     /// つみあげで名前を「秘密❤️」にしているやること (解除するまで。やることを消しても残す)
     private(set) var secretTaskIDs: Set<UUID> = []
+    /// ユーザーの分身のアバター (まだ選んでいなければ nil)
+    private(set) var avatar: AvatarBody?
+    /// 最初の「どっちのきみで始める？」を出した
+    private(set) var avatarAsked = false
 
     var level: LevelProgress { LevelTable.progress(forXP: xp) }
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let notifier = Notifier()
+    private var avatarStore: AvatarStore { AvatarStore(defaults: defaults) }
     /// 予約し直しを順番に行う (前の予約の途中で次が混ざらないように)
     @ObservationIgnored private var scheduling: Task<Void, Never>?
 
@@ -76,6 +81,8 @@ final class AppModel {
         graduated = defaults.bool(forKey: StoreKey.graduated)
         levelUps = load([LevelUpEvent].self, StoreKey.levelUps) ?? []
         secretTaskIDs = load(Set<UUID>.self, StoreKey.secretTasks) ?? []
+        avatar = avatarStore.body
+        avatarAsked = avatarStore.asked
         removeExpiredTasks()
         notifier.onStart = { [weak self] response in self?.handle(response) }
         // 以前の版で「続きをやっています」のまま残っていたら閉じる
@@ -163,6 +170,21 @@ final class AppModel {
             secretTaskIDs.remove(taskID)
         }
         store(secretTaskIDs, StoreKey.secretTasks)
+    }
+
+    // MARK: - アバター
+
+    /// 分身の姿を選ぶ。あとから何度でも無料で選び直せる
+    func chooseAvatar(_ body: AvatarBody) {
+        avatarStore.choose(body)
+        avatar = body
+        avatarAsked = true
+    }
+
+    /// 最初の「どっちのきみで始める？」を選ばずに閉じた (選ぶまではワンのすけだけで褒める)
+    func skipAvatarChoice() {
+        avatarStore.markAsked()
+        avatarAsked = true
     }
 
     // MARK: - 始める
