@@ -356,6 +356,16 @@ final class WanTests: XCTestCase {
         }
     }
 
+    func testFacingFlipsOnlyOppositeSides() {
+        XCTAssertTrue(Facing.left.needsFlip(toFace: .right))
+        XCTAssertTrue(Facing.right.needsFlip(toFace: .left))
+        XCTAssertFalse(Facing.left.needsFlip(toFace: .left))
+        XCTAssertFalse(Facing.front.needsFlip(toFace: .left))
+        XCTAssertFalse(Facing.right.needsFlip(toFace: .front))
+        // 褒める画面ではワンのすけはアバター (左) のほうを向く
+        XCTAssertFalse(WanPose.banzai.facing.needsFlip(toFace: .left))
+    }
+
     func testCheerStyleDefault() {
         XCTAssertEqual(CheerStyle.resolve("", reduceMotion: false), .big)
         XCTAssertEqual(CheerStyle.resolve("", reduceMotion: true), .small)
