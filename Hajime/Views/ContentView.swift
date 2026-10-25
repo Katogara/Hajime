@@ -30,6 +30,8 @@ private struct TaskListView: View {
     @State private var editing: StartTask?
     @State private var showingHistory = false
     @State private var showingIntro = false
+    /// 分身の姿を選ぶ画面
+    @State private var choosingAvatar: AvatarChoiceMode?
     /// 「今日は何時から」を候補以外の時刻にするとき
     @State private var pickingTime: StartTask?
     /// 説明を一度見たら、次からは自動で出さない (タイトルのタップでいつでも見られる)
@@ -41,7 +43,10 @@ private struct TaskListView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     header
-                    LevelBadge(progress: model.level)
+                    HStack(spacing: 10) {
+                        AvatarFaceButton(avatar: model.avatar) { choosingAvatar = .again }
+                        LevelBadge(progress: model.level)
+                    }
                     if model.tasks.isEmpty {
                         emptyCard
                     }
@@ -104,11 +109,23 @@ private struct TaskListView: View {
             .sheet(item: $pickingTime) { task in
                 OneDayTimeSheet(task: task) { model.setOneDayTime($0, for: task.id) }
             }
-            .fullScreenCover(isPresented: $showingIntro, onDismiss: { introSeen = true }) {
+            .fullScreenCover(isPresented: $showingIntro, onDismiss: {
+                introSeen = true
+                // 最初の説明を見終えたら、分身の姿を選ぶ (説明を見直したときは出さない)
+                if !model.avatarAsked { choosingAvatar = .first }
+            }) {
                 IntroView()
             }
+            .fullScreenCover(item: $choosingAvatar) { mode in
+                AvatarChoiceView(first: mode == .first)
+            }
             .onAppear {
-                if !introSeen { showingIntro = true }
+                if !introSeen {
+                    showingIntro = true
+                } else if !model.avatarAsked {
+                    // 姿を選べるようになる前から使っている人にも、一度だけ聞く
+                    choosingAvatar = .first
+                }
             }
         }
     }
@@ -151,6 +168,16 @@ private struct TaskListView: View {
         }
         .popCard(tint: Pop.orange)
     }
+}
+
+/// 分身の姿を選ぶ画面の出し方
+private enum AvatarChoiceMode: Identifiable {
+    /// 最初の「どっちのきみで始める？」(選ばずに閉じられる)
+    case first
+    /// 一覧の顔から開いて選び直す
+    case again
+
+    var id: Self { self }
 }
 
 /// ツールバーの丸いボタン

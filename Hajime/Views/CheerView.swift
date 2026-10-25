@@ -1,7 +1,9 @@
 import SwiftUI
 
 /// 始めたとき・続けたときに全画面で出す、大げさに褒める演出。紙吹雪が飛び、少しすると消える (タップでも消える)。
+/// 主役は分身のアバターで、ワンのすけが横で一緒に喜ぶ。背景はダークモードでもクリーム色。
 struct CheerView: View {
+    @Environment(AppModel.self) private var model
     let cheer: Cheer
     let onDone: () -> Void
 
@@ -38,8 +40,9 @@ struct CheerView: View {
         }
     }
 
-    private var emoji: String { cheer.kind == .started ? "🎉" : "🔥" }
-    private var background: Color { cheer.kind == .started ? Pop.orange : Pop.green }
+    /// 始めたときはばんざい、「やりました！」のときは拍手
+    private var wanPose: WanPose { cheer.kind == .started ? .banzai : .clap }
+    private var accent: Color { cheer.kind == .started ? Pop.orangeDeep : Pop.greenDeep }
 
     var body: some View {
         if cheer.kind == .graduated {
@@ -51,11 +54,11 @@ struct CheerView: View {
 
     private var cheerBody: some View {
         ZStack {
-            background.ignoresSafeArea()
+            Pop.cream.ignoresSafeArea()
             // 中心から広がる光の輪
             ForEach(0..<3) { ring in
                 Circle()
-                    .stroke(Color.white.opacity(0.25), lineWidth: 18)
+                    .stroke(accent.opacity(0.18), lineWidth: 18)
                     .scaleEffect(burst ? 2.6 + Double(ring) * 0.6 : 0.2)
                     .opacity(burst ? 0 : 1)
                     .animation(.easeOut(duration: 1.2).delay(Double(ring) * 0.15), value: burst)
@@ -63,28 +66,23 @@ struct CheerView: View {
             }
             Confetti(burst: burst)
             VStack(spacing: 18) {
-                Text(emoji)
-                    .font(.system(size: 110))
-                    .scaleEffect(burst ? 1 : 0.2)
-                    .rotationEffect(.degrees(burst ? 0 : -30))
-                    .animation(.spring(response: 0.45, dampingFraction: 0.4), value: burst)
+                CheerStage(avatar: model.avatar, wanPose: wanPose, appeared: burst)
                 HeadlineText(phrase.title)
-                    .font(.system(size: 46, weight: .black, design: .rounded))
+                    .font(.system(size: 42, weight: .black, design: .rounded))
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.15), radius: 0, y: 4)
+                    .foregroundStyle(accent)
                     .scaleEffect(burst ? 1 : 0.5)
                     .opacity(burst ? 1 : 0)
                     .animation(.spring(response: 0.5, dampingFraction: 0.5).delay(0.1), value: burst)
                 PhraseText(phrase.sub)
                     .font(.system(.headline, design: .rounded, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(Pop.brown)
                     .opacity(burst ? 1 : 0)
                     .animation(.easeOut(duration: 0.4).delay(0.4), value: burst)
                 if cheer.gainedXP {
                     Text("+1 EXP")
                         .font(.system(.title2, design: .rounded, weight: .black))
-                        .foregroundStyle(Pop.ink)
+                        .foregroundStyle(Pop.brown)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 8)
                         .background(Capsule().fill(Pop.yellow))
@@ -95,7 +93,7 @@ struct CheerView: View {
             .padding(24)
             // レベルが上がったときは、続けてレベルアップを別の画面でしっかり褒める
             if let level = cheer.levelUp, showingLevelUp {
-                LevelUpStage(level: level)
+                LevelUpStage(level: level, avatar: model.avatar)
                     .transition(.scale(scale: 0.6).combined(with: .opacity))
             }
         }
@@ -125,6 +123,7 @@ struct CheerView: View {
 /// レベルアップの画面。始めたことに続けて、積み上げてきたことを大げさに褒める
 private struct LevelUpStage: View {
     let level: Int
+    let avatar: AvatarBody?
     @State private var appeared = false
     @State private var phrase = [
         "積み上げてきた証拠！ほんとうにすごい！",
@@ -137,10 +136,10 @@ private struct LevelUpStage: View {
 
     var body: some View {
         ZStack {
-            Pop.pink.ignoresSafeArea()
+            Pop.cream.ignoresSafeArea()
             ForEach(0..<4) { ring in
                 Circle()
-                    .stroke(Color.white.opacity(0.25), lineWidth: 16)
+                    .stroke(Pop.pink.opacity(0.22), lineWidth: 16)
                     .frame(width: 180, height: 180)
                     .scaleEffect(appeared ? 3 + Double(ring) * 0.5 : 0.2)
                     .opacity(appeared ? 0 : 1)
@@ -148,33 +147,28 @@ private struct LevelUpStage: View {
             }
             ConfettiBurst()
             VStack(spacing: 14) {
-                Text("🌟")
-                    .font(.system(size: 90))
-                    .scaleEffect(appeared ? 1 : 0.1)
-                    .rotationEffect(.degrees(appeared ? 0 : 180))
-                    .animation(.spring(response: 0.5, dampingFraction: 0.4), value: appeared)
+                // レベルアップは特別なので、ワンのすけはキラキラ目でびっくりする
+                CheerStage(avatar: avatar, wanPose: .wow, appeared: appeared, size: 190)
                 Text("LEVEL UP!")
-                    .font(.system(size: 44, weight: .black, design: .rounded))
-                    .foregroundStyle(Pop.yellow)
-                    .shadow(color: .black.opacity(0.2), radius: 0, y: 4)
+                    .font(.system(size: 40, weight: .black, design: .rounded))
+                    .foregroundStyle(Pop.pink)
                     .scaleEffect(appeared ? 1 : 2.4)
                     .opacity(appeared ? 1 : 0)
                     .animation(.spring(response: 0.45, dampingFraction: 0.5).delay(0.1), value: appeared)
                 Text("Lv.\(level)")
-                    .font(.system(size: 88, weight: .black, design: .rounded))
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.18), radius: 0, y: 6)
+                    .font(.system(size: 76, weight: .black, design: .rounded))
+                    .foregroundStyle(Pop.brown)
                     .scaleEffect(appeared ? 1 : 0.3)
                     .animation(.spring(response: 0.5, dampingFraction: 0.35).delay(0.25), value: appeared)
                 HeadlineText("「\(LevelTable.title(for: level))」になりました！")
                     .font(.system(.headline, design: .rounded, weight: .heavy))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Pop.brown)
                     .opacity(appeared ? 1 : 0)
                     .animation(.easeOut(duration: 0.4).delay(0.5), value: appeared)
                 HeadlineText(phrase)
                     .font(.system(.title2, design: .rounded, weight: .black))
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Pop.pink)
                     .opacity(appeared ? 1 : 0)
                     .offset(y: appeared ? 0 : 20)
                     .animation(.spring(response: 0.5, dampingFraction: 0.6).delay(0.7), value: appeared)

@@ -16,6 +16,10 @@ enum Pop {
     static let card = Color(light: 0xFFFFFF, dark: 0x33251B)
     /// 文字と影の色 (こげ茶)
     static let ink = Color(light: 0x3A2414, dark: 0xFFF1E0)
+    /// 褒める画面の背景。キャラクターが沈まないよう、ダークモードでもクリーム色のまま
+    static let cream = Color(light: 0xFFF4E6, dark: 0xFFF4E6)
+    /// キャラクターの輪郭線と同じこげ茶。褒める画面の文字に使う (ダークモードでも変えない)
+    static let brown = Color(light: 0x5A3A22, dark: 0x5A3A22)
 
     /// やることごとに色を変えて、一覧をにぎやかにする
     static let taskColors: [Color] = [orange, green, pink, yellow]
