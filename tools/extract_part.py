@@ -10,10 +10,15 @@ region: 首より下で、肌の色以外をすべて服として取る（上下
 どちらも、背景のマゼンタと、マゼンタがにじんだふちを透明にし、小さな点のごみを消す。
 """
 import argparse
+import sys
+from pathlib import Path
 
 import numpy as np
 from PIL import Image, ImageFilter
 from scipy import ndimage
+
+sys.path.insert(0, str(Path(__file__).parent))
+from to_svg import background, fringe_of  # noqa: E402
 
 p = argparse.ArgumentParser()
 p.add_argument("mode", choices=["diff", "region"])
@@ -28,8 +33,8 @@ a = p.parse_args()
 base = np.asarray(Image.open(a.base).convert("RGB")).astype(int)
 worn = np.asarray(Image.open(a.worn).convert("RGB")).astype(int)
 r, g, b = worn[..., 0], worn[..., 1], worn[..., 2]
-magenta = (r > 170) & (b > 170) & (g < 110) & (abs(r - b) < 90)
-fringe = ((r - g) > 70) & ((b - g) > 70)   # マゼンタがにじんだ色
+magenta = background(worn)          # ふちとつながったマゼンタだけ（絵の中のピンクは残す）
+fringe = fringe_of(worn, magenta, strength=70)   # 背景のすぐそばの、マゼンタがにじんだ色
 figure = ~magenta
 dark = worn.sum(-1) < 330                   # こげ茶の線
 skin_ref = np.array([0xF3, 0xD3, 0xB8])
