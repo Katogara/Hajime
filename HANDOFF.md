@@ -103,8 +103,11 @@
 - 下絵と基準の絵の候補: `C:\Users\user\Hajime\ai-trial-20261026` (お手本は `refs/`、2 日目の下絵は `gen/`、不採用は `gen/rejected/`)。基準の絵はまだユーザーの承認待ち
 - 描かせ方: 1 点ごとに新しいチャットで、お手本の絵を 1 枚だけ添え、「位置・大きさ・ポーズを変えずに X だけを変える」と頼む。背景はマゼンタ (#FF00FF)。アバターの服や小物は、素体に着せた全身を描かせ、素体との差で取り出す (部品だけを描かせると位置が合わない)
 - `tools/take_gemini_download.ps1`: Gemini の「フルサイズでダウンロード」で落ちた画像を、ダウンロードフォルダから作業フォルダへ移す (指定時刻より新しいものだけ)
-- `tools/extract_diff.py`: 素体と「着せた全身」の差から、服や小物だけを透過 PNG で取り出す
-- `tools/to_svg.py`: マゼンタを抜き、決まった色だけに塗り直してから vtracer で SVG にする (`pip install --user numpy vtracer`。Python は `python -P` で実行)
+- `tools/extract_part.py`: 素体と「着せた全身」から服や小物を欠けなく取り出す (`diff` は穴埋めと線の拾い直し、`region --neck 305` は首より下の肌以外を服として取る)。`extract_diff.py` は最初の版で、線が欠けるので使わない
+- `tools/parts_sheet.py`: 取り出した部品だけの絵と、素体に重ねた絵を並べた確認用の一覧を作る
+- `tools/to_svg.py`: マゼンタを抜き、決まった色だけに塗り直してから vtracer で SVG にする。`auto N 色...` で決まった色を必ず残す。にじみは線の色に、小さな点は消す (`pip install --user numpy scipy vtracer`。Python は `python -P` で実行)
+- 素体は「頭」の体 (`avatar_body`) と、「スウェット・ズボン・スニーカー・手」の初期の服 (`avatar_default_outfit`) に分ける。服を着替えるときは初期の服を描かない (細いズボンでも下の服がはみ出さない)
+- ワンのすけの首の小物は、バンダナを外しただけのワンのすけ (`r10_wan_wave_nobandana`) との差で取る
 - `tools/evaluate.py`: 試し描きの一覧、64px の一覧、重ね合わせ、位置と色の数字を出す
 
 ### 経験値とレベル (`Experience.swift`)
