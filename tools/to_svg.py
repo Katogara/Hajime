@@ -50,15 +50,15 @@ def figure_mask(img):
     return ~background(a, alpha), a
 
 
-def flatten(src, spec):
+def flatten(src, spec, min_blob=300):
     """決まった色だけに塗り直す。spec は ["#色", ...] か ["auto", "N", "#色", ...]。
+    min_blob より小さい、絵から離れた点のかたまりはごみとして消す（まつ毛のような細かい部品では小さくする）。
     戻り値: (塗り直した RGB の配列, 絵の画素の bool 配列, 使った色の配列)"""
     solid, a = figure_mask(Image.open(src))
-    # 絵から離れた小さな点のごみ（300px 未満のかたまり）を消す
     lab, cnt = ndimage.label(solid)
     if cnt:
         sizes = ndimage.sum(solid, lab, range(1, cnt + 1))
-        solid &= np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s >= 300])
+        solid &= np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s >= min_blob])
     # マゼンタがにじんだふちの色は、線のこげ茶とみなす
     a[solid & fringe_of(a, ~solid)] = LINE
 

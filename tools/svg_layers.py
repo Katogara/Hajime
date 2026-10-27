@@ -1,7 +1,7 @@
 """絵を、決まりに合わせた「線」と「塗り」の2枚の SVG にする。
 
 使い方:
-  svg_layers.py 元画像 出力の名前 色の指定... [--align-from 画像 ...] [--no-align] [--height H]
+  svg_layers.py 元画像 出力の名前 色の指定... [--align-from 画像 ...] [--no-align] [--height H] [--min-blob N]
     色の指定は to_svg.py と同じ（#RRGGBB を並べるか、auto N #色 ...）
     出力: 名前_line.svg（線のこげ茶だけ）、名前_fill.svg（塗り。線の下も周りの色で埋める）、名前_check.png
   svg_layers.py check SVG ...   決まりを守っているかを確かめる（守っていなければ終了コード 1）
@@ -61,14 +61,14 @@ def move(img, s, dx, dy, pivot, order):
 
 # ---- SVG の整形 ----
 
-def trace(rgba, **kw):
+def trace(rgba, speckle=6, **kw):
     import vtracer
     with tempfile.TemporaryDirectory() as d:
         png, svg = Path(d) / "in.png", Path(d) / "out.svg"
         Image.fromarray(rgba, "RGBA").save(png)
         vtracer.convert_image_to_svg_py(
             str(png), str(svg), colormode="color", mode="spline",
-            filter_speckle=6, color_precision=8, layer_difference=8,
+            filter_speckle=speckle, color_precision=8, layer_difference=8,
             corner_threshold=60, length_threshold=4.0, splice_threshold=45, path_precision=2, **kw)
         return svg.read_text(encoding="utf-8")
 
@@ -168,7 +168,7 @@ def check(path):
 # ---- 本体 ----
 
 def build(a):
-    mapped, solid, palette = flatten(a.src, a.colors)
+    mapped, solid, palette = flatten(a.src, a.colors, a.min_blob)
     if a.no_align:
         s, dx, dy, pivot = 1.0, 0.0, 0.0, (0, 0)
     else:
@@ -184,22 +184,23 @@ def build(a):
     if fill_px.any():
         _, (iy, ix) = ndimage.distance_transform_edt(~fill_px, return_indices=True)
         filled[line] = mapped[iy[line], ix[line]]
-    else:
-        filled[line] = LINE
 
     hexes = ["#%02X%02X%02X" % tuple(c) for c in palette]
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     line_rgba = np.zeros((SIZE, SIZE, 4), np.uint8)
     line_rgba[line] = list(LINE) + [255]
-    fill_rgba = np.dstack([filled, np.where(solid, 255, 0)]).astype(np.uint8)
+    # 塗りのない部品（まつ毛など線だけのもの）では、塗りの SVG を作らない
+    fill_rgba = np.dstack([filled, np.where(solid & fill_px.any(), 255, 0)]).astype(np.uint8)
+    speckle = 2 if a.min_blob < 50 else 6   # 細かい部品では、vtracer の点の切り捨ても弱める
     names = []
     for layer, rgba, kw, cols in [("fill", fill_rgba, dict(hierarchical="stacked"), hexes),
                                   ("line", line_rgba, dict(hierarchical="cutout"), [LINE_HEX])]:
-        if not rgba[..., 3].any():
-            continue
         p = out.with_name(out.name + f"_{layer}.svg")
-        p.write_text(clean(trace(rgba, **kw), cols), encoding="utf-8")
+        if not rgba[..., 3].any():
+            p.unlink(missing_ok=True)
+            continue
+        p.write_text(clean(trace(rgba, speckle, **kw), cols), encoding="utf-8")
         names.append(p)
 
     # 確かめ用: 左が塗り直した元の絵、右が SVG を重ねて画像に戻したもの
@@ -230,4 +231,5 @@ if __name__ == "__main__":
     ap.add_argument("--align-from", nargs="+")
     ap.add_argument("--no-align", action="store_true")
     ap.add_argument("--height", type=float)
+    ap.add_argument("--min-blob", type=int, default=300, help="これより小さい離れた点はごみとして消す（まつ毛は 10）")
     sys.exit(0 if build(ap.parse_args()) else 1)
