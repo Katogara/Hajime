@@ -147,7 +147,7 @@ private struct IntroStep: View {
 }
 
 /// ページの位置。今のページだけ横に伸びたオレンジの丸
-private struct PageDots: View {
+struct PageDots: View {
     let count: Int
     let current: Int
 

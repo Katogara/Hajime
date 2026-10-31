@@ -17,18 +17,24 @@ struct CheerView: View {
     /// - Parameters:
     ///   - step: 差し込む最初の一歩 (やることが消えているときや秘密❤️のときは nil)
     ///   - title: 差し込むやることの名前
-    init(cheer: Cheer, style: CheerStyle = .big, step: String? = nil, title: String? = nil,
+    ///   - next: 一歩を分けてあるときの、分ける前の一歩 (「やりました！」のあとに「次は」と添える)
+    init(cheer: Cheer, style: CheerStyle = .big, step: String? = nil, title: String? = nil, next: String? = nil,
          onDone: @escaping () -> Void) {
         self.cheer = cheer
         self.style = style
         self.onDone = onDone
-        _phrase = State(initialValue: Self.line(for: cheer.kind, step: step, title: title))
+        _phrase = State(initialValue: Self.line(for: cheer.kind, step: step, title: title, next: next))
     }
 
-    static func line(for kind: Cheer.Kind, step: String?, title: String?) -> WanLines.Line {
+    static func line(for kind: Cheer.Kind, step: String?, title: String?, next: String? = nil) -> WanLines.Line {
         var random = SystemRandomNumberGenerator()
         let lines = kind == .continued ? WanLines.continued : WanLines.started
-        return WanLines.pick(from: lines, step: step, title: title, using: &random)
+        var line = WanLines.pick(from: lines, step: step, title: title, using: &random)
+        // 続けるかどうかは本人が決める。次を言うだけで、やめてもいいと添える
+        if kind == .continued, let next {
+            line.sub = "続けるなら、次は「\(next)」だよ。ここでやめてもOK！"
+        }
+        return line
     }
 
     /// 表示しておく時間 (せりふを読めるよう、少し長め)

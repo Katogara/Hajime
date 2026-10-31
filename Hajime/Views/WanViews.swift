@@ -103,9 +103,9 @@ struct CheerBand: View {
     let cheer: Cheer
     @State private var line: WanLines.Line
 
-    init(cheer: Cheer, step: String?, title: String?) {
+    init(cheer: Cheer, step: String?, title: String?, next: String? = nil) {
         self.cheer = cheer
-        _line = State(initialValue: CheerView.line(for: cheer.kind, step: step, title: title))
+        _line = State(initialValue: CheerView.line(for: cheer.kind, step: step, title: title, next: next))
     }
 
     var body: some View {

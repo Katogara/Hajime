@@ -22,12 +22,13 @@ struct ContentView: View {
                     // 控えめ: 全画面にせず、画面の下の帯で褒める
                     Color.clear
                         .wanBand($model.cheer) { cheer in
-                            CheerBand(cheer: cheer, step: words(for: cheer)?.step, title: words(for: cheer)?.title)
+                            CheerBand(cheer: cheer, step: words(for: cheer)?.step, title: words(for: cheer)?.title,
+                                  next: words(for: cheer)?.next)
                         }
                         .zIndex(1)
                 } else {
                     CheerView(cheer: cheer, style: cheerStyle, step: words(for: cheer)?.step,
-                              title: words(for: cheer)?.title) {
+                              title: words(for: cheer)?.title, next: words(for: cheer)?.next) {
                         withAnimation(.easeOut(duration: 0.3)) {
                             if model.cheer == cheer { model.cheer = nil }
                         }
@@ -59,12 +60,12 @@ struct ContentView: View {
         }
     }
 
-    /// 褒め言葉に差し込む一歩と名前。やることが消えているときと、秘密❤️のときは差し込まない
-    private func words(for cheer: Cheer) -> (step: String, title: String)? {
+    /// 褒め言葉に差し込む一歩と名前と、分ける前の一歩。やることが消えているときと、秘密❤️のときは差し込まない
+    private func words(for cheer: Cheer) -> (step: String, title: String, next: String?)? {
         guard let id = cheer.taskID, !model.secretTaskIDs.contains(id), let task = model.task(id: id) else {
             return nil
         }
-        return (task.firstStep, task.title)
+        return (task.firstStep, task.title, task.isSplit ? task.nextStep : nil)
     }
 }
 
@@ -78,6 +79,8 @@ private struct TaskListView: View {
     @State private var choosingAvatar: AvatarChoiceMode?
     /// 「今日は何時から」を候補以外の時刻にするとき
     @State private var pickingTime: StartTask?
+    /// 提案のシートを閉じてから、一歩を別のやることにする登録を開く
+    @State private var pendingOtherTask: StartTask?
     /// 説明を一度見たら、次からは自動で出さない (タイトルのタップでいつでも見られる)
     @AppStorage("introSeen") private var introSeen = false
 
@@ -161,6 +164,26 @@ private struct TaskListView: View {
             }
             .sheet(item: $pickingTime) { task in
                 OneDayTimeSheet(task: task) { model.setOneDayTime($0, for: task.id) }
+            }
+            // 始めなかったあと、次に開いたときに一度だけ、ワンのすけが一歩を小さくする提案をする
+            .sheet(item: $model.shrinkOffer, onDismiss: {
+                if let draft = pendingOtherTask {
+                    pendingOtherTask = nil
+                    editing = draft
+                }
+            }) { offer in
+                if let task = model.task(id: offer.taskID) {
+                    StepSplitSheet(step: task.firstStep, offer: true) { step in
+                        model.split(taskID: task.id, into: step)
+                        model.shrinkOffer = nil
+                    } onOtherTask: {
+                        pendingOtherTask = task.draftFromStep()
+                        model.shrinkOffer = nil
+                    } onKeep: {
+                        model.shrinkOffer = nil
+                    }
+                    .presentationDetents([.medium, .large])
+                }
             }
             .fullScreenCover(isPresented: $showingIntro, onDismiss: {
                 introSeen = true
@@ -279,7 +302,8 @@ private struct TaskCard: View {
                         PhraseText(task.title)
                             .font(.system(.title3, design: .rounded, weight: .heavy))
                             .foregroundStyle(Pop.ink)
-                        PhraseText("👣 \(task.firstStep)")
+                        // 分けた一歩は、分ける前の一歩を「→」で添えて 1 枚のカードのまま見せる
+                        PhraseText(task.isSplit ? "👣 \(task.firstStep)（→ \(task.nextStep ?? "")）" : "👣 \(task.firstStep)")
                             .font(.system(.subheadline, design: .rounded, weight: .medium))
                             .foregroundStyle(Pop.ink.opacity(0.75))
                         if task.isOneDay {
