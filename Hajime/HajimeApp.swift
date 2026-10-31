@@ -9,6 +9,8 @@ struct HajimeApp: App {
         WindowGroup {
             ContentView()
                 .environment(model)
+                // 絵に着せる服と髪 (着替えると、どの画面の絵も変わる)
+                .environment(\.dressing, model.dressing)
                 // 文字はすべて丸ゴシック、ボタンや選択はオレンジ
                 .fontDesign(.rounded)
                 .tint(Pop.orange)

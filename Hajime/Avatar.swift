@@ -13,10 +13,6 @@ enum AvatarBody: String, CaseIterable, Codable {
         case .female: return "ボブの髪の姿"
         }
     }
-
-    func imageName(_ pose: AvatarPose) -> String {
-        "avatar_\(rawValue)_\(pose.rawValue)"
-    }
 }
 
 /// 絵のキャラクターが顔と体を向けている方向 (見る人から見た左右)。
@@ -68,8 +64,6 @@ enum WanPose: String, CaseIterable {
     case gift
     /// まばたき
     case blink
-
-    var imageName: String { "wan_\(rawValue)" }
 
     /// 絵の向き。仮素材 (2026-10-25 のゆるかわ版) は、Gemini にすべて「見る人の左へ少し向ける」と指示して描かせ、
     /// できた絵でも確かめた (どれもしっぽが右に見えている = 左を向いている)

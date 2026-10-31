@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "wanAnchors": {
+    "center": [466, 318],
+    "poses": {
+      "banzai": {"dx": 2, "dy": 0, "scale": 1.0, "deg": 0},
+      "clap": {"dx": -6, "dy": 40, "scale": 1.0, "deg": -3},
+      "blink": {"dx": -1, "dy": -1, "scale": 1.0, "deg": 0},
+      "tehe": {"dx": 34, "dy": 123, "scale": 0.84, "deg": -3},
+      "nod": {"dx": 8, "dy": 90, "scale": 1.0, "deg": -3},
+      "gift": {"dx": 5, "dy": 28, "scale": 1.08, "deg": -3},
+      "wow": {"dx": 5, "dy": 31, "scale": 1.08, "deg": -3}
+    }
+  },
+  "themes": [
+    {
+      "id": "gyaru", "character": "avatar", "shelf": "fashion", "name": "ギャル系", "note": "キラキラ・元気", "order": 1,
+      "items": [
+        {"part": "head", "name": "ハートのサングラス", "art": {"all": "av_gyaru_head"}},
+        {"part": "top", "name": "ファーのベスト", "over": true, "art": {"std": "av_gyaru_top_std", "joy": "av_gyaru_top_joy"}},
+        {"part": "feet", "name": "厚底スニーカー", "art": {"all": "av_gyaru_feet"}}
+      ]
+    },
+    {
+      "id": "host", "character": "avatar", "shelf": "fashion", "name": "ホスト系", "note": "夜のきらめき", "order": 2,
+      "items": [
+        {"part": "top", "name": "金の襟のジャケット", "art": {"std": "av_host_top_std"}},
+        {"part": "bottom", "name": "黒のスラックス", "art": {"all": "av_host_bottom"}},
+        {"part": "feet", "name": "黒の革靴", "art": {"all": "av_host_feet"}}
+      ]
+    },
+    {
+      "id": "shibuya", "character": "avatar", "shelf": "fashion", "name": "渋谷系", "note": "レトロ・ポップ", "order": 3,
+      "items": [
+        {"part": "head", "name": "キャスケット", "art": {"all": "av_shibuya_head"}},
+        {"part": "top", "name": "ボーダーのニット", "art": {"std": "av_shibuya_top_std"}},
+        {"part": "bottom", "name": "紺のワイドパンツ", "art": {"all": "av_shibuya_bottom"}},
+        {"part": "feet", "name": "赤のスニーカー", "art": {"all": "av_shibuya_feet"}}
+      ]
+    },
+    {
+      "id": "consa", "character": "avatar", "shelf": "fashion", "name": "コンサバ系", "note": "きちんと・やわらか", "order": 4,
+      "items": [
+        {"part": "top", "name": "パールとカーディガン", "art": {"std": "av_consa_top_std"}},
+        {"part": "bottom", "name": "ベージュのパンツ", "art": {"all": "av_consa_bottom"}},
+        {"part": "feet", "name": "ベージュのローファー", "art": {"all": "av_consa_feet"}}
+      ]
+    },
+    {
+      "id": "street", "character": "avatar", "shelf": "fashion", "name": "ストリート系", "note": "ゆるっと大きめに", "order": 5,
+      "items": [
+        {"part": "top", "name": "ビッグパーカー", "art": {"std": "av_street_top_std", "joy": "av_street_top_joy"}}
+      ]
+    },
+    {
+      "id": "newyear", "character": "avatar", "shelf": "season", "name": "正月", "month": 1, "order": 1,
+      "items": [
+        {"part": "neck", "name": "水引柄のスカーフ", "art": {"all": "av_newyear_neck"}},
+        {"part": "hand", "name": "羽子板", "art": {"all": "av_newyear_hand"}}
+      ]
+    },
+    {
+      "id": "xmas", "character": "avatar", "shelf": "season", "name": "クリスマス", "month": 12, "order": 12,
+      "items": [
+        {"part": "head", "name": "ノルディック柄のニット帽", "art": {"all": "av_xmas_head"}},
+        {"part": "hand", "name": "プレゼントの箱", "art": {"all": "av_xmas_hand"}}
+      ]
+    },
+    {
+      "id": "gyaru", "character": "wan", "shelf": "fashion", "name": "ギャル系", "note": "キラキラ・元気", "order": 1,
+      "items": [
+        {"part": "head", "name": "ハートのサングラス", "art": {"all": "wan_gyaru_head"}}
+      ]
+    },
+    {
+      "id": "host", "character": "wan", "shelf": "fashion", "name": "ホスト系", "note": "夜のきらめき", "order": 2,
+      "items": [
+        {"part": "neck", "name": "蝶ネクタイと金のチェーン", "art": {"all": "wan_host_neck"}}
+      ]
+    },
+    {
+      "id": "shibuya", "character": "wan", "shelf": "fashion", "name": "渋谷系", "note": "レトロ・ポップ", "order": 3,
+      "items": [
+        {"part": "head", "name": "キャスケット", "art": {"all": "wan_shibuya_head"}}
+      ]
+    },
+    {
+      "id": "consa", "character": "wan", "shelf": "fashion", "name": "コンサバ系", "note": "きちんと・やわらか", "order": 4,
+      "items": [
+        {"part": "neck", "name": "パールのネックレス", "art": {"all": "wan_consa_neck"}}
+      ]
+    },
+    {
+      "id": "newyear", "character": "wan", "shelf": "season", "name": "正月", "month": 1, "order": 1,
+      "items": [
+        {"part": "head", "name": "獅子舞の頭", "art": {"all": "wan_newyear_head"}},
+        {"part": "neck", "name": "紅白の水引", "art": {"all": "wan_newyear_neck"}}
+      ]
+    }
+  ]
+}

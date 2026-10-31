@@ -58,6 +58,17 @@ final class AppModel {
     private(set) var avatar: AvatarBody?
     /// 最初の「どっちのきみで始める？」を出した
     private(set) var avatarAsked = false
+    /// アバターの髪型と髪の色 (体を選ぶまでは nil)
+    private(set) var look: AvatarLook?
+    /// 部位ごとに着ている服
+    private(set) var wardrobe = Wardrobe()
+    /// 開発中の確かめ用: 買わなくても、すべての服を着られる (課金を作るまで。公開する前に外す)
+    private(set) var devWearAll = false
+
+    /// 絵に着せるもの。着られない服 (買っていない) は着ていないものとして渡す
+    var dressing: Dressing {
+        Dressing(look: look, wardrobe: devWearAll ? wardrobe : Wardrobe())
+    }
     /// ワンのすけからもらったおみやげ (もらった順)
     private(set) var souvenirs: [Souvenir] = []
     /// 今もらったおみやげ。褒める演出が終わってから見せ、見せたら nil に戻す
@@ -93,6 +104,9 @@ final class AppModel {
         static let souvenirs = "souvenirs"
         static let lastActive = "lastActive"
         static let welcomeDay = "welcomeDay"
+        static let avatarLook = "avatarLook"
+        static let wardrobe = "wardrobe"
+        static let devWearAll = "devWearAll"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -106,6 +120,13 @@ final class AppModel {
         secretTaskIDs = load(Set<UUID>.self, StoreKey.secretTasks) ?? []
         avatar = avatarStore.body
         avatarAsked = avatarStore.asked
+        // 髪型を選べるようになる前から使っている人は、選んだ体の最初の見た目から始める
+        look = avatar.map { body in
+            load(AvatarLook.self, StoreKey.avatarLook).map { AvatarLook(body: body, hair: $0.hair, hairColor: $0.hairColor) }
+                ?? .initial(for: body)
+        }
+        wardrobe = (load(Wardrobe.self, StoreKey.wardrobe) ?? Wardrobe()).valid(in: .shared)
+        devWearAll = defaults.bool(forKey: StoreKey.devWearAll)
         souvenirs = load([Souvenir].self, StoreKey.souvenirs) ?? []
         welcomeDay = defaults.object(forKey: StoreKey.welcomeDay) as? Date
         removeExpiredTasks()
@@ -204,6 +225,29 @@ final class AppModel {
         avatarStore.choose(body)
         avatar = body
         avatarAsked = true
+        // 体を選び直したら、その体の最初の髪型にする (髪の色と買った服はそのまま)
+        if look?.body != body {
+            var next = AvatarLook.initial(for: body)
+            next.hairColor = look?.hairColor ?? next.hairColor
+            setLook(next)
+        }
+    }
+
+    /// 髪型と髪の色を変える (無料)
+    func setLook(_ next: AvatarLook) {
+        look = next
+        store(next, StoreKey.avatarLook)
+    }
+
+    /// その部位にこのテーマの服を着る。nil なら脱いで初期の服 (ワンのすけは何も付けない) にする
+    func wear(_ character: CostumeCharacter, _ part: CostumePart, theme: String?) {
+        wardrobe[character][part] = theme
+        store(wardrobe, StoreKey.wardrobe)
+    }
+
+    func setDevWearAll(_ on: Bool) {
+        devWearAll = on
+        defaults.set(on, forKey: StoreKey.devWearAll)
     }
 
     /// 最初の「どっちのきみで始める？」を選ばずに閉じた (選ぶまではワンのすけだけで褒める)
@@ -398,6 +442,13 @@ final class AppModel {
     // MARK: - 通知の予約
 
     /// 促す通知を予約し直す (7 日分なので、アプリを開くたびに先へ延ばす)
+    /// 予約中の促す通知 (開発中の確かめ用)。予約し直しが終わってから読む
+    func pendingPrompts() async -> [(date: Date, kind: Prompt.Kind, title: String)] {
+        await scheduling?.value
+        let titles = Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0.title) })
+        return await notifier.pendingPrompts().map { ($0.date, $0.kind, titles[$0.taskID] ?? "") }
+    }
+
     func refreshSchedule() {
         removeExpiredTasks()
         autoContinueIfDue()

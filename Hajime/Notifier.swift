@@ -55,9 +55,12 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
 
     /// 促す通知を予約し直す。予約は iOS が持つので、アプリを終了していても届く。
     func schedulePrompts(_ prompts: [Prompt], tasks: [StartTask], calendar: Calendar = .current) async {
+        // 要らなくなった予約だけを消す。同じ ID の予約は add で置き換わるので消さない
+        // (消す処理は iOS の中で遅れて実行されるため、全部消してから入れ直すと、入れ直した予約まで消えることがある)
+        let wanted = Set(prompts.map(NotificationID.prompt))
         let pending = await center.pendingNotificationRequests()
         center.removePendingNotificationRequests(withIdentifiers: pending.map(\.identifier)
-            .filter { $0.hasPrefix(NotificationID.promptPrefix) })
+            .filter { $0.hasPrefix(NotificationID.promptPrefix) && !wanted.contains($0) })
         let byID = Dictionary(uniqueKeysWithValues: tasks.map { ($0.id, $0) })
         for prompt in prompts {
             guard let task = byID[prompt.taskID] else { continue }
@@ -82,6 +85,18 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
                 identifier: NotificationID.prompt(prompt), content: content,
                 trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false)))
         }
+    }
+
+    /// 予約中の促す通知 (開発中の確かめ用。設定の一覧に出す)。早い順
+    func pendingPrompts() async -> [(date: Date, kind: Prompt.Kind, taskID: UUID)] {
+        let pending = await center.pendingNotificationRequests()
+        return pending.compactMap { request -> (date: Date, kind: Prompt.Kind, taskID: UUID)? in
+            guard request.identifier.hasPrefix(NotificationID.promptPrefix),
+                  let parsed = Self.parse(request.content.userInfo),
+                  let date = (request.trigger as? UNCalendarNotificationTrigger)?.nextTriggerDate() else { return nil }
+            return (date, parsed.1, parsed.0)
+        }
+        .sorted { $0.date < $1.date }
     }
 
     /// 始めたあと、通知センターに残っているそのやることの通知を消す
