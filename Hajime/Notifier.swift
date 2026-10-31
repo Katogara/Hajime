@@ -99,6 +99,14 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
         .sorted { $0.date < $1.date }
     }
 
+    /// 通知センターに残っている再通知 (届いた時刻)。始めなかったやることに、小さくする提案をするために読む
+    func deliveredNudges() async -> [(taskID: UUID, date: Date)] {
+        await center.deliveredNotifications().compactMap { notification -> (taskID: UUID, date: Date)? in
+            guard let parsed = Self.parse(notification.request.content.userInfo), parsed.1 == .nudge else { return nil }
+            return (parsed.0, notification.date)
+        }
+    }
+
     /// 始めたあと、通知センターに残っているそのやることの通知を消す
     func clearDeliveredPrompts(taskID: UUID) async {
         let delivered = await center.deliveredNotifications()
