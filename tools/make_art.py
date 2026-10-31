@@ -63,6 +63,18 @@ def blobs(which):
     return f
 
 
+def bottom_rows(lo, hi):
+    """y が lo 以上 hi 未満の行から、立ち姿の手を除いたものを残す。
+    手は素体の手の部品が描くので、下の服に手が入ると大喜びのポーズで腰に手が浮く"""
+    hands = np.asarray(Image.open(P / "std_hands.png").convert("RGBA"))[..., 3] > 0
+    hands = ndimage.binary_dilation(hands, iterations=4)
+    keep = rows(lo, hi)
+
+    def f(m):
+        return keep(m) & ~hands
+    return f
+
+
 def topmost(m):
     """いちばん上にあるかたまりだけを残す"""
     lab, n = ndimage.label(ndimage.binary_dilation(m, iterations=3))
@@ -74,18 +86,25 @@ def below_top(m):
     return m & ~topmost(m)
 
 
-# 名前: (フォルダ, 元画像, 切り分け, 色, 位置合わせの素体, 線をそろえるか, ごみの大きさ)
+# 名前: (フォルダ, 元画像, 切り分け, 色, 位置合わせの素体, 線をそろえるか, ごみの大きさ, 塗り替え)
 JOBS = {}
 
 
-def job(folder, name, src, colors, base=AV_BASE, cut=None, line=True, blob=300):
-    JOBS[name] = (folder, src, cut, colors, base, line, blob)
+def job(folder, name, src, colors, base=AV_BASE, cut=None, line=True, blob=300, recolor=None):
+    JOBS[name] = (folder, src, cut, colors, base, line, blob, recolor or {})
 
+
+# 初期の服は、どの服と合わせても浮かない無地の白い上と黒のパンツにする（2026-10-31、形とパターンのチーム）。
+# 下絵は青緑のスウェットとベージュのパンツなので、塗りの色だけを替える。パンツの中の肌色とピンクは、にじみから来た色
+WHITE, PANTS = "#F7F4EE", "#3E3F47"
+DEFAULT_OUTFIT = {"top": {"#4AA9A3": WHITE},
+                  "bottom": {"#EFCAAD": PANTS, "#F1C7AE": PANTS, "#F4A7A7": PANTS},
+                  "feet": {"#EFCAAD": PANTS, "#F4A7A7": PANTS}}
 
 # アバターの素体（部位ごと、2つのポーズ）
 for pose in ["std", "joy"]:
     for part in ["headbase", "hands", "top", "bottom", "feet"]:
-        job("avatar_body", f"av_{pose}_{part}", P / f"{pose}_{part}.png", AV)
+        job("avatar_body", f"av_{pose}_{part}", P / f"{pose}_{part}.png", AV, recolor=DEFAULT_OUTFIT.get(part))
 # 顔（男女共通）、まつ毛、髪
 job("avatar_face", "av_face_normal", P / "std_face.png", AV, line=False)
 job("avatar_face", "av_face_smile", P / "smile_face.png", AV, line=False)
@@ -111,16 +130,19 @@ job("gyaru", "av_gyaru_top_joy", P / "j02_avatar_male_joy_gyaru_vest.png", GYARU
 job("gyaru", "av_gyaru_feet", P / "o01_avatar_gyaru.png", GYARU, cut=rows(780, 1024))
 job("gyaru", "wan_gyaru_head", P / "w02_wan_gyaru.png", WAN_GYARU, base=WAN_BASE)
 job("host", "av_host_top_std", P / "o02_avatar_host.png", HOST, cut=rows(0, 530))
-job("host", "av_host_bottom", P / "o02_avatar_host.png", HOST, cut=rows(530, 805))
+job("host", "av_host_top_joy", P / "j03_avatar_male_joy_host.png", HOST)
+job("host", "av_host_bottom", P / "o02_avatar_host.png", HOST, cut=bottom_rows(530, 805))
 job("host", "av_host_feet", P / "o02_avatar_host.png", HOST, cut=rows(805, 1024))
 job("host", "wan_host_neck", P / "w03_wan_host.png", WAN_HOST, base=WAN_BASE)
 job("shibuya", "av_shibuya_head", P / "o03_avatar_shibuya.png", SHIBUYA, cut=rows(0, 300))
 job("shibuya", "av_shibuya_top_std", P / "o03_avatar_shibuya.png", SHIBUYA, cut=rows(300, 530))
-job("shibuya", "av_shibuya_bottom", P / "o03_avatar_shibuya.png", SHIBUYA, cut=rows(530, 805))
+job("shibuya", "av_shibuya_top_joy", P / "j04_avatar_male_joy_shibuya.png", SHIBUYA)
+job("shibuya", "av_shibuya_bottom", P / "o03_avatar_shibuya.png", SHIBUYA, cut=bottom_rows(530, 805))
 job("shibuya", "av_shibuya_feet", P / "o03_avatar_shibuya.png", SHIBUYA, cut=rows(805, 1024))
 job("shibuya", "wan_shibuya_head", P / "w04_wan_shibuya.png", WAN_SHIBUYA, base=WAN_BASE)
 job("consa", "av_consa_top_std", P / "o04_avatar_consa.png", CONSA, cut=rows(0, 530))
-job("consa", "av_consa_bottom", P / "o04_avatar_consa.png", CONSA, cut=rows(530, 805))
+job("consa", "av_consa_top_joy", P / "j05_avatar_male_joy_consa.png", CONSA)
+job("consa", "av_consa_bottom", P / "o04_avatar_consa.png", CONSA, cut=bottom_rows(530, 805))
 job("consa", "av_consa_feet", P / "o04_avatar_consa.png", CONSA, cut=rows(805, 1024))
 job("consa", "wan_consa_neck", P / "w05_wan_consa.png", WAN_CONSA, base=WAN_BASE)
 job("newyear", "av_newyear_neck", P / "o05_avatar_newyear.png", NEWYEAR, cut=blobs([0]))
@@ -144,7 +166,7 @@ def main(names):
     bad = []
     with tempfile.TemporaryDirectory() as tmp:
         for name in names:
-            folder, src, cut, colors, base, line, blob = JOBS[name]
+            folder, src, cut, colors, base, line, blob, recolor = JOBS[name]
             if cut:
                 src = cut_png(src, cut, tmp)
             (ART / folder).mkdir(parents=True, exist_ok=True)
@@ -156,6 +178,12 @@ def main(names):
             print(r.stdout.strip() or r.stderr.strip()[-600:])
             if r.returncode:
                 bad.append(name)
+            fill = ART / folder / f"{name}_fill.svg"
+            if recolor and fill.exists():
+                text = fill.read_text(encoding="utf-8")
+                for old, new in recolor.items():
+                    text = text.replace(f'fill="{old}"', f'fill="{new}"')
+                fill.write_text(text, encoding="utf-8")
             # 確かめ用の画像は Art/ に置かない（アプリに入れないため）
             check = ART / folder / f"{name}_check.png"
             if check.exists():
