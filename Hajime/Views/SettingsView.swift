@@ -32,6 +32,13 @@ struct SettingsView: View {
                             }
                         }
                     }
+                    NavigationLink {
+                        ClosetView()
+                    } label: {
+                        Text("きせかえ")
+                            .font(.system(.body, design: .rounded, weight: .bold))
+                            .foregroundStyle(Pop.ink)
+                    }
                 } header: {
                     Text("分身の姿")
                 }
@@ -50,6 +57,16 @@ struct SettingsView: View {
                 } footer: {
                     PhraseText("控えめにすると、全画面ではなく、画面の下でワンのすけが褒めます。どれも画面をタップすると閉じます。")
                 }
+
+                Section {
+                    Toggle("すべての服を着られるようにする", isOn: Binding(
+                        get: { model.devWearAll }, set: { model.setDevWearAll($0) }))
+                    NavigationLink("予約中の通知") { PendingPromptsView() }
+                } header: {
+                    Text("開発中の確かめ用")
+                } footer: {
+                    PhraseText("服を買えるようになるまでと、通知を確かめるためのものです。公開する前に外します。")
+                }
             }
             .scrollContentBackground(.hidden)
             .popBackground()
@@ -64,5 +81,42 @@ struct SettingsView: View {
                 AvatarChoiceView(first: false)
             }
         }
+    }
+}
+
+/// 予約中の促す通知の一覧 (開発中の確かめ用)。iOS が持っている予約を、そのまま早い順に出す
+private struct PendingPromptsView: View {
+    @Environment(AppModel.self) private var model
+    @State private var prompts: [(date: Date, kind: Prompt.Kind, title: String)] = []
+    @State private var loaded = false
+
+    var body: some View {
+        List {
+            if loaded && prompts.isEmpty {
+                Text("予約中の通知はありません")
+            }
+            ForEach(Array(prompts.enumerated()), id: \.offset) { _, prompt in
+                HStack {
+                    Text(prompt.date.formatted(.dateTime.month().day().weekday().hour().minute()))
+                        .monospacedDigit()
+                    Text(prompt.kind == .first ? "最初" : "再通知")
+                        .foregroundStyle(prompt.kind == .first ? Pop.ink : Pop.orange)
+                    Spacer()
+                    Text(prompt.title)
+                        .lineLimit(1)
+                        .foregroundStyle(Pop.ink.opacity(0.6))
+                }
+                .font(.system(.subheadline, design: .rounded))
+            }
+        }
+        .navigationTitle("予約中の通知")
+        .navigationBarTitleDisplayMode(.inline)
+        .refreshable { await load() }
+        .task { await load() }
+    }
+
+    private func load() async {
+        prompts = await model.pendingPrompts()
+        loaded = true
     }
 }

@@ -1,12 +1,127 @@
+import CoreImage
 import SwiftUI
 
-// ワンのすけとアバターの絵。今は Gemini の画像を切り抜いた仮素材 (Hajime/Placeholder の PNG) で、
-// 製品ではベクターでなぞったものを Assets.xcassets に入れて差し替える。
-// 画像の名前は Avatar.swift の WanPose と AvatarBody にまとめている。
+// ワンのすけとアバターの絵。Art/ の SVG (CI がアセットカタログにする) を部品ごとに重ね、
+// 重ねたシルエットに外形の線と白ふちを付けて 1 枚の画像にする (仕様書「線の太さの決め直し」)。
+// 重ね方は Costumes.swift の FigureRig、着ている服と髪は画面の環境 \.dressing で受け取る。
 
-/// 名前から絵を読む。仮素材はアセットカタログではなくバンドルの PNG なので UIImage で読む
-private func characterImage(_ name: String) -> Image {
-    Image(uiImage: UIImage(named: name) ?? UIImage())
+/// 部品を 1024 のキャンバスの大きさで重ねたもの (外形はまだ付けない)
+private struct FigureStack: View {
+    let layers: [FigureLayer]
+    let side: CGFloat
+
+    var body: some View {
+        ZStack {
+            ForEach(Array(layers.enumerated()), id: \.offset) { _, layer in
+                piece(layer)
+            }
+        }
+        .frame(width: side, height: side)
+    }
+
+    @ViewBuilder
+    private func piece(_ layer: FigureLayer) -> some View {
+        let unit = side / 1024
+        let image = Image(layer.asset)
+        Group {
+            if let tint = layer.tint {
+                image.resizable().renderingMode(.template)
+                    .foregroundStyle(Color(red: Double((tint >> 16) & 0xFF) / 255,
+                                           green: Double((tint >> 8) & 0xFF) / 255,
+                                           blue: Double(tint & 0xFF) / 255))
+            } else {
+                image.resizable()
+            }
+        }
+        .frame(width: side, height: side)
+        .modifier(AnchorEffect(anchor: layer.anchor, unit: unit))
+    }
+}
+
+/// ワンのすけの小物を、頭の真ん中を中心に拡大・回転してから、ずらす (tools/wan_anchors.py と同じ手順)
+private struct AnchorEffect: ViewModifier {
+    let anchor: WanAnchorKey?
+    let unit: CGFloat
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if let a = anchor {
+            let center = UnitPoint(x: a.cx / 1024, y: a.cy / 1024)
+            content
+                .scaleEffect(CGFloat(a.scale), anchor: center)
+                .rotationEffect(.degrees(a.deg), anchor: center)
+                .offset(x: CGFloat(a.dx) * unit, y: CGFloat(a.dy) * unit)
+        } else {
+            content
+        }
+    }
+}
+
+/// 重ねた絵に、外形の線 (キャンバスの 12/1024。シルエットの内と外に 6 ずつ) と白ふち (24/1024) を付けた画像を作る。
+/// 同じ重ね方と大きさの画像は取っておき、着替えたときだけ作り直す (毎回作ると重い)
+@MainActor
+enum FigureRenderer {
+    private static let cache = NSCache<NSString, UIImage>()
+    private static let context = CIContext()
+    static let line = CIColor(red: 0x5A / 255.0, green: 0x3A / 255.0, blue: 0x22 / 255.0)
+
+    static func image(_ layers: [FigureLayer], side: CGFloat, scale: CGFloat, border: Bool = true) -> UIImage? {
+        guard side > 0 else { return nil }
+        // 同じ小物の絵でもポーズでずらし方が違うので、ずらし方も含めた並び全体をキーにする
+        let key = "\(layers)-\(Int(side * scale))-\(border)" as NSString
+        if let hit = cache.object(forKey: key) { return hit }
+        let renderer = ImageRenderer(content: FigureStack(layers: layers, side: side))
+        renderer.scale = scale
+        guard let cg = renderer.cgImage else { return nil }
+        let base = CIImage(cgImage: cg)
+        let extent = base.extent
+        let unit = extent.width / 1024
+        func dilate(_ r: CGFloat) -> CIImage {
+            base.applyingFilter("CIMorphologyMaximum", parameters: [kCIInputRadiusKey: r * unit]).cropped(to: extent)
+        }
+        func paint(_ color: CIColor, mask: CIImage) -> CIImage {
+            CIImage(color: color).cropped(to: extent)
+                .applyingFilter("CIBlendWithAlphaMask", parameters: [
+                    kCIInputBackgroundImageKey: CIImage.empty().cropped(to: extent),
+                    kCIInputMaskImageKey: mask])
+        }
+        let eroded = base.applyingFilter("CIMorphologyMinimum", parameters: [kCIInputRadiusKey: 6 * unit])
+            .cropped(to: extent)
+        let ring = base.applyingFilter("CISourceOutCompositing", parameters: [kCIInputBackgroundImageKey: eroded])
+        var out = paint(line, mask: dilate(6))
+        if border { out = out.composited(over: paint(.white, mask: dilate(6 + 24))) }
+        out = paint(line, mask: ring).composited(over: base.composited(over: out))
+        guard let made = context.createCGImage(out, from: extent) else { return nil }
+        let image = UIImage(cgImage: made, scale: scale, orientation: .up)
+        cache.setObject(image, forKey: key)
+        return image
+    }
+}
+
+/// 重ねた絵を、置かれた枠いっぱいの正方形で出す
+private struct FigureView: View {
+    let layers: [FigureLayer]
+    /// 左右を反転する (向かせたい方向が絵と逆のとき)
+    var flip = false
+    var border = true
+    @Environment(\.displayScale) private var displayScale
+
+    var body: some View {
+        GeometryReader { geo in
+            let side = min(geo.size.width, geo.size.height)
+            Group {
+                if let image = FigureRenderer.image(layers, side: side, scale: displayScale, border: border) {
+                    Image(uiImage: image).resizable()
+                } else {
+                    Color.clear
+                }
+            }
+            .frame(width: side, height: side)
+            .scaleEffect(x: flip ? -1 : 1, y: 1)
+            .frame(width: geo.size.width, height: geo.size.height)
+        }
+        .aspectRatio(1, contentMode: .fit)
+    }
 }
 
 /// ワンのすけ
@@ -14,28 +129,26 @@ struct WanImage: View {
     let pose: WanPose
     /// 向かせたい方向 (相手や吹き出しのほう)。nil なら絵のまま
     var facing: Facing?
+    @Environment(\.dressing) private var dressing
 
     var body: some View {
-        characterImage(pose.imageName)
-            .resizable()
-            .scaledToFit()
-            .scaleEffect(x: facing.map(pose.facing.needsFlip) == true ? -1 : 1, y: 1)
+        FigureView(layers: FigureRig.wan(pose: pose, wardrobe: dressing.wardrobe),
+                   flip: facing.map(pose.facing.needsFlip) == true)
             .accessibilityLabel("ワンのすけ")
     }
 }
 
-/// ユーザーの分身のアバター
+/// ユーザーの分身のアバター。髪と服は \.dressing から (選んだ体と違う体を見せるときは、その体の最初の見た目)
 struct AvatarImage: View {
     let figure: AvatarBody
     let pose: AvatarPose
     /// 向かせたい方向 (ワンのすけのほう)。nil なら絵のまま
     var facing: Facing?
+    @Environment(\.dressing) private var dressing
 
     var body: some View {
-        characterImage(figure.imageName(pose))
-            .resizable()
-            .scaledToFit()
-            .scaleEffect(x: facing.map(pose.facing.needsFlip) == true ? -1 : 1, y: 1)
+        FigureView(layers: FigureRig.avatar(dressing.look(for: figure), pose: pose, wardrobe: dressing.wardrobe),
+                   flip: facing.map(pose.facing.needsFlip) == true)
             .accessibilityLabel("あなたの分身")
     }
 }

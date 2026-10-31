@@ -259,6 +259,8 @@ struct WelcomeBubble: View {
 struct ShareCard: View {
     let step: String
     let avatar: AvatarBody?
+    /// 着ている服と髪。画像にするとき (ImageRenderer) は画面の環境が届かないので、作る側で渡す
+    var dressing = Dressing()
     /// 画像にするときの一辺 (pt)。scale 3 で 1080px
     static let side: CGFloat = 360
 
@@ -288,6 +290,7 @@ struct ShareCard: View {
         .frame(width: Self.side, height: Self.side)
         .background(Pop.cream)
         .environment(\.colorScheme, .light)
+        .environment(\.dressing, dressing)
     }
 
     /// 画像にする (押したときだけ作る)

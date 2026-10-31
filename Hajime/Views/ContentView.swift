@@ -260,6 +260,7 @@ private struct TaskCard: View {
     /// 今日はじめたことをシェアできる (秘密❤️にしたやることは出さない)
     var shareable = false
     var avatar: AvatarBody?
+    @Environment(\.dressing) private var dressing
     let onEdit: () -> Void
     let onStart: () -> Void
     /// 今日だけの時刻を決める (nil でいつもの時刻に戻す)
@@ -312,7 +313,7 @@ private struct TaskCard: View {
                     }
                 }
                 if done {
-                    DonePraise(shareCard: shareable ? ShareCard(step: task.firstStep, avatar: avatar) : nil,
+                    DonePraise(shareCard: shareable ? ShareCard(step: task.firstStep, avatar: avatar, dressing: dressing) : nil,
                                onAgain: onStart, onUndo: onUndo)
                 } else {
                     timeMenu(oneDay: oneDay, now: context.date)
