@@ -14,6 +14,9 @@ jobs:
       - name: Show Xcode version
         run: xcodebuild -version
 
+      - name: Make asset catalog from Art/
+        run: python3 scripts/make_assets.py
+
       - name: Generate Xcode project
         run: |
           brew install xcodegen
