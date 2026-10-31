@@ -512,11 +512,18 @@ final class CostumeTests: XCTestCase {
         XCTAssertLessThan(names.firstIndex(of: "av_joy_top_line")!, names.firstIndex(of: "av_gyaru_top_joy_fill")!)
     }
 
-    func testTopWithoutJoyArtFallsBackToDefault() {
+    /// 大喜びの絵がない上は、大喜びのときだけ初期の上に戻ってしまう。売る前に必ず描くよう、ここで止める
+    func testEveryAvatarTopHasJoyArt() {
+        for theme in catalog.themes(for: .avatar) {
+            for item in theme.items where item.part == .top {
+                XCTAssertNotNil(item.art(for: "joy"), "\(theme.key) の上に大喜びの絵がない")
+            }
+        }
         var wardrobe = Wardrobe()
         wardrobe.avatar[.top] = "host"
         let names = FigureRig.avatar(.initial(for: .male), pose: .joy, wardrobe: wardrobe, catalog: catalog).map(\.asset)
-        XCTAssertTrue(names.contains("av_joy_top_fill"))
+        XCTAssertTrue(names.contains("av_host_top_joy_fill"))
+        XCTAssertFalse(names.contains("av_joy_top_fill"))
     }
 
     func testHairTintOnlyOnFill() {
