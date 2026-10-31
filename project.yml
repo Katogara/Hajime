@@ -25,6 +25,10 @@ targets:
       - path: Hajime
         excludes:
           - Info.plist
+          # 仮素材の PNG。Art/ の SVG に置き換えたので、アプリに入れない
+          - Placeholder/**
+          # 絵の SVG。CI の scripts/make_assets.py が Art.xcassets にするので、そのままは入れない
+          - Art/**
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.Hajime

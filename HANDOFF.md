@@ -120,6 +120,15 @@
 - ワンのすけの首の小物は、バンダナを外しただけのワンのすけ (`r10_wan_wave_nobandana`) との差で取る
 - `tools/evaluate.py`: 試し描きの一覧、64px の一覧、重ね合わせ、位置と色の数字を出す
 
+### 衣装の仕組み (2026-10-31、`Costumes.swift`・`Costumes.json`)
+
+- 製品の絵は `Hajime/Art/<フォルダ>/*.svg` (`avatar_body`・`avatar_face`・`wan` と、系統ごとの `gyaru`・`host`・`shibuya`・`consa`・`street`・`newyear`・`xmas`)。`python -P tools/make_art.py` で `ai-trial-20261026` の部品から作り直せる (確認の絵は `ai-trial-20261026/art_check/`)。CI の `scripts/make_assets.py` が `Hajime/Art.xcassets` (ベクターのまま) を作ってから xcodegen を動かす。同じ名前の絵があると止まる。ルートの `Art/` にしないこと (Windows では `art/drafts/` とぶつかる)。`project.yml` は `Art/**` と `Placeholder/**` をソースから外している
+- 衣装の一覧は `Costumes.json`。系統 (テーマ) ごとに、アバターとワンのすけの部位 (head・face・neck・top・bottom・feet・hand) と、ポーズごとの絵 (std / joy) を書く。製品 ID は `com.katogara.hajime.<avatar|wan>.<系統>.<部位>`。袖なしの上 (`over: true`) は初期の上に重ね、袖ありは置き換える。大喜びの絵がない上は、大喜びのときだけ初期の上に戻る (ホスト・渋谷・コンサバは大喜びの上がまだない)。手の小物は大喜びでは出さない
+- ワンのすけの小物は「手を振る」の位置で描き、ほかのポーズでは `wanAnchors` (dx・dy・倍率・角度。中心 466,318) で動かす。値は `tools/wan_anchors.py` で合わせた (てへ・うなずきは少しずれる)。首の小物を着けるとき、そのポーズのバンダナなしの絵があればそれを使う (今は手を振るだけ)
+- 重ねる順と絵の選び方は `FigureRig` (UI に依存しない、テストあり)。描くのは `CharacterViews.swift` の `FigureRenderer`: 部品を重ねて `ImageRenderer` で 1 枚にし、CoreImage でこげ茶の外形 (外へ 6・内へ 6 で合計 12/1024) と白ふち (外へ 30) を付け、重ね方・大きさ・ふちの有無ごとに NSCache に残す
+- 髪型 4 つと髪の色 6 つ (`HairColor`。塗りだけ色を変える)、まつ毛は女性を選んだときに付ける (`AvatarLook`)。着ている服は `Wardrobe` (部位ごとの ID。知らない ID は捨てる)。`Dressing` を Environment で渡し、シェアのカードには明示して渡す (`ImageRenderer` は Environment を引き継がないため)
+- 設定 →「きせかえ」(`ClosetView`): 試着しながら髪型・色・部位ごとの服を選ぶ。買う仕組み (StoreKit) はまだないので、設定の「開発中の確かめ用」の「すべての服を着られるようにする」をオンにしたときだけ着られる。公開する前に外す
+
 ### 経験値とレベル (`Experience.swift`)
 
 - 始めると経験値 +1。同じやることでは 1 日 1 回まで (`Experience.canEarn`、記録の `xpAwarded` で判定)
@@ -134,6 +143,7 @@
 - 最初の通知の 15 分後に、さらに小さい一歩で 1 回だけ再通知する (1 分)。その日に始めたら (通知からでも一覧からでも) その日の残りを予約しない
 - iOS のローカル通知の予約は 64 件まで。促す通知は日時の早い順に 60 件までにして、タイマー終了の通知の分を残す
 - 予約し直しは `AppModel.refreshSchedule` で直列に行う (前の予約の途中で次が混ざらないように)
+- 予約し直すときは、要らなくなった予約だけを消す (2026-10-31)。同じ ID の予約は add で置き換わる。前は全部消してから入れ直していたが、iOS の削除は遅れて実行されるので、入れ直した予約まで消えることがあった (ユーザーの報告: 「今日だけ別の時間」で 22:30 にしてから 22:00 に戻すと、22:15 の再通知が来ない。予約の計算は正しいことをテスト `testRevertedOneDayTimeKeepsTodaysNudge` で確かめた)。実機で直ったかは未確認。設定の「開発中の確かめ用」→「予約中の通知」で、iOS が持っている予約を見られる
 - 通知の userInfo に、やることの ID・種類・その日の最初の通知の時刻を入れる。始めるまでの時間はこの時刻から測る
 
 ### 記録 (`StartRecord`, `StartStats`)
@@ -152,6 +162,9 @@
 | `Hajime/ReminderSchedule.swift` | 促す通知の日時の計算 (UI に依存しない) |
 | `Hajime/Notifier.swift` | ローカル通知の予約・ボタン・タップの受け取り |
 | `Hajime/Avatar.swift` | アバターの体と表情、ワンのすけの表情 (画像の名前)、アバターの選択の保存 |
+| `Hajime/Costumes.swift`、`Hajime/Costumes.json` | 衣装の一覧、髪型と色、着ている服、重ねる順 (`FigureRig`) |
+| `Hajime/Art/` | 製品の絵の SVG (CI で `Art.xcassets` にする。`tools/make_art.py` で作る) |
+| `Hajime/Views/CharacterViews.swift`、`ClosetView.swift` | 絵を重ねて外形と白ふちを付ける描画、きせかえの画面 |
 | `Hajime/WanLines.swift` | ワンのすけのせりふ、演出の強さ、おみやげ、「おかえり」の判定 |
 | `Hajime/Placeholder/` | ワンのすけとアバターの仮素材 (`tools/cut_placeholders.py` で `art/drafts/` から切り出す) |
 | `Hajime/Views/` | 一覧 (`ContentView`)、説明 (`IntroView`)、登録 (`TaskEditView`)、一歩の画面 (`ReadyView`)、タイマー (`TimerView`)、記録 (`HistoryView`) |
@@ -168,7 +181,7 @@
 - [x] 今日だけ促す時刻を変える (一覧から 2 タップ)
 - [x] 経験値とレベル、レベル 100 の卒業式 (表は仮)
 - [x] 今日だけやること、これまでのつみあげ
-- [ ] ガイドキャラクター「ワンのすけ」(かわいい柴犬) と分身のアバター。仮素材で、褒める画面・姿を選ぶ画面・せりふ・演出の強さ・「またね」・「おかえり」・おみやげ・シェアまで作った。残りは課金 (着せ替え・投げ銭)、アバターの髪型と色、製品の絵への差し替え
+- [ ] ガイドキャラクター「ワンのすけ」(かわいい柴犬) と分身のアバター。仮素材で、褒める画面・姿を選ぶ画面・せりふ・演出の強さ・「またね」・「おかえり」・おみやげ・シェアまで作った。2026-10-31 に製品の絵 (SVG) への差し替え、髪型と色、衣装の仕組みときせかえの画面を作った。残りは課金 (StoreKit。CI のテストだけ)、ホスト・渋谷・コンサバの大喜びの上、ほかのポーズのバンダナなし、服の下に初期の服が見える件 (デザインチームに相談)
 - [x] ポップな見た目 (`Views/Pop.swift`: オレンジ基調・クリーム色の背景・丸ゴシック・押すと沈むボタン・絵文字。Figma の HABITA の色味をもとに、ビジネス感を消す方向。一覧はカード表示で、削除は編集画面から)
 - [ ] 実機での確認 (通知のボタンから始める動き、タイマー終了の通知のボタン)
 - [ ] F6 ウィジェット (無料 Apple ID では拡張ごとに App ID を使うため後回し)、F7 場所で促す
