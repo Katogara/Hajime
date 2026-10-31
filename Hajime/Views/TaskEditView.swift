@@ -6,6 +6,10 @@ struct TaskEditView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var task: StartTask
     let isNew: Bool
+    /// 新しく登録したとき、保存の前に一度だけ「もっと小さくできる？」と聞く (「次から聞かない」で止められる)
+    @AppStorage("askSmallerStep") private var askSmallerStep = true
+    @State private var askingSmaller = false
+    @State private var closeAfterAsking = false
 
     init(task: StartTask, isNew: Bool) {
         _task = State(initialValue: task)
@@ -54,14 +58,14 @@ struct TaskEditView: View {
                     }
                 }
                 Section("やること") {
-                    TextField("例: 筋トレ", text: $task.title)
+                    TextField("例: お風呂", text: $task.title)
                 }
                 Section {
-                    TextField("例: ウェアに着替える", text: $task.firstStep)
+                    TextField("例: 浴室のドアを開ける", text: $task.firstStep)
                 } header: {
                     Text("最初の一歩")
                 } footer: {
-                    PhraseText("失敗しようのない、すぐ終わる行動にします。通知にはこの一歩だけが出ます。")
+                    PhraseText("からだを1回動かすだけで終わる行動にします。通知にはこの一歩だけが出ます。")
                 }
                 Section(task.isOneDay ? "今日、何時に促す？" : "促す時刻") {
                     DatePicker("時刻", selection: time, displayedComponents: .hourAndMinute)
@@ -70,7 +74,7 @@ struct TaskEditView: View {
                     }
                 }
                 Section {
-                    TextField("例: 靴下を履く", text: $task.smallerStep)
+                    TextField("例: 立ち上がる", text: $task.smallerStep)
                 } header: {
                     Text("さらに小さい一歩（任意）")
                 } footer: {
@@ -95,13 +99,119 @@ struct TaskEditView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("保存") {
-                        model.save(task)
-                        dismiss()
+                        if isNew && askSmallerStep {
+                            askingSmaller = true
+                        } else {
+                            model.save(task)
+                            dismiss()
+                        }
                     }
                     .disabled(!canSave)
                 }
             }
+            .sheet(isPresented: $askingSmaller, onDismiss: {
+                // シートを閉じてから保存して戻る (シートを出したまま親を閉じない)
+                guard closeAfterAsking else { return }
+                model.save(task)
+                dismiss()
+            }) {
+                SmallerStepSheet(step: task.firstStep) { newStep in
+                    if let newStep { task.firstStep = newStep }
+                    closeAfterAsking = true
+                    askingSmaller = false
+                }
+                .presentationDetents([.medium, .large])
+            }
         }
+    }
+}
+
+/// 新しく登録した一歩を、ワンのすけが一度だけ「もっと小さくできる？」と聞くシート。
+/// 一歩の中身は判定しない (どの一歩にも同じ型を出す)。今の一歩を認めてから聞き、「このままでOK」も同じ大きさで並べる
+private struct SmallerStepSheet: View {
+    let step: String
+    /// 選んだ一歩 (nil ならそのまま)
+    let onChoose: (String?) -> Void
+    @AppStorage("askSmallerStep") private var askSmallerStep = true
+    /// 「＿＿へ行く」「＿＿を手に持つ」を選んだときの型と、書き足す言葉
+    @State private var template: Template?
+    @State private var blank = ""
+    @FocusState private var blankFocused: Bool
+
+    enum Template: String {
+        case go = "へ行く"
+        case hold = "を手に持つ"
+
+        var label: String { "＿＿\(rawValue)" }
+        var prompt: String { self == .go ? "例: 洗面所" : "例: タオル" }
+    }
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(spacing: 12) {
+                    WanImage(pose: .nod, facing: .right)
+                        .frame(width: 100, height: 100)
+                    SpeechBubble(tail: .leading) {
+                        PhraseText("いい一歩、ワンダフル！ もっと小さくすると、もっと始めやすくなるかも。最初に、からだをどう動かす？")
+                            .font(.system(.subheadline, design: .rounded, weight: .bold))
+                            .foregroundStyle(Pop.brown)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                Text("いまの一歩: \(step)")
+                    .font(.system(.footnote, design: .rounded))
+                    .foregroundStyle(Pop.ink.opacity(0.6))
+
+                choice("立ち上がる") { onChoose("立ち上がる") }
+                ForEach([Template.go, .hold], id: \.self) { t in
+                    if template == t {
+                        HStack {
+                            TextField(t.prompt, text: $blank)
+                                .textFieldStyle(.roundedBorder)
+                                .focused($blankFocused)
+                                .submitLabel(.done)
+                                .onSubmit(useBlank)
+                            Text(t.rawValue)
+                                .font(.system(.body, design: .rounded, weight: .bold))
+                                .foregroundStyle(Pop.ink)
+                            Button("決める", action: useBlank)
+                                .buttonStyle(PopButtonStyle())
+                                .disabled(blank.trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
+                    } else {
+                        choice(t.label) {
+                            template = t
+                            blank = ""
+                            blankFocused = true
+                        }
+                    }
+                }
+                choice("このままでOK", style: .plain) { onChoose(nil) }
+
+                Toggle("次から聞かない", isOn: Binding(get: { !askSmallerStep }, set: { askSmallerStep = !$0 }))
+                    .font(.system(.footnote, design: .rounded))
+                    .foregroundStyle(Pop.ink.opacity(0.7))
+            }
+            .padding(20)
+        }
+        .popBackground()
+    }
+
+    private func choice(_ title: String, style: PopButtonStyle = PopButtonStyle(),
+                        action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(.headline, design: .rounded, weight: .bold))
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(style)
+    }
+
+    private func useBlank() {
+        let word = blank.trimmingCharacters(in: .whitespaces)
+        guard let template, !word.isEmpty else { return }
+        onChoose(word + template.rawValue)
     }
 }
 
