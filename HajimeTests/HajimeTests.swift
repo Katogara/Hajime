@@ -61,6 +61,17 @@ final class ReminderScheduleTests: XCTestCase {
         XCTAssertEqual(prompts.count, 14)
     }
 
+    func testRevertedOneDayTimeKeepsTodaysNudge() {
+        // 22:00 のやることを 22:00 すぎに登録し、今日だけ 22:30 にしてから、いつもの時刻に戻した (ユーザーの報告)
+        var task = task(at: 22)
+        task.oneDayTime = date(19, 22, 30)
+        let moved = ReminderSchedule.prompts(for: [task], startedDays: [], now: date(19, 22, 2), calendar: calendar)
+        XCTAssertEqual(moved.prefix(2).map(\.date), [date(19, 22, 30), date(19, 22, 45)])
+        task.oneDayTime = nil
+        let reverted = ReminderSchedule.prompts(for: [task], startedDays: [], now: date(19, 22, 3), calendar: calendar)
+        XCTAssertEqual(reverted.first, Prompt(taskID: task.id, kind: .nudge, date: date(19, 22, 15), promptDate: date(19, 22)))
+    }
+
     func testOneDayTimeWorksOnUnscheduledWeekday() {
         // 金曜 (6) だけのやることを、月曜の今日だけ促す
         var task = task(at: 7, weekdays: [6])
@@ -414,16 +425,134 @@ final class AvatarTests: XCTestCase {
         XCTAssertNil(AvatarStore(defaults: defaults).body)
     }
 
-    func testAllImagesExist() {
-        let bundle = Bundle(for: AppModel.self)
-        for pose in WanPose.allCases {
-            XCTAssertNotNil(UIImage(named: pose.imageName, in: bundle, compatibleWith: nil), pose.imageName)
-        }
-        for figure in AvatarBody.allCases {
-            for pose in AvatarPose.allCases {
-                let name = figure.imageName(pose)
-                XCTAssertNotNil(UIImage(named: name, in: bundle, compatibleWith: nil), name)
+}
+
+final class CostumeTests: XCTestCase {
+    private let catalog = CostumeCatalog.shared
+    private let bundle = Bundle(for: AppModel.self)
+
+    private func exists(_ asset: String) -> Bool {
+        UIImage(named: asset, in: bundle, compatibleWith: nil) != nil
+    }
+
+    func testCatalogLoads() {
+        XCTAssertGreaterThan(catalog.version, 0, "Costumes.json が読めない")
+        XCTAssertFalse(catalog.themes(for: .avatar).isEmpty)
+        XCTAssertFalse(catalog.themes(for: .wan).isEmpty)
+    }
+
+    func testProductIDsAreUnique() {
+        let ids = catalog.themes.flatMap { theme in theme.items.map { theme.productID($0.part) } }
+        XCTAssertEqual(ids.count, Set(ids).count)
+        XCTAssertEqual(catalog.themes.map(\.key).count, Set(catalog.themes.map(\.key)).count)
+    }
+
+    func testEveryItemHasArtForEachPose() {
+        for theme in catalog.themes {
+            for item in theme.items {
+                // アバターの袖ありの胴は、ポーズごとの絵が要る (まだ立ち姿だけのものは、大喜びでは初期の服で出す)
+                let poses = theme.character == .avatar ? ["std", "joy"] : ["all"]
+                for pose in poses {
+                    guard let art = item.art(for: pose) else { continue }
+                    XCTAssertTrue(exists(art + "_fill") || exists(art + "_line"), "\(theme.key).\(item.part): \(art)")
+                }
+                XCTAssertNotNil(item.art(for: theme.character == .avatar ? "std" : "all"), "\(theme.key).\(item.part)")
             }
         }
+    }
+
+    func testEveryLayerExistsInEveryCombination() {
+        var wearAll = Wardrobe()
+        for theme in catalog.themes {
+            for item in theme.items { wearAll[theme.character][item.part] = theme.id }
+        }
+        for wardrobe in [Wardrobe(), wearAll] {
+            for body in AvatarBody.allCases {
+                for hair in HairStyle.allCases {
+                    for pose in AvatarPose.allCases {
+                        let look = AvatarLook(body: body, hair: hair, hairColor: .milkTea)
+                        for layer in FigureRig.avatar(look, pose: pose, wardrobe: wardrobe, catalog: catalog) {
+                            XCTAssertTrue(exists(layer.asset), layer.asset)
+                        }
+                    }
+                }
+            }
+            for pose in WanPose.allCases {
+                for layer in FigureRig.wan(pose: pose, wardrobe: wardrobe, catalog: catalog, hasAsset: exists) {
+                    XCTAssertTrue(exists(layer.asset), layer.asset)
+                }
+            }
+        }
+    }
+
+    func testAvatarLayerOrder() {
+        var wardrobe = Wardrobe()
+        wardrobe.avatar[.top] = "street"
+        wardrobe.avatar[.head] = "xmas"
+        wardrobe.avatar[.hand] = "xmas"
+        let look = AvatarLook.initial(for: .female)
+        let names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        // 髪のない頭が最初、顔の上にまつ毛と髪、パーカーは初期の胴と入れ替え、帽子は髪の上、手に持つ物がいちばん上
+        XCTAssertEqual(names.first, "av_std_headbase_fill")
+        XCTAssertLessThan(names.firstIndex(of: "av_face_normal_line")!, names.firstIndex(of: "av_lashes_std_line")!)
+        XCTAssertLessThan(names.firstIndex(of: "av_lashes_std_line")!, names.firstIndex(of: "av_hair_bob_fill")!)
+        XCTAssertFalse(names.contains("av_std_top_fill"))
+        XCTAssertLessThan(names.firstIndex(of: "av_hair_bob_line")!, names.firstIndex(of: "av_xmas_head_fill")!)
+        XCTAssertEqual(names.last, "av_xmas_hand_line")
+        // 大喜びでは手に持つ物を出さない
+        let joy = FigureRig.avatar(look, pose: .joy, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        XCTAssertFalse(joy.contains("av_xmas_hand_fill"))
+        XCTAssertTrue(joy.contains("av_street_top_joy_fill"))
+    }
+
+    func testSleevelessTopLayersOverDefault() {
+        var wardrobe = Wardrobe()
+        wardrobe.avatar[.top] = "gyaru"
+        let names = FigureRig.avatar(.initial(for: .male), pose: .joy, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        XCTAssertLessThan(names.firstIndex(of: "av_joy_top_line")!, names.firstIndex(of: "av_gyaru_top_joy_fill")!)
+    }
+
+    func testTopWithoutJoyArtFallsBackToDefault() {
+        var wardrobe = Wardrobe()
+        wardrobe.avatar[.top] = "host"
+        let names = FigureRig.avatar(.initial(for: .male), pose: .joy, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        XCTAssertTrue(names.contains("av_joy_top_fill"))
+    }
+
+    func testHairTintOnlyOnFill() {
+        let look = AvatarLook(body: .male, hair: .mash, hairColor: .ashGray)
+        let layers = FigureRig.avatar(look, pose: .smile, wardrobe: Wardrobe(), catalog: catalog)
+        XCTAssertEqual(layers.first { $0.asset == "av_hair_mash_fill" }?.tint, HairColor.ashGray.hex)
+        XCTAssertNil(layers.first { $0.asset == "av_hair_mash_line" }?.tint)
+        let brown = FigureRig.avatar(.initial(for: .male), pose: .smile, wardrobe: Wardrobe(), catalog: catalog)
+        XCTAssertNil(brown.first { $0.asset == "av_hair_short_fill" }?.tint)
+    }
+
+    func testWanNeckItemRemovesBandanaOnlyWhereDrawn() {
+        var wardrobe = Wardrobe()
+        wardrobe.wan[.neck] = "consa"
+        let wave = FigureRig.wan(pose: .wave, wardrobe: wardrobe, catalog: catalog, hasAsset: exists).map(\.asset)
+        XCTAssertEqual(wave.first, "wan_wave_nobandana_fill")
+        let clap = FigureRig.wan(pose: .clap, wardrobe: wardrobe, catalog: catalog, hasAsset: exists)
+        XCTAssertEqual(clap.first?.asset, "wan_clap_fill")
+        // 手を振る絵以外では、小物を頭の位置に合わせて動かす
+        XCTAssertNotNil(clap.last?.anchor)
+        XCTAssertNil(FigureRig.wan(pose: .wave, wardrobe: wardrobe, catalog: catalog, hasAsset: exists).last?.anchor)
+    }
+
+    func testWardrobeDropsUnknownItemsAndKeepsOld() throws {
+        let json = #"{"avatar":{"top":"street","cape":"street","feet":"nothing"},"wan":{"head":"gyaru"}}"#
+        let decoded = try JSONDecoder().decode(Wardrobe.self, from: Data(json.utf8)).valid(in: catalog)
+        XCTAssertEqual(decoded.avatar, [.top: "street"])
+        XCTAssertEqual(decoded.wan, [.head: "gyaru"])
+        let again = try JSONDecoder().decode(Wardrobe.self, from: JSONEncoder().encode(decoded))
+        XCTAssertEqual(again, decoded)
+    }
+
+    func testAvatarLookReadsPartialData() throws {
+        let look = try JSONDecoder().decode(AvatarLook.self, from: Data(#"{"body":"female","hair":"wig"}"#.utf8))
+        XCTAssertEqual(look, AvatarLook.initial(for: .female))
+        XCTAssertTrue(look.lashes)
+        XCTAssertFalse(AvatarLook.initial(for: .male).lashes)
     }
 }
