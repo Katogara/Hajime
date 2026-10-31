@@ -1,7 +1,7 @@
 """絵を、決まりに合わせた「線」と「塗り」の2枚の SVG にする。
 
 使い方:
-  svg_layers.py 元画像 出力の名前 色の指定... [--align-from 画像 ...] [--no-align] [--height H] [--min-blob N]
+  svg_layers.py 元画像 出力の名前 色の指定... [--align-from 画像 ...] [--no-align] [--height H] [--min-blob N] [--line-target 8]
     色の指定は to_svg.py と同じ（#RRGGBB を並べるか、auto N #色 ...）
     出力: 名前_line.svg（線のこげ茶だけ）、名前_fill.svg（塗り。線の下も周りの色で埋める）、名前_check.png
   svg_layers.py check SVG ...   決まりを守っているかを確かめる（守っていなければ終了コード 1）
@@ -178,6 +178,17 @@ def build(a):
     solid = move(solid.astype(np.uint8), s, dx, dy, pivot, 0).astype(bool)
 
     line = solid & (np.abs(mapped.astype(int) - LINE).sum(-1) == 0)
+    if a.line_target:
+        # 内側の線を決まりの太さ（外形はアプリで合成のあとに付ける）にそろえる。
+        # 顔のパーツのような小さな線のかたまり（2500px 未満）は太らせない（ユーザーが選んだ見本「顔そのまま」）
+        lab, n = ndimage.label(line)
+        sizes = ndimage.sum(line, lab, range(1, n + 1)) if n else []
+        big = np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s >= 2500])
+        r = int(round((a.line_target - line_width(big)) / 2))
+        if r > 0:
+            y, x = np.ogrid[-r:r + 1, -r:r + 1]
+            line |= ndimage.binary_dilation(big, x * x + y * y <= r * r) & solid
+            mapped[line] = LINE
     fill_px = solid & ~line
     # 線の下は、いちばん近い塗りの色で埋める（線を上に重ねたときにすき間が出ないように）
     filled = mapped.copy()
@@ -232,4 +243,5 @@ if __name__ == "__main__":
     ap.add_argument("--no-align", action="store_true")
     ap.add_argument("--height", type=float)
     ap.add_argument("--min-blob", type=int, default=300, help="これより小さい離れた点はごみとして消す（まつ毛は 10）")
+    ap.add_argument("--line-target", type=float, help="内側の線をこの太さ（px）まで太らせる。決まりは 8。顔のパーツの部品には付けない")
     sys.exit(0 if build(ap.parse_args()) else 1)
