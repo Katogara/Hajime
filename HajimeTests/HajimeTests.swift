@@ -249,6 +249,59 @@ final class StartTaskTests: XCTestCase {
         task.weekdays = [6, 2, 4]
         XCTAssertEqual(task.scheduleText, "月・水・金 7:05")
     }
+
+    func testSplitKeepsOriginalStepAsNextOnlyOnce() {
+        var task = StartTask(title: "お風呂", firstStep: "コンタクトを取る", minuteOfDay: 21 * 60)
+        XCTAssertFalse(task.isSplit)
+        task.split(into: "洗面所へ行く")
+        XCTAssertTrue(task.isSplit)
+        XCTAssertEqual(task.firstStep, "洗面所へ行く")
+        XCTAssertEqual(task.nextStep, "コンタクトを取る")
+        // 通知には分けた一歩だけを出す
+        XCTAssertEqual(task.plan(for: .first).step, "洗面所へ行く")
+        // 2 回目は分けた一歩を書き換えるだけで、分ける前の一歩はそのまま
+        task.split(into: "立ち上がる")
+        XCTAssertEqual(task.firstStep, "立ち上がる")
+        XCTAssertEqual(task.nextStep, "コンタクトを取る")
+        task.unsplit()
+        XCTAssertFalse(task.isSplit)
+        XCTAssertEqual(task.firstStep, "コンタクトを取る")
+        XCTAssertNil(task.nextStep)
+    }
+
+    func testDraftFromStepUsesStepAsTitleAndKeepsTime() {
+        let task = StartTask(title: "お風呂", firstStep: "コンタクトを取る", minuteOfDay: 21 * 60, weekdays: [2, 4])
+        let draft = task.draftFromStep()
+        XCTAssertNotEqual(draft.id, task.id)
+        XCTAssertEqual(draft.title, "コンタクトを取る")
+        XCTAssertEqual(draft.firstStep, "")
+        XCTAssertEqual(draft.minuteOfDay, 21 * 60)
+        XCTAssertEqual(draft.weekdays, [2, 4])
+    }
+
+    func testDecodesTasksSavedBeforeSplitting() throws {
+        // 一歩を分けられるようになる前に保存したやること (nextStep がない)
+        var old = try JSONSerialization.jsonObject(with: JSONEncoder().encode(
+            StartTask(title: "お風呂", firstStep: "浴室のドアを開ける", minuteOfDay: 21 * 60))) as! [String: Any]
+        old.removeValue(forKey: "nextStep")
+        let task = try JSONDecoder().decode(StartTask.self, from: JSONSerialization.data(withJSONObject: old))
+        XCTAssertFalse(task.isSplit)
+        XCTAssertEqual(task.firstStep, "浴室のドアを開ける")
+    }
+
+    @MainActor
+    func testSavingWithEmptySplitStepGoesBackToOriginal() {
+        let defaults = UserDefaults(suiteName: "split-\(UUID())")!
+        let model = AppModel(defaults: defaults)
+        var task = StartTask(title: "お風呂", firstStep: "コンタクトを取る", minuteOfDay: 21 * 60)
+        task.split(into: "洗面所へ行く")
+        task.firstStep = " "
+        model.save(task)
+        XCTAssertEqual(model.task(id: task.id)?.firstStep, "コンタクトを取る")
+        XCTAssertEqual(model.task(id: task.id)?.isSplit, false)
+        model.split(taskID: task.id, into: "洗面所へ行く")
+        XCTAssertEqual(model.task(id: task.id)?.nextStep, "コンタクトを取る")
+    }
 }
 
 final class StartStatsTests: XCTestCase {
