@@ -6,8 +6,8 @@
       "banzai": {"dx": 2, "dy": 0, "scale": 1.0, "deg": 0},
       "clap": {"dx": -6, "dy": 40, "scale": 1.0, "deg": -3},
       "blink": {"dx": -1, "dy": -1, "scale": 1.0, "deg": 0},
-      "tehe": {"dx": 34, "dy": 123, "scale": 0.84, "deg": -3},
-      "nod": {"dx": 8, "dy": 90, "scale": 1.0, "deg": -3},
+      "tehe": {"dx": 38, "dy": 95, "scale": 0.84, "deg": -8},
+      "nod": {"dx": 8, "dy": 100, "scale": 1.0, "deg": 0},
       "gift": {"dx": 5, "dy": 28, "scale": 1.08, "deg": -3},
       "wow": {"dx": 5, "dy": 31, "scale": 1.08, "deg": -3}
     }
@@ -24,7 +24,7 @@
     {
       "id": "host", "character": "avatar", "shelf": "fashion", "name": "ホスト系", "note": "夜のきらめき", "order": 2,
       "items": [
-        {"part": "top", "name": "金の襟のジャケット", "art": {"std": "av_host_top_std"}},
+        {"part": "top", "name": "金の襟のジャケット", "art": {"std": "av_host_top_std", "joy": "av_host_top_joy"}},
         {"part": "bottom", "name": "黒のスラックス", "art": {"all": "av_host_bottom"}},
         {"part": "feet", "name": "黒の革靴", "art": {"all": "av_host_feet"}}
       ]
@@ -33,7 +33,7 @@
       "id": "shibuya", "character": "avatar", "shelf": "fashion", "name": "渋谷系", "note": "レトロ・ポップ", "order": 3,
       "items": [
         {"part": "head", "name": "キャスケット", "art": {"all": "av_shibuya_head"}},
-        {"part": "top", "name": "ボーダーのニット", "art": {"std": "av_shibuya_top_std"}},
+        {"part": "top", "name": "ボーダーのニット", "art": {"std": "av_shibuya_top_std", "joy": "av_shibuya_top_joy"}},
         {"part": "bottom", "name": "紺のワイドパンツ", "art": {"all": "av_shibuya_bottom"}},
         {"part": "feet", "name": "赤のスニーカー", "art": {"all": "av_shibuya_feet"}}
       ]
@@ -41,7 +41,7 @@
     {
       "id": "consa", "character": "avatar", "shelf": "fashion", "name": "コンサバ系", "note": "きちんと・やわらか", "order": 4,
       "items": [
-        {"part": "top", "name": "パールとカーディガン", "art": {"std": "av_consa_top_std"}},
+        {"part": "top", "name": "パールとカーディガン", "art": {"std": "av_consa_top_std", "joy": "av_consa_top_joy"}},
         {"part": "bottom", "name": "ベージュのパンツ", "art": {"all": "av_consa_bottom"}},
         {"part": "feet", "name": "ベージュのローファー", "art": {"all": "av_consa_feet"}}
       ]
