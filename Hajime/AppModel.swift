@@ -28,12 +28,6 @@ struct Cheer: Identifiable, Equatable {
     var taskID: UUID?
 }
 
-/// 始めなかったあと、次に開いたときに一度だけ「もっと手前から始めてみる？」と提案する
-struct ShrinkOffer: Identifiable, Equatable {
-    var taskID: UUID
-    var id: UUID { taskID }
-}
-
 /// 「やっぱりやめます」のあとに、ワンのすけが画面の下で「わかった、またね」と言う
 struct Farewell: Identifiable, Equatable {
     let id = UUID()
@@ -83,12 +77,6 @@ final class AppModel {
     var newSouvenir: Souvenir?
     /// 「やっぱりやめます」のあとの、ワンのすけのひとこと (少しすると消す)
     var farewell: Farewell?
-    /// 一歩を小さくする提案 (見せたら nil に戻す)
-    var shrinkOffer: ShrinkOffer?
-    /// 「やっぱりやめます」を押したやること。次に開いたときに提案する
-    private var pendingShrink: UUID?
-    /// 小さくする提案を一度出したやること (同じやることには二度出さない。日ごとの記録は残さない)
-    private var shrinkOffered: Set<UUID> = []
     /// 久しぶりに開いた日 (その日のうちだけ「おかえり」を出す。閉じたら nil)
     private(set) var welcomeDay: Date?
 
@@ -122,12 +110,9 @@ final class AppModel {
         static let wardrobe = "wardrobe"
         static let devWearAll = "devWearAll"
         static let outfits = "outfits"
-        static let pendingShrink = "pendingShrink"
-        static let shrinkOffered = "shrinkOffered"
+        /// 以前の版の「始めなかったあとの、一歩を小さくする提案」で使っていた (読み込むときに消す)
+        static let retired = ["pendingShrink", "shrinkOffered", "askSmallerStep"]
     }
-
-    /// 再通知のあとこの時間たっても始めていなければ、次に開いたときに小さくする提案をする
-    static let shrinkAfterNudge: TimeInterval = 30 * 60
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -151,8 +136,7 @@ final class AppModel {
             .filter { !$0.parts.isEmpty }
         souvenirs = load([Souvenir].self, StoreKey.souvenirs) ?? []
         welcomeDay = defaults.object(forKey: StoreKey.welcomeDay) as? Date
-        pendingShrink = load(UUID.self, StoreKey.pendingShrink)
-        shrinkOffered = load(Set<UUID>.self, StoreKey.shrinkOffered) ?? []
+        StoreKey.retired.forEach(defaults.removeObject(forKey:))
         removeExpiredTasks()
         notifier.onStart = { [weak self] response in self?.handle(response) }
         // 以前の版で「続きをやっています」のまま残っていたら閉じる
@@ -170,13 +154,6 @@ final class AppModel {
         task.title = task.title.trimmingCharacters(in: .whitespacesAndNewlines)
         task.firstStep = task.firstStep.trimmingCharacters(in: .whitespacesAndNewlines)
         task.smallerStep = task.smallerStep.trimmingCharacters(in: .whitespacesAndNewlines)
-        task.nextStep = task.nextStep?.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !task.isSplit {
-            task.nextStep = nil
-        } else if task.firstStep.isEmpty {
-            // 分けた一歩を消したら、分ける前の一歩に戻す
-            task.unsplit()
-        }
         if task.isOneDay {
             // 今日だけのやることは、曜日を使わず、今日の決めた時刻だけ促す
             let now = Date()
@@ -195,13 +172,6 @@ final class AppModel {
             await notifier.requestAuthorization()
             refreshSchedule()
         }
-    }
-
-    /// 一歩をもっと手前の一歩に分ける (使ったあとの提案から)
-    func split(taskID: UUID, into step: String) {
-        guard var task = task(id: taskID) else { return }
-        task.split(into: step)
-        save(task)
     }
 
     /// 今日だけ促す時刻を変える (nil でいつもの時刻に戻す)
@@ -314,12 +284,6 @@ final class AppModel {
 
     private func handle(_ response: PromptResponse) {
         guard task(id: response.taskID) != nil else { return }
-        // 通知から始めるときは、小さくする提案より始めることを優先する
-        if let offer = shrinkOffer {
-            shrinkOffer = nil
-            shrinkOffered.remove(offer.taskID)
-            store(shrinkOffered, StoreKey.shrinkOffered)
-        }
         if response.startNow {
             start(taskID: response.taskID, kind: response.kind, promptDate: response.promptDate)
         } else if session == nil {
@@ -396,11 +360,6 @@ final class AppModel {
         finish()
         // 責めも褒めもせず、ふだんと同じ明るさで見送る
         farewell = Farewell(line: WanLines.farewell.randomElement()!)
-        // 今は提案せず、次に開いたときに一度だけ「もっと手前から始めてみる？」と聞く
-        if !shrinkOffered.contains(session.taskID) {
-            pendingShrink = session.taskID
-            store(pendingShrink, StoreKey.pendingShrink)
-        }
     }
 
     /// まちがえて「やりました！」を押したときの取り消し。「やっぱりやめます」を押したのと同じにする
@@ -464,33 +423,6 @@ final class AppModel {
             defaults.set(now, forKey: StoreKey.welcomeDay)
         }
         defaults.set(now, forKey: StoreKey.lastActive)
-        offerShrinkIfNeeded(now: now)
-    }
-
-    /// 「やっぱりやめます」を押したか、再通知のあとも始めなかったやることに、一度だけ小さくする提案をする
-    private func offerShrinkIfNeeded(now: Date) {
-        if let id = pendingShrink {
-            pendingShrink = nil
-            store(UUID?.none, StoreKey.pendingShrink)
-            if offerShrink(taskID: id) { return }
-        }
-        Task {
-            let nudges = await notifier.deliveredNudges()
-            for nudge in nudges where now.timeIntervalSince(nudge.date) >= Self.shrinkAfterNudge {
-                let startedAfter = records.contains { $0.taskID == nudge.taskID && $0.startedAt >= nudge.date }
-                if !startedAfter && offerShrink(taskID: nudge.taskID) { return }
-            }
-        }
-    }
-
-    /// 提案できれば出して true。通知から開いた画面やタイマーの最中には出さない
-    private func offerShrink(taskID: UUID) -> Bool {
-        guard task(id: taskID) != nil, !shrinkOffered.contains(taskID),
-              session == nil, ready == nil, shrinkOffer == nil else { return false }
-        shrinkOffered.insert(taskID)
-        store(shrinkOffered, StoreKey.shrinkOffered)
-        shrinkOffer = ShrinkOffer(taskID: taskID)
-        return true
     }
 
     func sceneEnteredBackground(now: Date = .now) {

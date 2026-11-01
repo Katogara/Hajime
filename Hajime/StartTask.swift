@@ -10,11 +10,9 @@ struct StartTask: Codable, Identifiable, Equatable {
     var id = UUID()
     /// やること (例: 筋トレ)
     var title: String
-    /// 失敗しようのない最初の一歩 (例: ウェアに着替える)
+    /// 失敗しようのない最初の一歩。通知を見たとき、からだが最初にする動き (例: 起き上がる)。
+    /// 以前の版の「一歩を分ける」で残った分ける前の一歩 (nextStep) は、読み込むときに捨てる
     var firstStep: String
-    /// 一歩を分けたときの、分ける前の一歩 (例: コンタクトを取る)。通知には `firstStep` だけを出し、
-    /// これは一覧と「やりました！」で「次は」として見せる。分けられるのは 1 回だけ (以前のデータにはないので省略可)
-    var nextStep: String?
     /// 始めないまま再通知するときの、さらに小さい一歩 (空なら最初の一歩を短い時間で促す)
     var smallerStep: String = ""
     /// 促す時刻 (0 時からの分)
@@ -28,29 +26,11 @@ struct StartTask: Codable, Identifiable, Equatable {
 
     var isOneDay: Bool { onlyOn != nil }
 
-    /// 一歩を分けてある (分ける前の一歩が残っている)
-    var isSplit: Bool { !(nextStep ?? "").trimmingCharacters(in: .whitespaces).isEmpty }
-
-    /// 一歩をもっと手前の一歩に分ける。分けてあるときは、分けた一歩だけを書き換える (分けるのは 1 回だけ)
-    mutating func split(into step: String) {
-        if !isSplit { nextStep = firstStep }
-        firstStep = step
-    }
-
-    /// 一歩を、別の時刻にできる新しいやることにするときの下書き (一歩をやることの名前にし、時刻と曜日は引き継ぐ)
-    func draftFromStep() -> StartTask {
-        var draft = StartTask.draft()
-        draft.title = firstStep
-        draft.minuteOfDay = minuteOfDay
-        if !isOneDay { draft.weekdays = weekdays }
-        return draft
-    }
-
-    /// 分けるのをやめて、分ける前の一歩に戻す
-    mutating func unsplit() {
-        guard isSplit, let nextStep else { return }
-        firstStep = nextStep
-        self.nextStep = nil
+    /// 一歩がやることの名前と同じ (例: お風呂 / お風呂)。やること全部を一歩にしているかもしれないので、
+    /// 登録画面で一言だけ「その前の動きは？」と添える。語句では判定しない (誤判定で責める形になるため)
+    var stepIsWholeTask: Bool {
+        let step = firstStep.trimmingCharacters(in: .whitespaces)
+        return !step.isEmpty && step == title.trimmingCharacters(in: .whitespaces)
     }
 
     /// 今日だけのやることで、その日が過ぎた
