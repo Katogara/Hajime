@@ -111,7 +111,7 @@ final class AppModel {
         static let devWearAll = "devWearAll"
         static let outfits = "outfits"
         /// 以前の版の「始めなかったあとの、一歩を小さくする提案」で使っていた (読み込むときに消す)
-        static let retired = ["pendingShrink", "shrinkOffered", "askSmallerStep"]
+        static let retired = ["pendingShrink", "shrinkOffered", "askSmallerStep", "stepTipsSeen"]
     }
 
     init(defaults: UserDefaults = .standard) {
