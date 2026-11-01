@@ -274,7 +274,7 @@ extension View {
 }
 
 /// 一覧のレベル表示の右に立つ 2 人の、ふだんの姿。アバターは「ふつう」、ワンのすけは手を振る止め絵。
-/// ワンのすけは右の手前でアバターのほうを向き、描いてある幅の 1/3 をアバターの脚に重ねる (アバターの真ん中より右で止め、
+/// ワンのすけは右の手前でアバターのほうを向き、描いてある幅の 1/4 をアバターの脚に重ねる (アバターの真ん中より右で止め、
 /// 顔と服の正面は隠さない)。足元は絵の足元の線でそろえ、2 人で 1 つの薄い影を敷く。
 /// 大喜びやばんざいは褒める画面だけで見せる (ふだんとのメリハリのため)。ずっと動かすことはしない。
 /// アバターをまだ選んでいなければ、点線の人型と「姿をえらぶ」を出す
@@ -298,7 +298,7 @@ struct CompanionPair: View {
         let avatarLeft = Self.avatarSpan.lowerBound * unit
         let avatarRight = Self.avatarSpan.upperBound * unit
         let wanWidth = (Self.wanSpan.upperBound - Self.wanSpan.lowerBound) * wanUnit
-        let wanLeft = max(avatarRight - wanWidth / 3, (avatarLeft + avatarRight) / 2)
+        let wanLeft = max(avatarRight - wanWidth / 4, (avatarLeft + avatarRight) / 2)
         let wanX = wanLeft - Self.wanSpan.lowerBound * wanUnit
         // 足元をそろえる: アバターの足元 size * foot = ワンのすけの上端 + wan * foot
         let wanY = (size - wan) * Self.foot

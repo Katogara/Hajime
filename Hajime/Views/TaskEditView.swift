@@ -6,19 +6,20 @@ struct TaskEditView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var task: StartTask
     let isNew: Bool
-    /// 一歩のコツ。初めて登録するときは登録シートの最初に出し、一歩の欄の「一歩のコツ」から何度でも見られる
+    /// 一歩のコツ。一歩の欄を初めてタップしたときは必ず出し (とばせない)、そのあとは「一歩のコツ」から何度でも見られる
     @AppStorage(TaskEditView.tipsSeenKey) private var tipsSeen = false
-    @State private var showingTips: Bool
+    @State private var showingTips = false
     /// 一歩の欄の「その前は？」
     @State private var askingBefore = false
+    @FocusState private var stepFocused: Bool
     @FocusState private var smallerFocused: Bool
 
-    static let tipsSeenKey = "stepTipsSeen"
+    /// 以前は登録シートの最初に出していた ("stepTipsSeen")。欄のタップで出す形に変えたので、全員に一度出し直す
+    static let tipsSeenKey = "stepTipsSeenOnTap"
 
     init(task: StartTask, isNew: Bool) {
         _task = State(initialValue: task)
         self.isNew = isNew
-        _showingTips = State(initialValue: isNew && !UserDefaults.standard.bool(forKey: Self.tipsSeenKey))
     }
 
     private var canSave: Bool {
@@ -53,7 +54,7 @@ struct TaskEditView: View {
                 if showingTips {
                     StepTipsView { step in
                         if let step { task.firstStep = step }
-                        closeTips()
+                        closeTips(focusStep: step == nil)
                     }
                     .navigationTitle("一歩のコツ")
                 } else {
@@ -69,7 +70,10 @@ struct TaskEditView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     if showingTips {
-                        Button("とばす", action: closeTips)
+                        // 初めての 1 回は最後まで見てもらう (最後の画面で、一歩をえらぶか自分で書く)
+                        if tipsSeen {
+                            Button("とばす") { closeTips(focusStep: false) }
+                        }
                     } else {
                         Button("保存") {
                             model.save(task)
@@ -110,6 +114,12 @@ struct TaskEditView: View {
             }
             Section {
                 TextField("例: 起き上がる", text: $task.firstStep)
+                    .focused($stepFocused)
+                    .onChange(of: stepFocused) { _, focused in
+                        guard focused && !tipsSeen else { return }
+                        stepFocused = false
+                        withAnimation { showingTips = true }
+                    }
                 // 一歩がやることの名前と同じときだけ、責めずに一言添える (直せば消える)
                 if task.stepIsWholeTask {
                     PhraseText("それだと、やること全部かも。その前の動きは？")
@@ -172,9 +182,15 @@ struct TaskEditView: View {
         .scrollContentBackground(.hidden)
     }
 
-    private func closeTips() {
+    /// 「自分で書く」で閉じたときは、そのまま一歩の欄に書けるようにする
+    private func closeTips(focusStep: Bool) {
         tipsSeen = true
         withAnimation { showingTips = false }
+        guard focusStep else { return }
+        Task {
+            try? await Task.sleep(for: .milliseconds(450))
+            stepFocused = true
+        }
     }
 }
 
