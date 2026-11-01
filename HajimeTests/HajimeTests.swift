@@ -302,6 +302,31 @@ final class StartTaskTests: XCTestCase {
         model.split(taskID: task.id, into: "洗面所へ行く")
         XCTAssertEqual(model.task(id: task.id)?.nextStep, "コンタクトを取る")
     }
+
+    @MainActor
+    func testSavedOutfitsKeepOrderSkipDuplicatesAndReload() {
+        let suite = "outfits-\(UUID())"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let model = AppModel(defaults: defaults)
+        let host = CostumeCatalog.shared.theme(.avatar, "host")!
+        model.saveOutfit(.avatar, host.fullSet)
+        model.saveOutfit(.avatar, host.fullSet)
+        model.saveOutfit(.wan, [.head: "gyaru"])
+        XCTAssertEqual(model.outfits.count, 2)
+        XCTAssertEqual(model.outfits.first?.character, .wan)
+        // 保存し直して読み込んでも、部位ごとのテーマがそのまま戻る
+        let reloaded = AppModel(defaults: defaults)
+        XCTAssertEqual(reloaded.outfits.map(\.parts), model.outfits.map(\.parts))
+        XCTAssertEqual(reloaded.outfits.last?.parts, [.top: "host", .bottom: "host", .feet: "host"])
+        reloaded.deleteOutfit(reloaded.outfits[0].id)
+        XCTAssertEqual(AppModel(defaults: defaults).outfits.count, 1)
+    }
+
+    func testSavedOutfitDropsPartsMissingFromCatalog() {
+        let outfit = SavedOutfit(character: .avatar, parts: [.top: "host", .face: "host"])
+        XCTAssertEqual(outfit.valid(in: .shared).parts, [.top: "host"])
+    }
 }
 
 final class StartStatsTests: XCTestCase {
