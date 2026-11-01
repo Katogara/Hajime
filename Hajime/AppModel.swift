@@ -70,6 +70,8 @@ final class AppModel {
     private(set) var wardrobe = Wardrobe()
     /// 開発中の確かめ用: 買わなくても、すべての服を着られる (課金を作るまで。公開する前に外す)
     private(set) var devWearAll = false
+    /// 保存したコーデ (新しい順)
+    private(set) var outfits: [SavedOutfit] = []
 
     /// 絵に着せるもの。着られない服 (買っていない) は着ていないものとして渡す
     var dressing: Dressing {
@@ -119,6 +121,7 @@ final class AppModel {
         static let avatarLook = "avatarLook"
         static let wardrobe = "wardrobe"
         static let devWearAll = "devWearAll"
+        static let outfits = "outfits"
         static let pendingShrink = "pendingShrink"
         static let shrinkOffered = "shrinkOffered"
     }
@@ -144,6 +147,8 @@ final class AppModel {
         }
         wardrobe = (load(Wardrobe.self, StoreKey.wardrobe) ?? Wardrobe()).valid(in: .shared)
         devWearAll = defaults.bool(forKey: StoreKey.devWearAll)
+        outfits = (load([SavedOutfit].self, StoreKey.outfits) ?? []).map { $0.valid(in: .shared) }
+            .filter { !$0.parts.isEmpty }
         souvenirs = load([Souvenir].self, StoreKey.souvenirs) ?? []
         welcomeDay = defaults.object(forKey: StoreKey.welcomeDay) as? Date
         pendingShrink = load(UUID.self, StoreKey.pendingShrink)
@@ -276,6 +281,22 @@ final class AppModel {
     func wear(_ character: CostumeCharacter, _ part: CostumePart, theme: String?) {
         wardrobe[character][part] = theme
         store(wardrobe, StoreKey.wardrobe)
+    }
+
+    /// 保存できるコーデの数
+    static let maxOutfits = 30
+
+    /// 試着中の組み合わせをコーデとして保存する。同じ組み合わせは二重に保存しない
+    func saveOutfit(_ character: CostumeCharacter, _ parts: [CostumePart: String]) {
+        guard !parts.isEmpty, !outfits.contains(where: { $0.character == character && $0.parts == parts }) else { return }
+        outfits.insert(SavedOutfit(character: character, parts: parts), at: 0)
+        if outfits.count > Self.maxOutfits { outfits.removeLast(outfits.count - Self.maxOutfits) }
+        store(outfits, StoreKey.outfits)
+    }
+
+    func deleteOutfit(_ id: UUID) {
+        outfits.removeAll { $0.id == id }
+        store(outfits, StoreKey.outfits)
     }
 
     func setDevWearAll(_ on: Bool) {

@@ -270,6 +270,45 @@ struct Wardrobe: Codable, Equatable {
     private enum CodingKeys: String, CodingKey { case avatar, wan }
 }
 
+/// 保存したコーデ (1 人ぶんの、部位ごとのテーマ)。買っていない服も入れられ、きせかえで呼び出して試着する。
+/// UserDefaults の outfits に、新しい順で保存する
+struct SavedOutfit: Codable, Identifiable, Equatable {
+    var id = UUID()
+    var character: CostumeCharacter
+    /// 部位の名前をキーにして保存する (知らない部位は読むときに外す)
+    private var raw: [String: String]
+
+    var parts: [CostumePart: String] {
+        Dictionary(uniqueKeysWithValues: raw.compactMap { k, v in CostumePart(rawValue: k).map { ($0, v) } })
+    }
+
+    init(character: CostumeCharacter, parts: [CostumePart: String]) {
+        self.character = character
+        raw = Dictionary(uniqueKeysWithValues: parts.map { ($0.key.rawValue, $0.value) })
+    }
+
+    /// 品目のある部位だけを残す (服を Costumes.json から外したときなど)
+    func valid(in catalog: CostumeCatalog) -> SavedOutfit {
+        var out = self
+        out.raw = Dictionary(uniqueKeysWithValues: parts
+            .filter { catalog.theme(character, $0.value)?.item($0.key) != nil }
+            .map { ($0.key.rawValue, $0.value) })
+        return out
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, character
+        case raw = "parts"
+    }
+}
+
+extension CostumeTheme {
+    /// テーマのひとそろいを着たときの、部位ごとのテーマ
+    var fullSet: [CostumePart: String] {
+        Dictionary(items.map { ($0.part, id) }, uniquingKeysWith: { first, _ in first })
+    }
+}
+
 /// 絵に着せるものをまとめた値。画面の環境 (\.dressing) で渡す。
 /// 環境が届かない ImageRenderer (シェアのカード) には、呼ぶ側で明示して渡す
 struct Dressing: Equatable {
