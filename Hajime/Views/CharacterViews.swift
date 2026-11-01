@@ -273,30 +273,72 @@ extension View {
     }
 }
 
-/// 一覧のレベル表示の横に置く、自分の顔。タップで姿を選び直す (選ぶまではワンのすけの顔)
-struct AvatarFaceButton: View {
+/// 一覧のレベル表示の右に立つ 2 人の、ふだんの姿。アバターは「ふつう」、ワンのすけは手を振る止め絵。
+/// ワンのすけは右の手前でアバターのほうを向き、描いてある幅の 1/3 をアバターの脚に重ねる (アバターの真ん中より右で止め、
+/// 顔と服の正面は隠さない)。足元は絵の足元の線でそろえ、2 人で 1 つの薄い影を敷く。
+/// 大喜びやばんざいは褒める画面だけで見せる (ふだんとのメリハリのため)。ずっと動かすことはしない。
+/// アバターをまだ選んでいなければ、点線の人型と「姿をえらぶ」を出す
+struct CompanionPair: View {
     let avatar: AvatarBody?
-    let action: () -> Void
+    /// アバターの絵の大きさ (正方形)。ワンのすけはその 0.6 倍
+    var size: CGFloat = 110
+
+    private static let wanScale: CGFloat = 0.6
+    /// 足元の高さ (絵の中で 920/1024)
+    private static let foot: CGFloat = 920.0 / 1024
+    /// 1024 のキャンバスで、絵が描いてある左右の範囲 (Art の av_std_* と wan_wave の SVG から測った値)。
+    /// 枠には左右にも透明な余白があるので、重なりは枠ではなくこの範囲で決める
+    private static let avatarSpan: ClosedRange<CGFloat> = 354...672
+    private static let wanSpan: ClosedRange<CGFloat> = 228...808
 
     var body: some View {
-        Button(action: action) {
+        let wan = size * Self.wanScale
+        let unit = size / 1024
+        let wanUnit = wan / 1024
+        let avatarLeft = Self.avatarSpan.lowerBound * unit
+        let avatarRight = Self.avatarSpan.upperBound * unit
+        let wanWidth = (Self.wanSpan.upperBound - Self.wanSpan.lowerBound) * wanUnit
+        let wanLeft = max(avatarRight - wanWidth / 3, (avatarLeft + avatarRight) / 2)
+        let wanX = wanLeft - Self.wanSpan.lowerBound * wanUnit
+        // 足元をそろえる: アバターの足元 size * foot = ワンのすけの上端 + wan * foot
+        let wanY = (size - wan) * Self.foot
+        let shadowLeft = avatarLeft - 4
+        let shadowRight = wanX + Self.wanSpan.upperBound * wanUnit + 4
+        ZStack(alignment: .topLeading) {
+            Ellipse()
+                .fill(Pop.ink.opacity(0.1))
+                .frame(width: shadowRight - shadowLeft, height: size * 0.07)
+                .offset(x: shadowLeft, y: size * Self.foot - size * 0.035)
             Group {
                 if let avatar {
-                    AvatarImage(figure: avatar, pose: .smile)
+                    AvatarImage(figure: avatar, pose: .normal)
                 } else {
-                    WanImage(pose: .wave)
+                    placeholder
                 }
             }
-            // 全身の絵を大きく置き、頭のあたりだけを丸く切り取る
-            .frame(width: 150, height: 150)
-            .offset(y: 30)
-            .frame(width: 50, height: 50)
-            .clipShape(Circle())
-            .background(Circle().fill(Pop.card))
-            .overlay(Circle().stroke(Pop.orange.opacity(0.3), lineWidth: 2))
+            .frame(width: size, height: size)
+            WanImage(pose: .wave, facing: .left)
+                .frame(width: wan, height: wan)
+                .offset(x: wanX, y: wanY)
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(avatar == nil ? "分身の姿を選ぶ" : "分身の姿を選び直す")
+        .frame(width: max(size, wanX + wan), height: size, alignment: .topLeading)
+    }
+
+    /// まだ姿を選んでいないときの、点線の人型
+    private var placeholder: some View {
+        VStack(spacing: 4) {
+            Image(systemName: "person.fill")
+                .font(.system(size: size * 0.32))
+            Text("姿をえらぶ")
+                .font(.system(.caption2, design: .rounded, weight: .heavy))
+                .fixedSize()
+        }
+        .foregroundStyle(Pop.orange.opacity(0.7))
+        .frame(width: size * 0.42, height: size * 0.72)
+        .background(RoundedRectangle(cornerRadius: 14)
+            .strokeBorder(Pop.orange.opacity(0.5), style: StrokeStyle(lineWidth: 2, dash: [5, 4])))
+        .frame(width: size, height: size * Self.foot, alignment: .bottom)
+        .frame(width: size, height: size, alignment: .top)
     }
 }
 

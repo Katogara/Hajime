@@ -81,6 +81,7 @@ private struct TaskListView: View {
     @State private var pickingTime: StartTask?
     /// 説明を一度見たら、次からは自動で出さない (タイトルのタップでいつでも見られる)
     @AppStorage("introSeen") private var introSeen = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         @Bindable var model = model
@@ -92,10 +93,7 @@ private struct TaskListView: View {
                         WelcomeBubble { withAnimation { model.dismissWelcome() } }
                             .transition(.opacity)
                     }
-                    HStack(spacing: 10) {
-                        AvatarFaceButton(avatar: model.avatar) { choosingAvatar = .again }
-                        LevelBadge(progress: model.level)
-                    }
+                    statusRow
                     if model.tasks.isEmpty {
                         emptyCard
                     }
@@ -210,6 +208,32 @@ private struct TaskListView: View {
         .padding(.top, 4)
     }
 
+    /// 左にレベル、右にふだんの姿の 2 人。カードと一緒にスクロールする。
+    /// 2 人を押すと着せ替え、姿をまだ選んでいなければ姿を選ぶ画面 (選び直しは設定からもできる)
+    @ViewBuilder private var statusRow: some View {
+        let pair = Button {
+            if model.avatar == nil { choosingAvatar = .again } else { showingCloset = true }
+        } label: {
+            CompanionPair(avatar: model.avatar)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(model.avatar == nil ? "分身の姿を選ぶ" : "あなたの分身とワンのすけ。きせかえを開く")
+        if dynamicTypeSize >= .accessibility1 {
+            // 文字がとても大きいときは、レベルを上、2 人を下に並べる
+            VStack(alignment: .leading, spacing: 8) {
+                LevelColumn(progress: model.level)
+                pair
+            }
+        } else {
+            HStack(alignment: .bottom, spacing: 8) {
+                LevelColumn(progress: model.level)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                pair
+            }
+            .frame(minHeight: 120, alignment: .bottom)
+        }
+    }
+
     private var emptyCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("🌱")
@@ -232,7 +256,7 @@ private struct TaskListView: View {
 private enum AvatarChoiceMode: Identifiable {
     /// 最初の「どっちのきみで始める？」(選ばずに閉じられる)
     case first
-    /// 一覧の顔から開いて選び直す
+    /// 一覧の 2 人から開いて選ぶ (選ぶまでは点線の人型)
     case again
 
     var id: Self { self }

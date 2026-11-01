@@ -12,7 +12,6 @@ struct ClosetView: View {
     /// 試着で変えた組み合わせ。変えるまでは nil で、いま着ている服をそのまま見せる
     /// (開いたときに写しておくと、写す前の空の組み合わせが残ることがあるため)
     @State private var edited: Wardrobe?
-    @State private var joy = false
 
     private let catalog = CostumeCatalog.shared
     private let pieceColumns = [GridItem(.adaptive(minimum: 76), spacing: 10, alignment: .top)]
@@ -78,21 +77,19 @@ struct ClosetView: View {
         .sensoryFeedback(.selection, trigger: trying)
     }
 
-    /// 上の台座。アバター (選んでいれば) とワンのすけに、試着中の服を着せて並べる
+    /// 上の台座。アバター (選んでいれば) とワンのすけに、試着中の服を着せて並べる。
+    /// 一覧と同じふだんの姿 (アバターは「ふつう」、ワンのすけは手を振る) で見せ、ポーズは切り替えない
+    /// (大喜びは褒める画面だけで見せる。切り替えのボタンは、今のポーズの説明に読まれたため外した)
     private var stage: some View {
-        VStack(spacing: 6) {
-            HStack(alignment: .bottom, spacing: -10) {
-                if let avatar = model.avatar {
-                    AvatarImage(figure: avatar, pose: joy ? .joy : .smile, facing: .right)
-                        .frame(width: 170, height: 170)
-                }
-                WanImage(pose: joy ? .banzai : .wave, facing: model.avatar == nil ? nil : .left)
-                    .frame(width: model.avatar == nil ? 170 : 110, height: model.avatar == nil ? 170 : 110)
+        HStack(alignment: .bottom, spacing: -10) {
+            if let avatar = model.avatar {
+                AvatarImage(figure: avatar, pose: .normal)
+                    .frame(width: 170, height: 170)
             }
-            .environment(\.dressing, Dressing(look: model.look, wardrobe: trying))
-            Button(joy ? "ふつうのポーズ" : "大喜びのポーズ") { joy.toggle() }
-                .font(.system(.subheadline, design: .rounded, weight: .bold))
+            WanImage(pose: .wave, facing: model.avatar == nil ? nil : .left)
+                .frame(width: model.avatar == nil ? 170 : 110, height: model.avatar == nil ? 170 : 110)
         }
+        .environment(\.dressing, Dressing(look: model.look, wardrobe: trying))
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity)
         .background(Pop.cream)
@@ -177,7 +174,7 @@ struct ClosetView: View {
         wardrobe[character] = parts
         return Group {
             if character == .avatar {
-                AvatarImage(figure: model.avatar ?? .male, pose: .smile)
+                AvatarImage(figure: model.avatar ?? .male, pose: .normal)
             } else {
                 WanImage(pose: .wave)
             }
@@ -197,7 +194,7 @@ struct ClosetView: View {
                         model.setLook(next)
                     } picture: {
                         // 全身の絵を大きく置き、頭のあたりだけを丸く切り取る
-                        AvatarImage(figure: look.body, pose: .smile)
+                        AvatarImage(figure: look.body, pose: .normal)
                             .frame(width: 190, height: 190)
                             .offset(y: 38)
                             .frame(width: 64, height: 64)
