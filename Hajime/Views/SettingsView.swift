@@ -32,13 +32,6 @@ struct SettingsView: View {
                             }
                         }
                     }
-                    NavigationLink {
-                        ClosetView()
-                    } label: {
-                        Text("きせかえ")
-                            .font(.system(.body, design: .rounded, weight: .bold))
-                            .foregroundStyle(Pop.ink)
-                    }
                 } header: {
                     Text("分身の姿")
                 }

@@ -75,6 +75,7 @@ private struct TaskListView: View {
     @State private var showingHistory = false
     @State private var showingIntro = false
     @State private var showingSettings = false
+    @State private var showingCloset = false
     /// 分身の姿を選ぶ画面
     @State private var choosingAvatar: AvatarChoiceMode?
     /// 「今日は何時から」を候補以外の時刻にするとき
@@ -146,6 +147,7 @@ private struct TaskListView: View {
                     .accessibilityLabel("これまでのつみあげ")
                 }
                 ToolbarItemGroup(placement: .topBarTrailing) {
+                    RoundIconButton(systemImage: "hanger", label: "きせかえ") { showingCloset = true }
                     RoundIconButton(systemImage: "gearshape.fill", label: "設定") { showingSettings = true }
                     RoundIconButton(systemImage: "plus", label: "追加", filled: true) { editing = .draft() }
                 }
@@ -158,6 +160,9 @@ private struct TaskListView: View {
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView()
+            }
+            .sheet(isPresented: $showingCloset) {
+                NavigationStack { ClosetView() }
             }
             .sheet(item: $model.ready) { prompt in
                 ReadyView(prompt: prompt)
