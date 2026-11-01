@@ -96,6 +96,58 @@ enum FigureRenderer {
         cache.setObject(image, forKey: key)
         return image
     }
+
+    private static let pieceCache = NSCache<NSString, UIImage>()
+
+    /// 服 1 点だけの見本 (きせかえの一覧)。キャンバスに重ねてから、描いてあるところだけを切り出す
+    static func piece(_ layers: [FigureLayer], scale: CGFloat) -> UIImage? {
+        let key = "\(layers)-\(Int(scale))" as NSString
+        if let hit = pieceCache.object(forKey: key) { return hit }
+        guard let full = image(layers, side: 160, scale: scale, border: false), let cg = full.cgImage,
+              let box = opaqueBounds(cg), let cut = cg.cropping(to: box) else { return nil }
+        let out = UIImage(cgImage: cut, scale: scale, orientation: .up)
+        pieceCache.setObject(out, forKey: key)
+        return out
+    }
+
+    /// 透明でない画素を囲む四角 (左上が原点)
+    private static func opaqueBounds(_ cg: CGImage) -> CGRect? {
+        let w = cg.width, h = cg.height
+        var pixels = [UInt8](repeating: 0, count: w * h * 4)
+        let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard let ctx = CGContext(data: buffer.baseAddress, width: w, height: h, bitsPerComponent: 8,
+                                      bytesPerRow: w * 4, space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            ctx.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+            return true
+        }
+        guard drawn else { return nil }
+        var minX = w, minY = h, maxX = -1, maxY = -1
+        for y in 0..<h {
+            for x in 0..<w where pixels[(y * w + x) * 4 + 3] > 8 {
+                minX = min(minX, x)
+                maxX = max(maxX, x)
+                minY = min(minY, y)
+                maxY = max(maxY, y)
+            }
+        }
+        guard maxX >= minX, maxY >= minY else { return nil }
+        return CGRect(x: minX, y: minY, width: maxX - minX + 1, height: maxY - minY + 1)
+    }
+}
+
+/// 服 1 点の見本を、置かれた枠に収まる大きさで出す
+struct CostumePieceImage: View {
+    let layers: [FigureLayer]
+    @Environment(\.displayScale) private var displayScale
+
+    var body: some View {
+        if let image = FigureRenderer.piece(layers, scale: displayScale) {
+            Image(uiImage: image).resizable().scaledToFit()
+        } else {
+            Color.clear
+        }
+    }
 }
 
 /// 重ねた絵を、置かれた枠いっぱいの正方形で出す
