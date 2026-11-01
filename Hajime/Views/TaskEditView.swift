@@ -6,22 +6,12 @@ struct TaskEditView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var task: StartTask
     let isNew: Bool
-    /// 新しく登録したとき、保存の前に一度だけ「もっと小さくできる？」と聞く (「次から聞かない」で止められる)
-    @AppStorage("askSmallerStep") private var askSmallerStep = true
-    @State private var askingSmaller = false
-    @State private var closeAfterAsking = false
     /// 一歩のコツ。初めて登録するときは登録シートの最初に出し、一歩の欄の「一歩のコツ」から何度でも見られる
     @AppStorage(TaskEditView.tipsSeenKey) private var tipsSeen = false
     @State private var showingTips: Bool
-    /// この登録で一歩のコツを見た (保存時のシートの前置きを省く)
-    @State private var sawTips = false
-    /// 一歩のコツの型で一歩を入れた (同じ型を保存時にもう一度見せない)
-    @State private var usedTipsTemplate = false
-    @State private var splitting = false
-    /// 一歩を、別の時刻にできる新しいやることにするときの下書き
-    @State private var otherTask: StartTask?
-    /// 分けるシートを閉じてから、新しいやることの登録を開く
-    @State private var pendingOtherTask: StartTask?
+    /// 一歩の欄の「その前は？」
+    @State private var askingBefore = false
+    @FocusState private var smallerFocused: Bool
 
     static let tipsSeenKey = "stepTipsSeen"
 
@@ -33,8 +23,7 @@ struct TaskEditView: View {
 
     private var canSave: Bool {
         !task.title.trimmingCharacters(in: .whitespaces).isEmpty
-            // 分けた一歩を消したときは、分ける前の一歩に戻して保存する
-            && (!task.firstStep.trimmingCharacters(in: .whitespaces).isEmpty || task.isSplit)
+            && !task.firstStep.trimmingCharacters(in: .whitespaces).isEmpty
             && (task.isOneDay || !task.weekdays.isEmpty)
     }
 
@@ -63,10 +52,7 @@ struct TaskEditView: View {
             Group {
                 if showingTips {
                     StepTipsView { step in
-                        if let step {
-                            task.firstStep = step
-                            usedTipsTemplate = true
-                        }
+                        if let step { task.firstStep = step }
                         closeTips()
                     }
                     .navigationTitle("一歩のコツ")
@@ -85,41 +71,22 @@ struct TaskEditView: View {
                     if showingTips {
                         Button("とばす", action: closeTips)
                     } else {
-                        Button("保存", action: save)
-                            .disabled(!canSave)
+                        Button("保存") {
+                            model.save(task)
+                            dismiss()
+                        }
+                        .disabled(!canSave)
                     }
                 }
             }
-            .sheet(isPresented: $askingSmaller, onDismiss: {
-                // シートを閉じてから保存して戻る (シートを出したまま親を閉じない)
-                guard closeAfterAsking else { return }
-                model.save(task)
-                dismiss()
-            }) {
-                SmallerStepSheet(step: task.firstStep, short: sawTips) { newStep in
-                    if let newStep { task.firstStep = newStep }
-                    closeAfterAsking = true
-                    askingSmaller = false
-                }
-                .presentationDetents([.medium, .large])
-            }
-            .sheet(isPresented: $splitting, onDismiss: {
-                otherTask = pendingOtherTask
-                pendingOtherTask = nil
-            }) {
-                StepSplitSheet(step: task.firstStep) { step in
-                    task.split(into: step)
-                    splitting = false
-                } onOtherTask: {
-                    pendingOtherTask = task.draftFromStep()
-                    splitting = false
+            .sheet(isPresented: $askingBefore) {
+                StepBeforeSheet(step: task.firstStep) { step in
+                    task.firstStep = step
+                    askingBefore = false
                 } onKeep: {
-                    splitting = false
+                    askingBefore = false
                 }
                 .presentationDetents([.medium, .large])
-            }
-            .sheet(item: $otherTask) { draft in
-                TaskEditView(task: draft, isNew: true)
             }
         }
     }
@@ -142,17 +109,15 @@ struct TaskEditView: View {
                 TextField("例: お風呂", text: $task.title)
             }
             Section {
-                TextField("例: 浴室のドアを開ける", text: $task.firstStep)
-                if let next = task.nextStep, task.isSplit {
-                    HStack {
-                        PhraseText("次：\(next)")
-                            .foregroundStyle(Pop.ink.opacity(0.7))
-                        Spacer()
-                        Button("分けるのをやめる") { task.unsplit() }
-                            .font(.system(.footnote, design: .rounded, weight: .semibold))
-                    }
-                } else if !isNew && !task.firstStep.trimmingCharacters(in: .whitespaces).isEmpty {
-                    Button("この一歩を分ける") { splitting = true }
+                TextField("例: 起き上がる", text: $task.firstStep)
+                // 一歩がやることの名前と同じときだけ、責めずに一言添える (直せば消える)
+                if task.stepIsWholeTask {
+                    PhraseText("それだと、やること全部かも。その前の動きは？")
+                        .font(.system(.footnote, design: .rounded))
+                        .foregroundStyle(Pop.ink.opacity(0.55))
+                }
+                if !task.firstStep.trimmingCharacters(in: .whitespaces).isEmpty {
+                    Button("その前は？") { askingBefore = true }
                         .font(.system(.subheadline, design: .rounded, weight: .semibold))
                 }
             } header: {
@@ -168,11 +133,7 @@ struct TaskEditView: View {
                     }
                 }
             } footer: {
-                if task.isSplit {
-                    PhraseText("通知には最初の一歩だけが出ます。分ける前の一歩は「次」として残り、「やりました！」のあとに出ます。")
-                } else {
-                    PhraseText("からだを1回動かすだけで終わる行動にします。通知にはこの一歩だけが出ます。")
-                }
+                PhraseText("通知を見たとき、からだが最初にする動きは？ この一歩だけで終わってOK。")
             }
             Section(task.isOneDay ? "今日、何時に促す？" : "促す時刻") {
                 DatePicker("時刻", selection: time, displayedComponents: .hourAndMinute)
@@ -181,7 +142,19 @@ struct TaskEditView: View {
                 }
             }
             Section {
-                TextField("例: 立ち上がる", text: $task.smallerStep)
+                // 登録し直すときに、まだ決めていなければ一言だけ誘う (始めなかった直後には出さない)
+                if !isNew && task.smallerStep.trimmingCharacters(in: .whitespaces).isEmpty && !smallerFocused {
+                    Button { smallerFocused = true } label: {
+                        HStack(spacing: 8) {
+                            WanImage(pose: .nod, facing: .right)
+                                .frame(width: 32, height: 32)
+                            PhraseText("もっと小さい一歩も決めておく？")
+                                .font(.system(.subheadline, design: .rounded, weight: .semibold))
+                        }
+                    }
+                }
+                TextField("例: スマホを置く", text: $task.smallerStep)
+                    .focused($smallerFocused)
             } header: {
                 Text("さらに小さい一歩（任意）")
             } footer: {
@@ -201,49 +174,7 @@ struct TaskEditView: View {
 
     private func closeTips() {
         tipsSeen = true
-        sawTips = true
         withAnimation { showingTips = false }
-    }
-
-    private func save() {
-        if isNew && askSmallerStep && !usedTipsTemplate {
-            askingSmaller = true
-        } else {
-            model.save(task)
-            dismiss()
-        }
-    }
-}
-
-/// 新しく登録した一歩を、ワンのすけが一度だけ「もっと小さくできる？」と聞くシート。
-/// 一歩の中身は判定しない (どの一歩にも同じ型を出す)。今の一歩を認めてから聞き、「このままでOK」も同じ大きさで並べる
-private struct SmallerStepSheet: View {
-    let step: String
-    /// 一歩のコツを見た直後なので、前置きを省いて聞く
-    var short = false
-    /// 選んだ一歩 (nil ならそのまま)
-    let onChoose: (String?) -> Void
-    @AppStorage("askSmallerStep") private var askSmallerStep = true
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                WanAsks(pose: .nod, line: short ? "最初に、からだをどう動かす？"
-                    : "いい一歩、ワンダフル！ もっと小さくすると、もっと始めやすくなるかも。最初に、からだをどう動かす？")
-                Text("いまの一歩: \(step)")
-                    .font(.system(.footnote, design: .rounded))
-                    .foregroundStyle(Pop.ink.opacity(0.6))
-
-                StepTemplates { onChoose($0) }
-                StepChoiceButton(title: "このままでOK", style: .plain) { onChoose(nil) }
-
-                Toggle("次から聞かない", isOn: Binding(get: { !askSmallerStep }, set: { askSmallerStep = !$0 }))
-                    .font(.system(.footnote, design: .rounded))
-                    .foregroundStyle(Pop.ink.opacity(0.7))
-            }
-            .padding(20)
-        }
-        .popBackground()
     }
 }
 
