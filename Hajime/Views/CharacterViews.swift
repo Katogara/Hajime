@@ -281,7 +281,7 @@ extension View {
 struct CompanionPair: View {
     let avatar: AvatarBody?
     /// アバターの絵の大きさ (正方形)。ワンのすけはその 0.6 倍
-    var size: CGFloat = 110
+    var size: CGFloat = 140
 
     private static let wanScale: CGFloat = 0.6
     /// 足元の高さ (絵の中で 920/1024)
@@ -322,6 +322,9 @@ struct CompanionPair: View {
                 .offset(x: wanX, y: wanY)
         }
         .frame(width: max(size, wanX + wan), height: size, alignment: .topLeading)
+        // アバターの絵の左の透明な余白 (影の左端まで) は詰めて、レベル表示の幅を取らない
+        // (点線の人型は幅 0.42 で真ん中に置くので、その左端より内側は詰めない)
+        .padding(.leading, -min(shadowLeft, size * 0.29 - 4))
     }
 
     /// まだ姿を選んでいないときの、点線の人型
