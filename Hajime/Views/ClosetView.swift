@@ -273,7 +273,10 @@ struct ClosetView: View {
                                      @ViewBuilder picture: () -> Picture) -> some View {
         Button(action: action) {
             VStack(spacing: 4) {
+                // 髪型の絵は大きな全身を丸く切り抜いているだけで、はみ出した部分が隣のタイルのタップを拾っていた
+                // (ひとつ結びを選んだあと、左隣のマッシュを押してもひとつ結びのまま)。絵ではタップを受けず、枠で受ける
                 picture()
+                    .allowsHitTesting(false)
                     .frame(width: side, height: side)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
@@ -287,6 +290,7 @@ struct ClosetView: View {
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: .infinity, alignment: .top)
             }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(name)

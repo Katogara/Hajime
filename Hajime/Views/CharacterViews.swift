@@ -34,7 +34,25 @@ private struct FigureStack: View {
             }
         }
         .frame(width: side, height: side)
+        .mask { if let clip = layer.clip { HairClipShape(clip: clip) } else { Rectangle() } }
         .modifier(AnchorEffect(anchor: layer.anchor, unit: unit))
+    }
+}
+
+/// 帽子をかぶったときに髪を描く台形 (HairClip。1024 のキャンバスを枠の大きさに合わせる)
+private struct HairClipShape: Shape {
+    let clip: HairClip
+
+    func path(in rect: CGRect) -> Path {
+        let unit = rect.width / 1024
+        let y = clip.y, w = clip.halfWidth, spread = (1024 - clip.y) * HairClip.slope
+        var path = Path()
+        path.move(to: CGPoint(x: (512 - w) * unit, y: y * unit))
+        path.addLine(to: CGPoint(x: (512 + w) * unit, y: y * unit))
+        path.addLine(to: CGPoint(x: (512 + w + spread) * unit, y: 1024 * unit))
+        path.addLine(to: CGPoint(x: (512 - w - spread) * unit, y: 1024 * unit))
+        path.closeSubpath()
+        return path
     }
 }
 
