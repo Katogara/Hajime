@@ -46,6 +46,9 @@ STREET = [L, "#2F5BD3", "#E3F03A", "#6B4428", "#F1C7AE"]
 FUWARI = [L, "#B9A8DC", "#B5ABA0"]
 WAN_STREET = [L, "#2F5BD3", "#E3F03A", "#F0A242"]
 WAN_FUWARI = [L, "#B9A8DC", "#B5ABA0", "#FEF7ED"]
+WAN_XMAS = [L, "#B5814A", "#2E7D4F", "#C8283C", "#E8B931"]
+OUCHI = [L, "#D3A6AE", "#B9B7B2", "#F1C7AE"]
+WAN_OUCHI = [L, "#D3A6AE", "#B9B7B2"]
 
 
 def rows(lo, hi):
@@ -104,6 +107,21 @@ def frame_of(src, color, lo, hi, reach=5):
     return f
 
 
+def colors_of(src, colors, then=None, reach=5, tol=70):
+    """決まった色とそのすぐそばの線だけを残す。ワンのすけの首の小物に毛の色がまじって取れたとき、
+    ほかのポーズで小物を動かすと毛の色がずれて見えるので外す"""
+    rgbs = [np.array([int(c[i:i + 2], 16) for i in (1, 3, 5)]) for c in colors]
+
+    def f(m):
+        img = np.asarray(Image.open(src).convert("RGB")).astype(int)
+        near = np.zeros(m.shape, bool)
+        for rgb in rgbs:
+            near |= np.abs(img - rgb).sum(-1) < tol
+        keep = m & ndimage.binary_dilation(near, iterations=reach)
+        return then(keep) if then else keep
+    return f
+
+
 # 名前: (フォルダ, 元画像, 切り分け, 色, 位置合わせの素体, 線をそろえるか, ごみの大きさ, 塗り替え)
 JOBS = {}
 
@@ -153,6 +171,17 @@ job("fuwari", "av_fuwari_top_std", P / "o08_avatar_korea.png", FUWARI, cut=rows(
 job("fuwari", "av_fuwari_top_joy", P / "j07_avatar_male_joy_korea.png", FUWARI)
 job("fuwari", "av_fuwari_bottom", P / "o08_avatar_korea.png", FUWARI, cut=bottom_rows(584, 810))
 job("fuwari", "wan_fuwari_neck", P / "w07_wan_korea.png", WAN_FUWARI, base=WAN_BASE)
+# クリスマスのワンのすけ（2026-11-05。判定で赤い実をやめ、角を明るい黄土色にした）。首輪は毛の色を外す
+job("xmas", "wan_xmas_head", P / "w08_wan_xmas.png", WAN_XMAS, base=WAN_BASE, cut=topmost)
+job("xmas", "wan_xmas_neck", P / "w08_wan_xmas.png", WAN_XMAS, base=WAN_BASE,
+    cut=colors_of(G / "w08b_wan_xmas.jpg", ["#C8283C", "#E8B931"], then=rows(400, 700), tol=40))
+# おうちゆる（2026-11-05。判定でボタンを大きく3つ、裾に灰ピンクの帯、細いヘアバンド）。
+# 下は差では中の色が薄く抜けたので、首より下の肌以外を取った region の絵から切る
+job("ouchi", "av_ouchi_top_std", P / "o09_avatar_ouchi.png", OUCHI, cut=rows(290, 572))
+job("ouchi", "av_ouchi_top_joy", P / "j08_avatar_male_joy_ouchi.png", OUCHI)
+job("ouchi", "av_ouchi_bottom", P / "o09_avatar_ouchi_region.png", OUCHI, cut=bottom_rows(572, 802))
+job("ouchi", "av_ouchi_feet", P / "o09_avatar_ouchi_feet.png", OUCHI)
+job("ouchi", "wan_ouchi_head", P / "w09_wan_ouchi.png", WAN_OUCHI, base=WAN_BASE)
 job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=rows(0, 330))
 job("gyaru", "av_gyaru_top_std", P / "o01_avatar_gyaru.png", GYARU, cut=rows(330, 780))
 job("gyaru", "av_gyaru_top_joy", P / "j02_avatar_male_joy_gyaru_vest.png", GYARU)
