@@ -49,7 +49,17 @@
     {
       "id": "street", "character": "avatar", "shelf": "fashion", "name": "ストリート系", "note": "ゆるっと大きめに", "order": 5,
       "items": [
-        {"part": "top", "name": "ビッグパーカー", "art": {"std": "av_street_top_std", "joy": "av_street_top_joy"}}
+        {"part": "head", "name": "後ろ向きのキャップ", "art": {"all": "av_street_head"}},
+        {"part": "top", "name": "ビッグパーカー", "art": {"std": "av_street_top_std", "joy": "av_street_top_joy"}},
+        {"part": "feet", "name": "ハイカットスニーカー", "art": {"all": "av_street_feet"}}
+      ]
+    },
+    {
+      "id": "fuwari", "character": "avatar", "shelf": "fashion", "name": "ふんわり淡色", "note": "淡い色でふんわりと", "order": 6,
+      "items": [
+        {"part": "face", "name": "丸めがね", "art": {"all": "av_fuwari_face"}},
+        {"part": "top", "name": "雲のニットベスト", "over": true, "art": {"std": "av_fuwari_top_std", "joy": "av_fuwari_top_joy"}},
+        {"part": "bottom", "name": "ワイドスラックス", "art": {"all": "av_fuwari_bottom"}}
       ]
     },
     {
@@ -88,6 +98,18 @@
       "id": "consa", "character": "wan", "shelf": "fashion", "name": "コンサバ系", "note": "きちんと・やわらか", "order": 4,
       "items": [
         {"part": "neck", "name": "パールのネックレス", "art": {"all": "wan_consa_neck"}}
+      ]
+    },
+    {
+      "id": "street", "character": "wan", "shelf": "fashion", "name": "ストリート系", "note": "ゆるっと大きめに", "order": 5,
+      "items": [
+        {"part": "head", "name": "後ろ向きのキャップ", "art": {"all": "wan_street_head"}}
+      ]
+    },
+    {
+      "id": "fuwari", "character": "wan", "shelf": "fashion", "name": "ふんわり淡色", "note": "淡い色でふんわりと", "order": 6,
+      "items": [
+        {"part": "neck", "name": "フリルの付け襟", "art": {"all": "wan_fuwari_neck"}}
       ]
     },
     {
