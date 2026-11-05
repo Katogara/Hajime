@@ -12,6 +12,8 @@ struct ClosetView: View {
     /// 試着で変えた組み合わせ。変えるまでは nil で、いま着ている服をそのまま見せる
     /// (開いたときに写しておくと、写す前の空の組み合わせが残ることがあるため)
     @State private var edited: Wardrobe?
+    /// 最後に押したタイル。台座の下の帯に、その名前を省略せずに出す
+    @State private var pick: TryOnPick?
 
     private let catalog = CostumeCatalog.shared
     private let pieceColumns = [GridItem(.adaptive(minimum: 76), spacing: 10, alignment: .top)]
@@ -58,7 +60,7 @@ struct ClosetView: View {
                 Button("閉じる") { dismiss() }
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button { edited = nil } label: {
+                Button { edited = nil; pick = nil } label: {
                     Image(systemName: "arrow.uturn.backward")
                 }
                 .disabled(trying == worn)
@@ -81,18 +83,48 @@ struct ClosetView: View {
     /// 一覧と同じふだんの姿 (アバターは「ふつう」、ワンのすけは手を振る) で見せ、ポーズは切り替えない
     /// (大喜びは褒める画面だけで見せる。切り替えのボタンは、今のポーズの説明に読まれたため外した)
     private var stage: some View {
-        HStack(alignment: .bottom, spacing: -10) {
-            if let avatar = model.avatar {
-                AvatarImage(figure: avatar, pose: .normal)
-                    .frame(width: 170, height: 170)
+        VStack(spacing: 8) {
+            HStack(alignment: .bottom, spacing: -10) {
+                if let avatar = model.avatar {
+                    AvatarImage(figure: avatar, pose: .normal)
+                        .frame(width: 170, height: 170)
+                }
+                WanImage(pose: .wave, facing: model.avatar == nil ? nil : .left)
+                    .frame(width: model.avatar == nil ? 170 : 110, height: model.avatar == nil ? 170 : 110)
             }
-            WanImage(pose: .wave, facing: model.avatar == nil ? nil : .left)
-                .frame(width: model.avatar == nil ? 170 : 110, height: model.avatar == nil ? 170 : 110)
+            .environment(\.dressing, Dressing(look: model.look, wardrobe: trying))
+            captionBand
         }
-        .environment(\.dressing, Dressing(look: model.look, wardrobe: trying))
-        .padding(.vertical, 12)
+        .padding(.top, 12)
+        .padding(.bottom, 10)
         .frame(maxWidth: .infinity)
         .background(Pop.cream)
+    }
+
+    /// 最後に押したタイルの名前を省略せずに出す帯。タイルの名前は 2 行で切れるので、全文はここで読む。
+    /// 高さは 52pt 以上で、文字を大きくしたときは伸ばす (省略しない)。白は使わずクリーム色にオレンジの細い枠
+    private var captionBand: some View {
+        let caption = pick.flatMap { $0.character == character ? TryOnCaption($0, catalog: catalog) : nil } ?? .hint
+        return VStack(spacing: 2) {
+            PhraseText(caption.name)
+                .font(.system(.subheadline, design: .rounded, weight: .bold))
+                .foregroundStyle(caption == .hint ? Pop.ink.opacity(0.55) : Pop.ink)
+            if !caption.detail.isEmpty {
+                PhraseText(caption.detail)
+                    .font(.system(.caption, design: .rounded))
+                    .foregroundStyle(Pop.ink.opacity(0.6))
+            }
+        }
+        .multilineTextAlignment(.center)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 6)
+        .frame(maxWidth: .infinity, minHeight: 52)
+        .background(RoundedRectangle(cornerRadius: 26, style: .continuous).fill(Pop.cream))
+        .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Pop.orange, lineWidth: 1.5))
+        .padding(.horizontal, 16)
+        .animation(.easeOut(duration: 0.2), value: caption)
+        .accessibilityElement(children: .combine)
     }
 
     private var parts: [CostumePart] {
@@ -126,6 +158,7 @@ struct ClosetView: View {
                     ForEach(Array(savedOutfits.enumerated()), id: \.element.id) { index, outfit in
                         tile("コーデ \(savedOutfits.count - index)", selected: trying[character] == outfit.parts, side: 84) {
                             change { $0 = outfit.parts }
+                            pick = .outfit(character, number: savedOutfits.count - index)
                         } picture: {
                             figure(wearing: outfit.parts)
                         }
@@ -153,12 +186,14 @@ struct ClosetView: View {
                 LazyVGrid(columns: figureColumns, spacing: 12) {
                     tile(character == .avatar ? "いつもの" : "なし", selected: trying[character].isEmpty, side: 84) {
                         change { $0 = [:] }
+                        pick = .set(character, theme: nil)
                     } picture: {
                         figure(wearing: [:])
                     }
                     ForEach(sets) { theme in
                         tile(theme.name, selected: trying[character] == theme.fullSet, side: 84) {
                             change { $0 = theme.fullSet }
+                            pick = .set(character, theme: theme.id)
                         } picture: {
                             figure(wearing: theme.fullSet)
                         }
@@ -192,6 +227,7 @@ struct ClosetView: View {
                     let next = AvatarLook(body: look.body, hair: hair, hairColor: look.hairColor)
                     tile(hair.label, selected: look.hair == hair) {
                         model.setLook(next)
+                        pick = .hair(hair)
                     } picture: {
                         // 全身の絵を大きく置き、頭のあたりだけを丸く切り取る
                         AvatarImage(figure: look.body, pose: .normal)
@@ -227,6 +263,7 @@ struct ClosetView: View {
             LazyVGrid(columns: pieceColumns, spacing: 12) {
                 tile(character == .avatar ? "いつもの" : "なし", selected: trying[character][part] == nil) {
                     change { $0[part] = nil }
+                    pick = .piece(character, part, theme: nil)
                 } picture: {
                     if let base = baseLayers(part) {
                         CostumePieceImage(layers: base)
@@ -240,6 +277,7 @@ struct ClosetView: View {
                     if let item = theme.item(part) {
                         tile(item.name, selected: trying[character][part] == theme.id) {
                             change { $0[part] = theme.id }
+                            pick = .piece(character, part, theme: theme.id)
                         } picture: {
                             CostumePieceImage(layers: pieceLayers(item))
                         }
