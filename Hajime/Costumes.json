@@ -63,6 +63,14 @@
       ]
     },
     {
+      "id": "ouchi", "character": "avatar", "shelf": "fashion", "name": "おうちゆる", "note": "きょうは休む日でいい", "order": 7,
+      "items": [
+        {"part": "top", "name": "大きなボタンのパジャマ", "art": {"std": "av_ouchi_top_std", "joy": "av_ouchi_top_joy"}},
+        {"part": "bottom", "name": "パジャマのパンツ", "art": {"all": "av_ouchi_bottom"}},
+        {"part": "feet", "name": "ふわふわのルームスリッパ", "art": {"all": "av_ouchi_feet"}}
+      ]
+    },
+    {
       "id": "newyear", "character": "avatar", "shelf": "season", "name": "正月", "month": 1, "order": 1,
       "items": [
         {"part": "neck", "name": "水引柄のスカーフ", "art": {"all": "av_newyear_neck"}},
@@ -110,6 +118,19 @@
       "id": "fuwari", "character": "wan", "shelf": "fashion", "name": "ふんわり淡色", "note": "淡い色でふんわりと", "order": 6,
       "items": [
         {"part": "neck", "name": "フリルの付け襟", "art": {"all": "wan_fuwari_neck"}}
+      ]
+    },
+    {
+      "id": "ouchi", "character": "wan", "shelf": "fashion", "name": "おうちゆる", "note": "きょうは休む日でいい", "order": 7,
+      "items": [
+        {"part": "head", "name": "ボタンのヘアバンド", "art": {"all": "wan_ouchi_head"}}
+      ]
+    },
+    {
+      "id": "xmas", "character": "wan", "shelf": "season", "name": "クリスマス", "month": 12, "order": 12,
+      "items": [
+        {"part": "head", "name": "トナカイの角", "art": {"all": "wan_xmas_head"}},
+        {"part": "neck", "name": "鈴の首輪", "art": {"all": "wan_xmas_neck"}}
       ]
     },
     {
