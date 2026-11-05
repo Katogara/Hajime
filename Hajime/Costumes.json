@@ -78,6 +78,22 @@
       ]
     },
     {
+      "id": "outdoor", "character": "avatar", "shelf": "fashion", "name": "アウトドア", "note": "ちょっと外の空気を", "order": 9,
+      "items": [
+        {"part": "head", "name": "山のバケットハット", "art": {"all": "av_outdoor_head"}, "hairLine": [282, 90]},
+        {"part": "top", "name": "フィッシングベスト", "over": true, "art": {"std": "av_outdoor_top_std", "joy": "av_outdoor_top_joy"}},
+        {"part": "feet", "name": "登山靴", "art": {"all": "av_outdoor_feet"}}
+      ]
+    },
+    {
+      "id": "sports", "character": "avatar", "shelf": "fashion", "name": "スポーツMIX", "note": "軽い足どりで", "order": 10,
+      "items": [
+        {"part": "top", "name": "切り替えのジャージ", "art": {"std": "av_sports_top_std", "joy": "av_sports_top_joy"}},
+        {"part": "bottom", "name": "ジャージのパンツ", "art": {"all": "av_sports_bottom"}},
+        {"part": "feet", "name": "ランニングシューズ", "art": {"all": "av_sports_feet"}}
+      ]
+    },
+    {
       "id": "newyear", "character": "avatar", "shelf": "season", "name": "正月", "month": 1, "order": 1,
       "items": [
         {"part": "neck", "name": "水引柄のスカーフ", "art": {"all": "av_newyear_neck"}},
@@ -137,6 +153,18 @@
       "id": "kissa", "character": "wan", "shelf": "fashion", "name": "レトロ喫茶", "note": "クリームソーダ気分で", "order": 8,
       "items": [
         {"part": "head", "name": "さくらんぼのヘアピン", "art": {"all": "wan_kissa_head"}}
+      ]
+    },
+    {
+      "id": "outdoor", "character": "wan", "shelf": "fashion", "name": "アウトドア", "note": "ちょっと外の空気を", "order": 9,
+      "items": [
+        {"part": "head", "name": "小さなバケットハット", "art": {"all": "wan_outdoor_head"}}
+      ]
+    },
+    {
+      "id": "sports", "character": "wan", "shelf": "fashion", "name": "スポーツMIX", "note": "軽い足どりで", "order": 10,
+      "items": [
+        {"part": "head", "name": "ヘッドバンド", "art": {"all": "wan_sports_head"}}
       ]
     },
     {
