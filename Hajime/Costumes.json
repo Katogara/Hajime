@@ -32,7 +32,7 @@
     {
       "id": "shibuya", "character": "avatar", "shelf": "fashion", "name": "渋谷系", "note": "レトロ・ポップ", "order": 3,
       "items": [
-        {"part": "head", "name": "キャスケット", "art": {"all": "av_shibuya_head"}},
+        {"part": "head", "name": "キャスケット", "art": {"all": "av_shibuya_head"}, "hairLine": [265, 92]},
         {"part": "top", "name": "ボーダーのニット", "art": {"std": "av_shibuya_top_std", "joy": "av_shibuya_top_joy"}},
         {"part": "bottom", "name": "紺のワイドパンツ", "art": {"all": "av_shibuya_bottom"}},
         {"part": "feet", "name": "赤のスニーカー", "art": {"all": "av_shibuya_feet"}}
@@ -49,7 +49,7 @@
     {
       "id": "street", "character": "avatar", "shelf": "fashion", "name": "ストリート系", "note": "ゆるっと大きめに", "order": 5,
       "items": [
-        {"part": "head", "name": "後ろ向きのキャップ", "art": {"all": "av_street_head"}},
+        {"part": "head", "name": "後ろ向きのキャップ", "art": {"all": "av_street_head"}, "hairLine": [263, 81]},
         {"part": "top", "name": "ビッグパーカー", "art": {"std": "av_street_top_std", "joy": "av_street_top_joy"}},
         {"part": "feet", "name": "ハイカットスニーカー", "art": {"all": "av_street_feet"}}
       ]
@@ -87,7 +87,7 @@
     {
       "id": "xmas", "character": "avatar", "shelf": "season", "name": "クリスマス", "month": 12, "order": 12,
       "items": [
-        {"part": "head", "name": "ノルディック柄のニット帽", "art": {"all": "av_xmas_head"}},
+        {"part": "head", "name": "ノルディック柄のニット帽", "art": {"all": "av_xmas_head"}, "hairLine": [282, 86]},
         {"part": "hand", "name": "プレゼントの箱", "art": {"all": "av_xmas_hand"}}
       ]
     },

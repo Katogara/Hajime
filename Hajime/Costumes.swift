@@ -76,12 +76,27 @@ struct CostumeItem: Codable, Equatable {
     /// ポーズごとの絵の名前 (_fill / _line を除く)。"all" は全ポーズで同じ絵。
     /// アバターのポーズは std (ふつう・にっこり) と joy (大喜び)。ワンのすけの小物は手を振る絵の位置で描き、ほかのポーズは wanAnchors で動かす
     var art: [String: String]
+    /// 帽子: [y, w]。髪は高さ y (1024 のキャンバス) より上を描かず、その高さではつばの幅 (真ん中から左右に w) に収め、
+    /// 下へ行くほど広げる。ボブやマッシュが帽子の外にはみ出さず、帽子の下から広がって見えるようにする
+    var hairLine: [Double]?
 
     func art(for pose: String) -> String? {
         art[pose] ?? art["all"]
     }
 
     var layersOver: Bool { over ?? false }
+
+    var hairClip: HairClip? {
+        guard let line = hairLine, line.count == 2 else { return nil }
+        return HairClip(y: line[0], halfWidth: line[1])
+    }
+}
+
+/// 帽子をかぶったときに髪を描く範囲。高さ y でつばの幅に収め、そこから下へ slope の傾きで広げた台形 (1024 のキャンバス、真ん中は x=512)
+struct HairClip: Hashable {
+    var y: Double
+    var halfWidth: Double
+    static let slope = 1.2
 }
 
 /// ワンのすけの小物を、手を振る絵以外のポーズの頭の位置に合わせる (tools/wan_anchors.py で求めた値)。
@@ -343,6 +358,8 @@ struct FigureLayer: Hashable {
     var tint: UInt32?
     /// ワンのすけの小物を、ポーズの頭の位置に合わせる
     var anchor: WanAnchorKey?
+    /// 帽子をかぶっているときの髪の切り方
+    var clip: HairClip?
 }
 
 /// FigureLayer に入れるため、WanAnchor を Hashable な形にしたもの
@@ -358,8 +375,10 @@ struct WanAnchorKey: Hashable {
 /// 部品の名前から、重ねる順の絵のリストを作る
 enum FigureRig {
     /// 部品 1 つは、塗りの上に線を重ねた 2 枚 (色は塗りにだけ付ける)
-    static func pair(_ name: String, tint: UInt32? = nil, anchor: WanAnchorKey? = nil) -> [FigureLayer] {
-        [FigureLayer(asset: name + "_fill", tint: tint, anchor: anchor), FigureLayer(asset: name + "_line", anchor: anchor)]
+    static func pair(_ name: String, tint: UInt32? = nil, anchor: WanAnchorKey? = nil,
+                     clip: HairClip? = nil) -> [FigureLayer] {
+        [FigureLayer(asset: name + "_fill", tint: tint, anchor: anchor, clip: clip),
+         FigureLayer(asset: name + "_line", anchor: anchor, clip: clip)]
     }
 
     /// アバター。重ね順は、髪のない頭、顔、まつ毛、髪、首と手、足、下、胴、(袖のない胴の服)、首、めがね、頭、手に持つ物。
@@ -381,8 +400,9 @@ enum FigureRig {
         }
         var layers = pair("av_\(p)_headbase") + pair(face)
         if look.lashes { layers += [FigureLayer(asset: "av_lashes_\(p)_line")] }
-        // 髪の色は塗りだけに付ける (こげ茶は絵の色のまま)
-        layers += pair("av_hair_\(look.hair.rawValue)", tint: look.hairColor == .brown ? nil : look.hairColor.hex)
+        // 髪の色は塗りだけに付ける (こげ茶は絵の色のまま)。帽子をかぶっていれば、帽子の下から広がる形に切る
+        layers += pair("av_hair_\(look.hair.rawValue)", tint: look.hairColor == .brown ? nil : look.hairColor.hex,
+                       clip: worn(.head)?.hairClip)
         layers += pair("av_\(p)_hands")
         for part in [CostumePart.feet, .bottom, .top] {
             if let item = worn(part), let art = item.art(for: p) {
