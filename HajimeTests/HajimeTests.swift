@@ -550,6 +550,23 @@ final class CostumeTests: XCTestCase {
         XCTAssertTrue(joy.contains("av_street_top_joy_fill"))
     }
 
+    func testHatClipsHairOnlyWhenWorn() {
+        let look = AvatarLook.initial(for: .female)
+        let bare = FigureRig.avatar(look, pose: .normal, wardrobe: Wardrobe(), catalog: catalog)
+        XCTAssertNil(bare.first { $0.asset == "av_hair_bob_fill" }?.clip)
+        var wardrobe = Wardrobe()
+        wardrobe.avatar[.head] = "shibuya"
+        let hat = FigureRig.avatar(look, pose: .joy, wardrobe: wardrobe, catalog: catalog)
+        // 帽子をかぶると髪の塗りと線の両方を切る。帽子そのものは切らない
+        XCTAssertNotNil(hat.first { $0.asset == "av_hair_bob_fill" }?.clip)
+        XCTAssertNotNil(hat.first { $0.asset == "av_hair_bob_line" }?.clip)
+        XCTAssertNil(hat.first { $0.asset == "av_shibuya_head_fill" }?.clip)
+        // めがねのような帽子でない頭の小物では切らない
+        wardrobe.avatar[.head] = "gyaru"
+        let glasses = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog)
+        XCTAssertNil(glasses.first { $0.asset == "av_hair_bob_fill" }?.clip)
+    }
+
     func testSleevelessTopLayersOverDefault() {
         var wardrobe = Wardrobe()
         wardrobe.avatar[.top] = "gyaru"
