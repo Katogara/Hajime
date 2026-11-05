@@ -51,6 +51,10 @@ OUCHI = [L, "#D3A6AE", "#B9B7B2", "#F1C7AE"]
 WAN_OUCHI = [L, "#D3A6AE", "#B9B7B2"]
 KISSA = [L, "#6CBF52", "#F3E3A0", "#E6CF7A"]
 WAN_KISSA = [L, "#C8283C", "#6CBF52"]
+OUTDOOR = [L, "#8C8B4E", "#86B8E8", "#6B4428"]
+WAN_OUTDOOR = [L, "#8C8B4E", "#86B8E8"]
+SPORTS = [L, "#1E9E5A", "#F2C230", "#F1C7AE"]
+WAN_SPORTS = [L, "#1E9E5A", "#F2C230"]
 
 
 def rows(lo, hi):
@@ -190,6 +194,20 @@ job("kissa", "av_kissa_top_std", P / "o10_avatar_kissa.png", KISSA)
 job("kissa", "av_kissa_top_joy", P / "j09_avatar_male_joy_kissa.png", KISSA)
 job("kissa", "av_kissa_bottom", P / "o10_avatar_kissa_region.png", KISSA, cut=bottom_rows(532, 805))
 job("kissa", "wan_kissa_head", P / "w10_wan_kissa.png", WAN_KISSA, base=WAN_BASE)
+# アウトドアとスポーツMIX (2026-11-05)。判定でワッペンを大きく、ポケットを空色、靴を 2 色、ワンのすけの帽子を小さく。
+# スポーツは上下そろいの緑ジャージが「イカゲーム」や体操服に見えるので、肩から胸を黄の切り替え、袖の短い 2 本線、パンツは無地。
+# 大喜びのベストは裾の下にスウェットの色が入るので高さで切る。ジャージの下は差では薄いので region から切る。
+# ワンのすけのヘッドバンドは Gemini が線を 2 本描くので one_stripe.py で 1 本にしたものを使う
+job("outdoor", "av_outdoor_head", P / "o11_avatar_outdoor.png", OUTDOOR, cut=rows(0, 290))
+job("outdoor", "av_outdoor_top_std", P / "o11_avatar_outdoor.png", OUTDOOR, cut=rows(290, 560))
+job("outdoor", "av_outdoor_top_joy", P / "j10_avatar_male_joy_outdoor.png", OUTDOOR, cut=rows(0, 530))
+job("outdoor", "av_outdoor_feet", P / "o11_avatar_outdoor_feet.png", OUTDOOR)
+job("outdoor", "wan_outdoor_head", P / "w11_wan_outdoor.png", WAN_OUTDOOR, base=WAN_BASE)
+job("sports", "av_sports_top_std", P / "o12_avatar_sports.png", SPORTS, cut=rows(290, 530))
+job("sports", "av_sports_top_joy", P / "j11_avatar_male_joy_sports.png", SPORTS)
+job("sports", "av_sports_bottom", P / "o12_avatar_sports_region.png", SPORTS, cut=bottom_rows(528, 805))
+job("sports", "av_sports_feet", P / "o12_avatar_sports_feet.png", SPORTS)
+job("sports", "wan_sports_head", P / "w12_wan_sports_one.png", WAN_SPORTS, base=WAN_BASE)
 job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=rows(0, 330))
 job("gyaru", "av_gyaru_top_std", P / "o01_avatar_gyaru.png", GYARU, cut=rows(330, 780))
 job("gyaru", "av_gyaru_top_joy", P / "j02_avatar_male_joy_gyaru_vest.png", GYARU)
