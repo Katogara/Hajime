@@ -94,6 +94,22 @@
       ]
     },
     {
+      "id": "amekaji", "character": "avatar", "shelf": "fashion", "name": "古着アメカジ", "note": "着古した味がいい", "order": 11,
+      "items": [
+        {"part": "top", "name": "星のパッチワークシャツ", "art": {"std": "av_amekaji_top_std", "joy": "av_amekaji_top_joy"}},
+        {"part": "bottom", "name": "コーデュロイパンツ", "art": {"all": "av_amekaji_bottom"}},
+        {"part": "feet", "name": "ワークブーツ", "art": {"all": "av_amekaji_feet"}}
+      ]
+    },
+    {
+      "id": "trad", "character": "avatar", "shelf": "fashion", "name": "雨の日トラッド", "note": "雨の日もゆったり", "order": 12,
+      "items": [
+        {"part": "head", "name": "チェックのハンチング", "art": {"all": "av_trad_head"}, "hairLine": [277, 90]},
+        {"part": "top", "name": "チェックのジャケット", "art": {"std": "av_trad_top_std", "joy": "av_trad_top_joy"}},
+        {"part": "feet", "name": "サイドゴアブーツ", "art": {"all": "av_trad_feet"}}
+      ]
+    },
+    {
       "id": "newyear", "character": "avatar", "shelf": "season", "name": "正月", "month": 1, "order": 1,
       "items": [
         {"part": "neck", "name": "水引柄のスカーフ", "art": {"all": "av_newyear_neck"}},
@@ -165,6 +181,18 @@
       "id": "sports", "character": "wan", "shelf": "fashion", "name": "スポーツMIX", "note": "軽い足どりで", "order": 10,
       "items": [
         {"part": "head", "name": "ヘッドバンド", "art": {"all": "wan_sports_head"}}
+      ]
+    },
+    {
+      "id": "amekaji", "character": "wan", "shelf": "fashion", "name": "古着アメカジ", "note": "着古した味がいい", "order": 11,
+      "items": [
+        {"part": "head", "name": "星のデニムキャップ", "art": {"all": "wan_amekaji_head"}}
+      ]
+    },
+    {
+      "id": "trad", "character": "wan", "shelf": "fashion", "name": "雨の日トラッド", "note": "雨の日もゆったり", "order": 12,
+      "items": [
+        {"part": "head", "name": "チェックのハンチング", "art": {"all": "wan_trad_head"}}
       ]
     },
     {

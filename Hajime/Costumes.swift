@@ -145,6 +145,60 @@ struct CostumeCatalog: Codable, Equatable {
     }
 }
 
+/// きせかえで最後に押したタイル。上の台座の下の帯に、その品の名前を省略せずに出す
+/// (タイルの名前は 2 行で切れるため。2026-11-05、形とパターンのチーム + UX デザイナーの 4 人が一致した案)
+enum TryOnPick: Equatable {
+    /// 部位の単品。theme が nil なら「いつもの」(アバター) か「なし」(ワンのすけ)
+    case piece(CostumeCharacter, CostumePart, theme: String?)
+    /// テーマのひとそろい。theme が nil なら「いつもの」/「なし」で全部脱いだとき
+    case set(CostumeCharacter, theme: String?)
+    /// 保存したコーデ (番号は一覧の表示と同じ)
+    case outfit(CostumeCharacter, number: Int)
+    case hair(HairStyle)
+
+    var character: CostumeCharacter {
+        switch self {
+        case .piece(let c, _, _), .set(let c, _), .outfit(let c, _): return c
+        case .hair: return .avatar
+        }
+    }
+}
+
+/// 帯に出す 2 行 (品名と、テーマ・部位)
+struct TryOnCaption: Equatable {
+    var name: String
+    var detail: String
+
+    /// まだ何も押していないとき
+    static let hint = TryOnCaption(name: "タイルを押すと試着できます", detail: "")
+
+    init(name: String, detail: String) {
+        self.name = name
+        self.detail = detail
+    }
+
+    init(_ pick: TryOnPick, catalog: CostumeCatalog) {
+        switch pick {
+        case .piece(let character, let part, let id):
+            if let id, let theme = catalog.theme(character, id), let item = theme.item(part) {
+                self.init(name: item.name, detail: "\(theme.name)・\(part.label)")
+            } else {
+                self.init(name: character == .avatar ? "いつもの服" : "なし", detail: part.label)
+            }
+        case .set(let character, let id):
+            if let id, let theme = catalog.theme(character, id) {
+                self.init(name: "\(theme.name)のセット", detail: theme.items.map(\.name).joined(separator: "・"))
+            } else {
+                self.init(name: character == .avatar ? "いつもの服" : "なし", detail: "セット")
+            }
+        case .outfit(_, let number):
+            self.init(name: "コーデ \(number)", detail: "保存したコーデ")
+        case .hair(let hair):
+            self.init(name: hair.label, detail: "髪型（無料）")
+        }
+    }
+}
+
 private extension CostumeShelf {
     /// 棚の並び: はじめての、季節、オシャレ
     var sortKey: Int {
