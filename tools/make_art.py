@@ -132,7 +132,123 @@ def colors_of(src, colors, then=None, reach=5, tol=70):
 JOBS = {}
 
 
-def job(folder, name, src, colors, base=AV_BASE, cut=None, line=True, blob=300, recolor=None):
+_current = {}
+AV_JOY_BASE = G / "r06_avatar_male_joy.jpg"
+
+
+def foreign(base_path, then=None, tol=45, close=2, edge=12):
+    """素体の絵にもともとある線や色 (髪・あご・手・腕・耳) の切れ端を消す。
+    部品の絵 (着せた全身から取ったもの) のうち、素体の同じ位置とほぼ同じ色のところは、服ではなく体なので除く。
+    除いたあとにできた細いすき間は閉じ、小さな島は捨てる。
+    2026-11-05、ユーザーの指摘 (丸めがねの左右に髪、雲のベストの裾に手、ハートのサングラスの左下がガタガタ) で足した"""
+    def f(m):
+        m = then(m) if then else m
+        img = _current["img"][..., :3].astype(int)
+        base = np.asarray(Image.open(base_path).convert("RGB").resize(img.shape[1::-1])).astype(int)
+        same = np.abs(img - base).sum(-1) < tol
+        # 切れ端は部品の外側の縁にだけある。内側まで消すと、素体と色が近い帽子などに穴や切れ目ができるので、縁から edge px 以内に限る
+        rim = m & ~ndimage.binary_erosion(m, iterations=edge)
+        keep = m & ~(same & rim)
+        keep = ndimage.binary_closing(keep, iterations=close) & m
+        keep = ndimage.binary_fill_holes(keep) & m
+        lab, n = ndimage.label(keep)
+        if n:
+            sizes = ndimage.sum(keep, lab, range(1, n + 1))
+            keep &= np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s >= 80])
+        return keep
+    return f
+
+
+def row_hull(colors, margin=9, then=None, tol=70):
+    """行ごとに、部品の決まった塗りの色がある左右の端から margin px より外を消す。
+    袖のないベストの脇に残る腕や手のとげ、めがねのつるの外に垂れた髪など、横に飛び出した切れ端に効く"""
+    fills = [np.array([int(c[i:i + 2], 16) for i in (1, 3, 5)]) for c in colors
+             if c.startswith("#") and c.upper() != L]
+
+    def f(m):
+        m = then(m) if then else m
+        img = _current["img"][..., :3].astype(int)
+        fill = np.zeros(m.shape, bool)
+        for rgb in fills:
+            fill |= np.abs(img - rgb).sum(-1) < tol
+        fill &= m
+        fill = ndimage.binary_opening(fill, iterations=1)  # にじみの細い点は端に数えない
+        out = np.zeros_like(m)
+        h = m.shape[0]
+        for y in range(h):
+            ys = slice(max(y - 2, 0), min(y + 3, h))  # 上下 2 行も見て、線だけの行 (裾や縁) を残す
+            xs = np.nonzero(fill[ys].any(0))[0]
+            if len(xs):
+                lo, hi = max(xs.min() - margin, 0), xs.max() + margin + 1
+                out[y, lo:hi] = m[y, lo:hi]
+            else:  # 塗りの色が見つからない行 (細いつるなど) は削らない
+                out[y] = m[y]
+        return out
+    return f
+
+
+def trimmed(reach, colors, then=None, close=3, tol=70):
+    """部品の外側に残った、ほかの体の線や色の切れ端 (髪の毛・手・腕・目のまわり・背景のにじみ) を削る。
+    取り出すときに部品のそばの線を拾い直すので、隣の髪や手の線まで付いてくる。
+    部品の塗りの面 (その部品の決まった色に近いところ。穴は埋める) から reach px より外にあるものを消す。
+    reach は線 1 本ぶん (6〜10)。
+    2026-11-05、ユーザーの指摘 (丸めがねの左右に髪、雲のベストの裾に手、ハートのサングラスの左下がガタガタ) で足した"""
+    fills = [np.array([int(c[i:i + 2], 16) for i in (1, 3, 5)]) for c in colors
+             if c.startswith("#") and c.upper() != L]
+
+    def f(m):
+        m = then(m) if then else m
+        img = _current["img"][..., :3].astype(int)
+        fill = np.zeros(m.shape, bool)
+        for rgb in fills:
+            fill |= np.abs(img - rgb).sum(-1) < tol
+        fill &= m
+        lab, n = ndimage.label(fill)
+        if n:  # 線のすき間に残った小さな塗りの点は、面として扱わない
+            sizes = ndimage.sum(fill, lab, range(1, n + 1))
+            fill &= np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s >= 20])
+        body = ndimage.binary_fill_holes(ndimage.binary_closing(fill, iterations=close))
+        keep = m & ndimage.binary_dilation(body, iterations=reach)
+        lab, n = ndimage.label(keep)
+        if n:
+            sizes = ndimage.sum(keep, lab, range(1, n + 1))
+            keep &= np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s >= 40])
+        return keep
+    return f
+
+
+# デザイナーのチェック (2026-11-05) で、優先度「高」「中」で切れ端を指摘された部品と、そのあと足した部品。
+# 全部にかけると、素体と色が近い帽子 (ワンのすけのバケットハット、ストリートのキャップ) に切れ目ができたので、指摘されたものだけにする
+CLEAN = {
+    "av_gyaru_head", "av_fuwari_face", "av_fuwari_top_std", "av_fuwari_top_joy", "av_newyear_hand", "av_xmas_hand",
+    "av_outdoor_head", "wan_kissa_head", "av_consa_top_joy", "av_consa_top_std", "av_host_top_std", "av_shibuya_top_std",
+    "wan_consa_neck", "av_kissa_top_joy", "av_kissa_top_std", "av_outdoor_top_joy", "av_outdoor_top_std",
+    "av_gyaru_top_joy", "av_gyaru_top_std", "av_newyear_neck", "av_shibuya_head", "wan_shibuya_head",
+    "av_street_top_joy", "wan_street_head", "wan_host_neck",
+    "av_amekaji_top_std", "av_amekaji_top_joy",  # wan_amekaji_head は掃除で横に白い切れ目が出たのでかけない
+    "av_trad_head", "av_trad_top_std", "av_trad_top_joy", "wan_trad_head",
+}
+
+
+def body_of(name, src):
+    """服の部品を取り出したときの素体 (切れ端を見分けるのに使う)"""
+    if name.startswith("wan_"):
+        return G / "r10_wan_wave_nobandana.jpg" if "_neck" in name else WAN_BASE
+    return AV_JOY_BASE if "_joy" in name else AV_BASE
+
+
+def job(folder, name, src, colors, base=AV_BASE, cut=None, line=True, blob=300, recolor=None, trim=None, clean=None):
+    if trim:
+        cut = trimmed(trim, colors, cut)
+    # 素体の髪・あご・手・耳の切れ端を消してから横のとげを削る (2026-11-05、デザイナーのチェック)。
+    # 下と足は、素体のズボンや靴と同じ形・近い色のことがあり、消しすぎるのでかけない
+    if clean is None:
+        clean = name in CLEAN
+    if clean:
+        cut = foreign(body_of(name, src), cut, tol=50)
+        # 色を自動で選ぶ組 (auto) は決まった塗りの色がわからないので、横のとげは削らない
+        if "auto" not in colors:
+            cut = row_hull(colors, 9, cut)
     JOBS[name] = (folder, src, cut, colors, base, line, blob, recolor or {})
 
 
@@ -208,7 +324,27 @@ job("sports", "av_sports_top_joy", P / "j11_avatar_male_joy_sports.png", SPORTS)
 job("sports", "av_sports_bottom", P / "o12_avatar_sports_region.png", SPORTS, cut=bottom_rows(528, 805))
 job("sports", "av_sports_feet", P / "o12_avatar_sports_feet.png", SPORTS)
 job("sports", "wan_sports_head", P / "w12_wan_sports_one.png", WAN_SPORTS, base=WAN_BASE)
-job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=rows(0, 330))
+# 古着アメカジと雨の日トラッド (2026-11-05。判定は「直して進める」で、直した正面図 o13c・o14c から取る)。
+# アメカジは素体のスウェットと色が近く差では青い面が抜けるので、region の絵から高さで切る。
+# 大喜びのアメカジも差では青い袖が抜けるので、肌以外すべての絵から、シャツの 2 色とそのそばの線だけを取る
+AMEKAJI = [L, "#5B80B0", "#A4603B"]
+TRAD = [L, "#2E6B50", "#1F2A44", "#C49A6C", "#85563C"]
+WAN_AMEKAJI = [L, "#5B80B0", "#A4603B"]
+WAN_TRAD = [L, "#2E6B50", "#1F2A44"]
+job("amekaji", "av_amekaji_top_std", P / "o13_avatar_amekaji_region.png", AMEKAJI, cut=bottom_rows(305, 548))
+job("amekaji", "av_amekaji_top_joy", P / "j12_avatar_male_joy_amekaji_region.png", AMEKAJI,
+    cut=colors_of(G / "j12_avatar_male_joy_amekaji.jpg", ["#5479AD", "#904240"], then=rows(150, 545), reach=6, tol=45))
+job("amekaji", "av_amekaji_bottom", P / "o13_avatar_amekaji_region.png", AMEKAJI, cut=bottom_rows(548, 805))
+# 靴は元より大きく描かれたので、shift_part.py で靴底を素体の足元にそろえたもの (アメカジ -17px、トラッド -18px)
+job("amekaji", "av_amekaji_feet", P / "o13_avatar_amekaji_feet.png", AMEKAJI)
+job("amekaji", "wan_amekaji_head", P / "w13_wan_amekaji.png", WAN_AMEKAJI, base=WAN_BASE)
+job("trad", "av_trad_head", P / "o14_avatar_trad.png", TRAD, cut=rows(0, 300))
+job("trad", "av_trad_top_std", P / "o14_avatar_trad.png", TRAD, cut=rows(300, 600))
+job("trad", "av_trad_top_joy", P / "j13_avatar_male_joy_trad.png", TRAD)
+job("trad", "av_trad_feet", P / "o14_avatar_trad_feet.png", TRAD)
+job("trad", "wan_trad_head", P / "w14_wan_trad.png", WAN_TRAD, base=WAN_BASE)
+# ハートのサングラスの下に、ピンクの毛の切れ端が 2 つ浮いていた (デザイナーのチェック) ので、いちばん大きいかたまりだけ残す
+job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=lambda m: blobs([0])(rows(0, 330)(m)))
 job("gyaru", "av_gyaru_top_std", P / "o01_avatar_gyaru.png", GYARU, cut=rows(330, 780))
 job("gyaru", "av_gyaru_top_joy", P / "j02_avatar_male_joy_gyaru_vest.png", GYARU)
 job("gyaru", "av_gyaru_feet", P / "o01_avatar_gyaru.png", GYARU, cut=rows(780, 1024))
@@ -239,6 +375,7 @@ job("xmas", "av_xmas_hand", P / "o06_avatar_xmas.png", XMAS, cut=rows(330, 1024)
 
 def cut_png(src, cut, tmp):
     img = np.asarray(Image.open(src).convert("RGBA")).copy()
+    _current["img"] = img
     keep = cut(img[..., 3] > 128)
     img[..., 3] = np.where(keep, img[..., 3], 0)
     out = Path(tmp) / (src.stem + "_cut.png")
