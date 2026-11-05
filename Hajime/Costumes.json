@@ -71,6 +71,13 @@
       ]
     },
     {
+      "id": "kissa", "character": "avatar", "shelf": "fashion", "name": "レトロ喫茶", "note": "クリームソーダ気分で", "order": 8,
+      "items": [
+        {"part": "top", "name": "グラスのワッペンのベスト", "over": true, "art": {"std": "av_kissa_top_std", "joy": "av_kissa_top_joy"}},
+        {"part": "bottom", "name": "クリーム色のスラックス", "art": {"all": "av_kissa_bottom"}}
+      ]
+    },
+    {
       "id": "newyear", "character": "avatar", "shelf": "season", "name": "正月", "month": 1, "order": 1,
       "items": [
         {"part": "neck", "name": "水引柄のスカーフ", "art": {"all": "av_newyear_neck"}},
@@ -124,6 +131,12 @@
       "id": "ouchi", "character": "wan", "shelf": "fashion", "name": "おうちゆる", "note": "きょうは休む日でいい", "order": 7,
       "items": [
         {"part": "head", "name": "ボタンのヘアバンド", "art": {"all": "wan_ouchi_head"}}
+      ]
+    },
+    {
+      "id": "kissa", "character": "wan", "shelf": "fashion", "name": "レトロ喫茶", "note": "クリームソーダ気分で", "order": 8,
+      "items": [
+        {"part": "head", "name": "さくらんぼのヘアピン", "art": {"all": "wan_kissa_head"}}
       ]
     },
     {
