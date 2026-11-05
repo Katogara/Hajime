@@ -41,6 +41,11 @@ WAN_GYARU = [L, "#FD60A0", "#E7B831", "#EF949A"]
 WAN_HOST = [L, "#1E1E1E", "#C9A227", "#F9F2DF"]
 WAN_SHIBUYA = [L, "#22306B", "#D7333B"]
 WAN_CONSA = [L, "#F1EBE1", "#CDA070", "#EADDCD"]
+# 2026-11-05、衣装の目利きチームの判定で描き直したストリート（キャップの穴から見える髪と首の肌を含む）と、ふんわり淡色（社内の呼び名は韓国系）
+STREET = [L, "#2F5BD3", "#E3F03A", "#6B4428", "#F1C7AE"]
+FUWARI = [L, "#B9A8DC", "#B5ABA0"]
+WAN_STREET = [L, "#2F5BD3", "#E3F03A", "#F0A242"]
+WAN_FUWARI = [L, "#B9A8DC", "#B5ABA0", "#FEF7ED"]
 
 
 def rows(lo, hi):
@@ -86,6 +91,19 @@ def below_top(m):
     return m & ~topmost(m)
 
 
+def frame_of(src, color, lo, hi, reach=5):
+    """めがねの縁だけを残す（y が lo 以上 hi 未満で、縁の色とそのすぐそばの線）。
+    レンズの中に描かれた目を残すと、大喜びの顔の上に開いた目が出るため"""
+    rgb = np.array([int(color[i:i + 2], 16) for i in (1, 3, 5)])
+
+    def f(m):
+        img = np.asarray(Image.open(src).convert("RGB")).astype(int)
+        near = np.abs(img - rgb).sum(-1) < 60
+        keep = ndimage.binary_dilation(near, iterations=reach)
+        return rows(lo, hi)(m & keep)
+    return f
+
+
 # 名前: (フォルダ, 元画像, 切り分け, 色, 位置合わせの素体, 線をそろえるか, ごみの大きさ, 塗り替え)
 JOBS = {}
 
@@ -122,8 +140,19 @@ for pose, src in [("wave", G / "r01_wan_wave.jpg"), ("banzai", G / "r02_wan_banz
 job("wan", "wan_wave_nobandana", G / "r10_wan_wave_nobandana.jpg", WAN, base=WAN_BASE)
 
 # 服（テーマごと）。名前は「種類_テーマ_部位_ポーズ」。下・足・頭・首・手は2つのポーズで同じ絵を使う
-job("street", "av_street_top_std", P / "b01_avatar_male_parka.png", PARKA)
-job("street", "av_street_top_joy", P / "j01_avatar_male_joy_parka.png", PARKA)
+# ストリートは 2026-11-05 に描き直した（パーカーを大きめに、矢印を太く。前の版は b01・j01 と PARKA の色）。
+# 靴は元より大きく描かれたので、shift_part.py で靴底を素体の足元にそろえたものを使う
+job("street", "av_street_head", P / "o07_avatar_street.png", STREET, cut=rows(0, 285))
+job("street", "av_street_top_std", P / "o07_avatar_street.png", STREET, cut=rows(285, 612))
+job("street", "av_street_top_joy", P / "j06_avatar_male_joy_street.png", STREET)
+job("street", "av_street_feet", P / "o07_avatar_street_feet.png", STREET)
+job("street", "wan_street_head", P / "w06_wan_street.png", WAN_STREET, base=WAN_BASE)
+job("fuwari", "av_fuwari_face", P / "o08_avatar_korea.png", FUWARI,
+    cut=frame_of(G / "o08c_avatar_korea.jpg", "#B5ABA0", 200, 290), line=False, blob=30)
+job("fuwari", "av_fuwari_top_std", P / "o08_avatar_korea.png", FUWARI, cut=rows(290, 584))
+job("fuwari", "av_fuwari_top_joy", P / "j07_avatar_male_joy_korea.png", FUWARI)
+job("fuwari", "av_fuwari_bottom", P / "o08_avatar_korea.png", FUWARI, cut=bottom_rows(584, 810))
+job("fuwari", "wan_fuwari_neck", P / "w07_wan_korea.png", WAN_FUWARI, base=WAN_BASE)
 job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=rows(0, 330))
 job("gyaru", "av_gyaru_top_std", P / "o01_avatar_gyaru.png", GYARU, cut=rows(330, 780))
 job("gyaru", "av_gyaru_top_joy", P / "j02_avatar_male_joy_gyaru_vest.png", GYARU)
