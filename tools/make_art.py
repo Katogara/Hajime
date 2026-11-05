@@ -49,6 +49,8 @@ WAN_FUWARI = [L, "#B9A8DC", "#B5ABA0", "#FEF7ED"]
 WAN_XMAS = [L, "#B5814A", "#2E7D4F", "#C8283C", "#E8B931"]
 OUCHI = [L, "#D3A6AE", "#B9B7B2", "#F1C7AE"]
 WAN_OUCHI = [L, "#D3A6AE", "#B9B7B2"]
+KISSA = [L, "#6CBF52", "#F3E3A0", "#E6CF7A"]
+WAN_KISSA = [L, "#C8283C", "#6CBF52"]
 
 
 def rows(lo, hi):
@@ -182,6 +184,12 @@ job("ouchi", "av_ouchi_top_joy", P / "j08_avatar_male_joy_ouchi.png", OUCHI)
 job("ouchi", "av_ouchi_bottom", P / "o09_avatar_ouchi_region.png", OUCHI, cut=bottom_rows(572, 802))
 job("ouchi", "av_ouchi_feet", P / "o09_avatar_ouchi_feet.png", OUCHI)
 job("ouchi", "wan_ouchi_head", P / "w09_wan_ouchi.png", WAN_OUCHI, base=WAN_BASE)
+# レトロ喫茶（2026-11-05）。判定で手に持つクリームソーダを外し、丸いグラスはベストの胸のワッペンにした。
+# スラックスは素体のズボンと色が近く差で取れないので、region の絵から切る
+job("kissa", "av_kissa_top_std", P / "o10_avatar_kissa.png", KISSA)
+job("kissa", "av_kissa_top_joy", P / "j09_avatar_male_joy_kissa.png", KISSA)
+job("kissa", "av_kissa_bottom", P / "o10_avatar_kissa_region.png", KISSA, cut=bottom_rows(532, 805))
+job("kissa", "wan_kissa_head", P / "w10_wan_kissa.png", WAN_KISSA, base=WAN_BASE)
 job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=rows(0, 330))
 job("gyaru", "av_gyaru_top_std", P / "o01_avatar_gyaru.png", GYARU, cut=rows(330, 780))
 job("gyaru", "av_gyaru_top_joy", P / "j02_avatar_male_joy_gyaru_vest.png", GYARU)
