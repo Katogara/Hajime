@@ -486,6 +486,24 @@ final class CostumeTests: XCTestCase {
         XCTAssertFalse(catalog.themes(for: .wan).isEmpty)
     }
 
+    /// きせかえの帯は、タイルで切れた名前を省略せずに出す。どの品・セットでも名前が引けること
+    func testTryOnCaptionShowsFullNames() {
+        for theme in catalog.themes {
+            for item in theme.items {
+                let caption = TryOnCaption(.piece(theme.character, item.part, theme: theme.id), catalog: catalog)
+                XCTAssertEqual(caption.name, item.name)
+                XCTAssertEqual(caption.detail, "\(theme.name)・\(item.part.label)")
+            }
+            let set = TryOnCaption(.set(theme.character, theme: theme.id), catalog: catalog)
+            XCTAssertEqual(set.name, "\(theme.name)のセット")
+            XCTAssertFalse(set.detail.isEmpty)
+        }
+        XCTAssertEqual(TryOnCaption(.piece(.avatar, .top, theme: nil), catalog: catalog).name, "いつもの服")
+        XCTAssertEqual(TryOnCaption(.piece(.wan, .head, theme: nil), catalog: catalog).name, "なし")
+        XCTAssertEqual(TryOnCaption(.piece(.avatar, .top, theme: "no-such-theme"), catalog: catalog).name, "いつもの服")
+        XCTAssertEqual(TryOnCaption(.hair(.bob), catalog: catalog).name, HairStyle.bob.label)
+    }
+
     func testProductIDsAreUnique() {
         let ids = catalog.themes.flatMap { theme in theme.items.map { theme.productID($0.part) } }
         XCTAssertEqual(ids.count, Set(ids).count)
