@@ -225,12 +225,15 @@ private struct TaskListView: View {
                 pair
             }
         } else {
+            // 行の高さは 2 人の絵 (140pt) で決まり、下にそろえたレベルの枠の上が空くので、行ごと上げて
+            // 2 人の頭を見出しの右の空きに食い込ませる (副題は右端が約 220pt、2 人は約 250pt から右)。
+            // 文字を大きくすると副題が右へ伸びるので、そのときは絵の上の透明な余白の分だけ上げる
             HStack(alignment: .bottom, spacing: 8) {
                 LevelColumn(progress: model.level)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 pair
             }
-            .frame(minHeight: 120, alignment: .bottom)
+            .padding(.top, dynamicTypeSize > .large ? -22 : -48)
         }
     }
 
