@@ -147,6 +147,19 @@
       ]
     },
     {
+      "id": "y2k", "character": "avatar", "shelf": "fashion", "name": "Y2K", "note": "きらっと懐かしく", "order": 18,
+      "items": [
+        {"part": "face", "name": "ピンクの楕円サングラス", "art": {"all": "av_y2k_face"}},
+        {"part": "feet", "name": "ぷっくり厚底スニーカー", "art": {"all": "av_y2k_feet"}}
+      ]
+    },
+    {
+      "id": "kotori", "character": "avatar", "shelf": "fashion", "name": "森の小鳥", "note": "ぬくもりを着て", "order": 19,
+      "items": [
+        {"part": "top", "name": "小鳥もようのスウェット", "art": {"std": "av_kotori_top_std", "joy": "av_kotori_top_joy"}}
+      ]
+    },
+    {
       "id": "newyear", "character": "avatar", "shelf": "season", "name": "正月", "month": 1, "order": 1,
       "items": [
         {"part": "neck", "name": "水引柄のスカーフ", "art": {"all": "av_newyear_neck"}},
@@ -260,6 +273,18 @@
       "id": "tech", "character": "wan", "shelf": "fashion", "name": "テック", "note": "未来っぽく身軽に", "order": 17,
       "items": [
         {"part": "head", "name": "ネオンのヘッドホン", "art": {"all": "wan_tech_head"}}
+      ]
+    },
+    {
+      "id": "y2k", "character": "wan", "shelf": "fashion", "name": "Y2K", "note": "きらっと懐かしく", "order": 18,
+      "items": [
+        {"part": "head", "name": "ちょうちょのヘアクリップ", "art": {"all": "wan_y2k_head"}}
+      ]
+    },
+    {
+      "id": "kotori", "character": "wan", "shelf": "fashion", "name": "森の小鳥", "note": "ぬくもりを着て", "order": 19,
+      "items": [
+        {"part": "neck", "name": "小鳥もようのスカーフ", "art": {"all": "wan_kotori_neck"}}
       ]
     },
     {
