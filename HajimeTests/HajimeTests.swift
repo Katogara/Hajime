@@ -568,6 +568,18 @@ final class CostumeTests: XCTestCase {
         XCTAssertTrue(joy.contains("av_street_top_joy_fill"))
     }
 
+    func testGrippedHandItemSitsBehindHands() {
+        var wardrobe = Wardrobe()
+        wardrobe.avatar[.hand] = "newyear"
+        let look = AvatarLook.initial(for: .male)
+        let names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        // 羽子板は素体の手より後ろに描き、手で握って見せる
+        XCTAssertEqual(names.filter { $0 == "av_newyear_hand_line" }.count, 1)
+        XCTAssertLessThan(names.firstIndex(of: "av_newyear_hand_line")!, names.firstIndex(of: "av_std_hands_fill")!)
+        let joy = FigureRig.avatar(look, pose: .joy, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        XCTAssertFalse(joy.contains("av_newyear_hand_fill"))
+    }
+
     func testHatClipsHairOnlyWhenWorn() {
         let look = AvatarLook.initial(for: .female)
         let bare = FigureRig.avatar(look, pose: .normal, wardrobe: Wardrobe(), catalog: catalog)
