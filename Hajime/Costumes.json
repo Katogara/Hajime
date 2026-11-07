@@ -110,10 +110,24 @@
       ]
     },
     {
+      "id": "pop", "character": "avatar", "shelf": "fashion", "name": "カラフルポップ", "note": "花の顔でにっこり", "order": 13,
+      "items": [
+        {"part": "head", "name": "にこにこ花のヘアピン", "art": {"all": "av_pop_head"}},
+        {"part": "top", "name": "にこにこ花のTシャツ", "art": {"std": "av_pop_top_std", "joy": "av_pop_top_joy"}}
+      ]
+    },
+    {
+      "id": "rock", "character": "avatar", "shelf": "fashion", "name": "ロック", "note": "ステージに立つ気分で", "order": 14,
+      "items": [
+        {"part": "face", "name": "四角いサングラス", "art": {"all": "av_rock_face"}},
+        {"part": "top", "name": "ライダースジャケット", "art": {"std": "av_rock_top_std", "joy": "av_rock_top_joy"}}
+      ]
+    },
+    {
       "id": "newyear", "character": "avatar", "shelf": "season", "name": "正月", "month": 1, "order": 1,
       "items": [
         {"part": "neck", "name": "水引柄のスカーフ", "art": {"all": "av_newyear_neck"}},
-        {"part": "hand", "name": "羽子板", "art": {"all": "av_newyear_hand"}}
+        {"part": "hand", "name": "羽子板", "art": {"all": "av_newyear_hand"}, "grip": true}
       ]
     },
     {
@@ -193,6 +207,18 @@
       "id": "trad", "character": "wan", "shelf": "fashion", "name": "雨の日トラッド", "note": "雨の日もゆったり", "order": 12,
       "items": [
         {"part": "head", "name": "チェックのハンチング", "art": {"all": "wan_trad_head"}}
+      ]
+    },
+    {
+      "id": "pop", "character": "wan", "shelf": "fashion", "name": "カラフルポップ", "note": "花の顔でにっこり", "order": 13,
+      "items": [
+        {"part": "head", "name": "にこにこ花のヘアピン", "art": {"all": "wan_pop_head"}}
+      ]
+    },
+    {
+      "id": "rock", "character": "wan", "shelf": "fashion", "name": "ロック", "note": "ステージに立つ気分で", "order": 14,
+      "items": [
+        {"part": "neck", "name": "スタッズの首輪", "art": {"all": "wan_rock_neck"}}
       ]
     },
     {

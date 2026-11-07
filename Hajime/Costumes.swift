@@ -79,6 +79,8 @@ struct CostumeItem: Codable, Equatable {
     /// 帽子: [y, w]。髪は高さ y (1024 のキャンバス) より上を描かず、その高さではつばの幅 (真ん中から左右に w) に収め、
     /// 下へ行くほど広げる。ボブやマッシュが帽子の外にはみ出さず、帽子の下から広がって見えるようにする
     var hairLine: [Double]?
+    /// 手の小物: 素体の手より後ろに描き、手で握っているように見せる (羽子板)。なければ手の前に描く (プレゼントの箱)
+    var grip: Bool?
 
     func art(for pose: String) -> String? {
         art[pose] ?? art["all"]
@@ -457,6 +459,9 @@ enum FigureRig {
         // 髪の色は塗りだけに付ける (こげ茶は絵の色のまま)。帽子をかぶっていれば、帽子の下から広がる形に切る
         layers += pair("av_hair_\(look.hair.rawValue)", tint: look.hairColor == .brown ? nil : look.hairColor.hex,
                        clip: worn(.head)?.hairClip)
+        // 手の小物は大喜びでは出さない。握る小物は手の後ろ、それ以外は全部の上に描く
+        let handItem = pose == .joy ? nil : worn(.hand)
+        if let item = handItem, item.grip == true, let art = item.art(for: p) { layers += pair(art) }
         layers += pair("av_\(p)_hands")
         for part in [CostumePart.feet, .bottom, .top] {
             if let item = worn(part), let art = item.art(for: p) {
@@ -469,7 +474,7 @@ enum FigureRig {
         for part in [CostumePart.neck, .face, .head] {
             if let art = worn(part)?.art(for: p) { layers += pair(art) }
         }
-        if pose != .joy, let art = worn(.hand)?.art(for: p) { layers += pair(art) }
+        if let item = handItem, item.grip != true, let art = item.art(for: p) { layers += pair(art) }
         return layers
     }
 
