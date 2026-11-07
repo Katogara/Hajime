@@ -433,6 +433,28 @@ job("tech", "av_tech_feet", P / "o19_avatar_tech_feet.png", TECH,
     cut=colors_of(G / "o19c_avatar_tech.jpg", ["#FEFEFE", "#35F3E9"], reach=6, tol=60))
 job("tech", "wan_tech_head", P / "w19_wan_tech.png", WAN_TECH, base=WAN_BASE,
     cut=lambda m: blobs([0])(colors_of(G / "w19_wan_tech.jpg", ["#979694", "#D4FF22"], reach=5, tol=60)(m)))
+# Y2K と森の小鳥 (仕様書の北欧。ID は kotori。店の名前に地域名を使わない) (2026-11-07、出す順は 10 か月目)。
+# Y2K: サングラスは透けない濃いピンクで少し大きく (デザイナー・マーケター)。濃いピンクは背景のマゼンタに近く取り出しで抜けたので、
+# o20c_avatar_y2k_face.png で縁の内側を #F29BC4 で塗った。厚底は -44px そろえた。蝶はワンのすけの頭のてっぺんへ移した。
+# 森の小鳥: ひよこに見える黄色い鳥 (ブランドディレクター・マーケター) をやめ、枝に止まった生成りの小鳥にした。
+# 白い鳥の影絵を青地に散らすと旧ツイッターの鳥に近く見える (ブランドディレクター) ので、飛ぶ姿は描かない。
+# スウェットは素体の青緑と色が近いので、region の絵から色で取る
+Y2K = [L, "#F29BC4", "#C9C9CF", "#FEFDFB", "#B499DC"]
+WAN_Y2K = [L, "#A2DAE7", "#B99BD6"]
+KOTORI = [L, "#5F7E9A", "#F1E9D2"]
+WAN_KOTORI = [L, "#5F7E9A", "#F1E9D2"]
+# 縁の明るいところは銀に、暗いところは線の色に塗ってある (ラベンダーの靴底の色に寄ってまだらになったため)
+job("y2k", "av_y2k_face", P / "o20c_avatar_y2k_face.png", [L, "#F29BC4", "#C9C9CF"], line=False, blob=30, clean=True)
+job("y2k", "av_y2k_feet", P / "o20_avatar_y2k_feet.png", Y2K)
+job("y2k", "wan_y2k_head", P / "w20c_wan_y2k.png", WAN_Y2K, base=WAN_BASE,
+    cut=lambda m: blobs([0])(colors_of(G / "w20c_wan_y2k.jpg", ["#A2DAE7", "#C9A3CC"], reach=5, tol=60)(m)))
+job("kotori", "av_kotori_top_std", P / "o21d_avatar_kotori_region.png", KOTORI,
+    cut=lambda m: blobs([0])(no_skin(smooth(colors_of(G / "o21d_avatar_kotori.jpg", ["#5F7E9A", "#F3EDCD"],
+                                                       then=rows(290, 560), reach=6, tol=60)), reach=4)(m)))
+job("kotori", "av_kotori_top_joy", P / "j19b_avatar_male_joy_kotori_region.png", KOTORI,
+    cut=lambda m: blobs([0])(no_skin(smooth(colors_of(G / "j19b_avatar_male_joy_kotori.jpg", ["#5F7E9A", "#F3EDCD"],
+                                                       then=rows(120, 570), reach=6, tol=60)), reach=4)(m)))
+job("kotori", "wan_kotori_neck", P / "w21d_wan_kotori.png", WAN_KOTORI, base=WAN_BASE)
 # ハートのサングラスの下に、ピンクの毛の切れ端が 2 つ浮いていた (デザイナーのチェック) ので、いちばん大きいかたまりだけ残す
 job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=lambda m: blobs([0])(rows(0, 330)(m)))
 job("gyaru", "av_gyaru_top_std", P / "o01_avatar_gyaru.png", GYARU, cut=rows(330, 780))
