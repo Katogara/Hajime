@@ -131,6 +131,22 @@
       ]
     },
     {
+      "id": "mode", "character": "avatar", "shelf": "fashion", "name": "モード", "note": "黒できりっと締める", "order": 16,
+      "items": [
+        {"part": "face", "name": "茶色の細いサングラス", "art": {"all": "av_mode_face"}},
+        {"part": "top", "name": "墨色のロングシャツ", "art": {"std": "av_mode_top_std", "joy": "av_mode_top_joy"}},
+        {"part": "feet", "name": "厚底ブーツ", "art": {"all": "av_mode_feet"}}
+      ]
+    },
+    {
+      "id": "tech", "character": "avatar", "shelf": "fashion", "name": "テック", "note": "未来っぽく身軽に", "order": 17,
+      "items": [
+        {"part": "face", "name": "水色のゴーグル", "art": {"all": "av_tech_face"}},
+        {"part": "top", "name": "ネオンジップのジャケット", "art": {"std": "av_tech_top_std", "joy": "av_tech_top_joy"}},
+        {"part": "feet", "name": "光るスニーカー", "art": {"all": "av_tech_feet"}}
+      ]
+    },
+    {
       "id": "newyear", "character": "avatar", "shelf": "season", "name": "正月", "month": 1, "order": 1,
       "items": [
         {"part": "neck", "name": "水引柄のスカーフ", "art": {"all": "av_newyear_neck"}},
@@ -232,6 +248,18 @@
       "id": "natural", "character": "wan", "shelf": "fashion", "name": "ナチュラル", "note": "さらっと軽く", "order": 15,
       "items": [
         {"part": "neck", "name": "麻のスカーフ", "art": {"all": "wan_natural_neck"}}
+      ]
+    },
+    {
+      "id": "mode", "character": "wan", "shelf": "fashion", "name": "モード", "note": "黒できりっと締める", "order": 16,
+      "items": [
+        {"part": "neck", "name": "グレーのハイネック襟", "art": {"all": "wan_mode_neck"}}
+      ]
+    },
+    {
+      "id": "tech", "character": "wan", "shelf": "fashion", "name": "テック", "note": "未来っぽく身軽に", "order": 17,
+      "items": [
+        {"part": "head", "name": "ネオンのヘッドホン", "art": {"all": "wan_tech_head"}}
       ]
     },
     {
