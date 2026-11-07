@@ -406,6 +406,33 @@ job("natural", "av_natural_top_std", P / "o17c_avatar_natural.png", NATURAL, cut
 job("natural", "av_natural_top_joy", P / "j16_avatar_male_joy_natural.png", NATURAL)
 job("natural", "av_natural_feet", P / "o17_avatar_natural_feet.png", SABOT)
 job("natural", "wan_natural_neck", P / "w17_wan_natural.png", WAN_NATURAL, base=WAN_BASE)
+# モードとテック (2026-11-07、出す順は 9 か月目)。判定は 3 人とも 2 つとも「直して進める」。
+# モード: シャツは墨色で襟なし (人民服に見せない。ブランドディレクター)、サングラスのレンズは透けない茶色 (黒は怖い・目が透けると
+# 大喜びで開いた目が出る、の両方を避ける)、ブーツは墨色の甲に明るい灰色の厚底 (3 人)。レンズの中に描かれた目は
+# o18c_avatar_mode_face.png でレンズの色に塗りつぶしてある。ブーツは厚底のぶん大きいので -34px そろえた。
+# テック: 上着は青みの灰色 (モードの墨色と見分ける。デザイナー)、ゴーグルは透けない水色、靴は光のにじみをやめて靴底を水色。
+# 上着と靴は素体の服と色が近く差で取れないので、region の絵から色で取る
+MODE = [L, "#45454A", "#7E5232", "#B9BBBD"]
+TECH = [L, "#5C6672", "#C8F03C", "#8FDDEB", "#A9A7A3", "#FEFDFB", "#35E6E8"]
+WAN_MODE = [L, "#646466"]
+WAN_TECH = [L, "#989896", "#D2F53C"]
+job("mode", "av_mode_face", P / "o18c_avatar_mode_face.png", MODE, line=False, blob=30)
+job("mode", "av_mode_top_std", P / "o18c_avatar_mode.png", MODE, cut=rows(290, 700))
+job("mode", "av_mode_top_joy", P / "j17_avatar_male_joy_mode.png", MODE)
+job("mode", "av_mode_feet", P / "o18_avatar_mode_feet.png", MODE)
+job("mode", "wan_mode_neck", P / "w18_wan_mode.png", WAN_MODE, base=WAN_BASE)
+job("tech", "av_tech_face", P / "o19c_avatar_tech_face.png", TECH, line=False, blob=30,
+    cut=lambda m: blobs([0])(colors_of(G / "o19c_avatar_tech.jpg", ["#AAA7A2", "#60CAE8"], reach=6, tol=60)(m)))
+job("tech", "av_tech_top_std", P / "o19c_avatar_tech_region.png", TECH,
+    cut=lambda m: blobs([0])(no_skin(smooth(colors_of(G / "o19c_avatar_tech.jpg", ["#62828F", "#CFE870"],
+                                                       then=rows(290, 545), reach=6, tol=50)), reach=4)(m)))
+job("tech", "av_tech_top_joy", P / "j18_avatar_male_joy_tech_region.png", TECH,
+    cut=lambda m: blobs([0])(no_skin(smooth(colors_of(G / "j18_avatar_male_joy_tech.jpg", ["#6C7584", "#C7EF5A"],
+                                                       then=rows(120, 560), reach=6, tol=50)), reach=4)(m)))
+job("tech", "av_tech_feet", P / "o19_avatar_tech_feet.png", TECH,
+    cut=colors_of(G / "o19c_avatar_tech.jpg", ["#FEFEFE", "#35F3E9"], reach=6, tol=60))
+job("tech", "wan_tech_head", P / "w19_wan_tech.png", WAN_TECH, base=WAN_BASE,
+    cut=lambda m: blobs([0])(colors_of(G / "w19_wan_tech.jpg", ["#979694", "#D4FF22"], reach=5, tol=60)(m)))
 # ハートのサングラスの下に、ピンクの毛の切れ端が 2 つ浮いていた (デザイナーのチェック) ので、いちばん大きいかたまりだけ残す
 job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=lambda m: blobs([0])(rows(0, 330)(m)))
 job("gyaru", "av_gyaru_top_std", P / "o01_avatar_gyaru.png", GYARU, cut=rows(330, 780))
