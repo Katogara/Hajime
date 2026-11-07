@@ -113,6 +113,42 @@ def frame_of(src, color, lo, hi, reach=5):
     return f
 
 
+def no_skin(then=None, reach=9, tol=60):
+    """手に持つ小物から、握っている指 (肌の色とそのまわりの線) を除く。
+    小物はアプリで素体の手の前に描くので、指を除くと、素体の手が小物の後ろからのぞく形になる。
+    肌に近い色 (羽子板の金の地など) の小物には使えない。
+    2026-11-07、プレゼントの箱に手の切れ端が残っていた (デザイナーのチェック) ので足した"""
+    skins = [np.array([int(c[i:i + 2], 16) for i in (1, 3, 5)]) for c in ["#F1C7AE", "#EFCAAD", "#F4D3BE", "#E8B9A0"]]
+
+    def f(m):
+        m = then(m) if then else m
+        img = _current["img"][..., :3].astype(int)
+        skin = np.zeros(m.shape, bool)
+        for rgb in skins:
+            skin |= np.abs(img - rgb).sum(-1) < tol
+        skin = ndimage.binary_opening(skin & m, iterations=1)
+        keep = m & ~ndimage.binary_dilation(skin, iterations=reach)
+        lab, n = ndimage.label(keep)
+        if n:
+            sizes = ndimage.sum(keep, lab, range(1, n + 1))
+            keep &= np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s >= 150])
+        return keep
+    return f
+
+
+def smooth(then=None, r=4):
+    """輪郭のギザギザをならす (半径 r の円で閉じてから開く)。
+    色で取った部品 (大喜びのアメカジの青い袖) は、外側の線がなく、ふちが細かく欠けるため (2026-11-07)"""
+    y, x = np.ogrid[-r:r + 1, -r:r + 1]
+    disk = x * x + y * y <= r * r
+
+    def f(m):
+        m = then(m) if then else m
+        m = ndimage.binary_closing(np.pad(m, r + 1), disk)[r + 1:-r - 1, r + 1:-r - 1]
+        return ndimage.binary_opening(m, disk) & (_current["img"][..., 3] > 128)
+    return f
+
+
 def colors_of(src, colors, then=None, reach=5, tol=70):
     """決まった色とそのすぐそばの線だけを残す。ワンのすけの首の小物に毛の色がまじって取れたとき、
     ほかのポーズで小物を動かすと毛の色がずれて見えるので外す"""
@@ -333,7 +369,8 @@ WAN_AMEKAJI = [L, "#5B80B0", "#A4603B"]
 WAN_TRAD = [L, "#2E6B50", "#1F2A44"]
 job("amekaji", "av_amekaji_top_std", P / "o13_avatar_amekaji_region.png", AMEKAJI, cut=bottom_rows(305, 548))
 job("amekaji", "av_amekaji_top_joy", P / "j12_avatar_male_joy_amekaji_region.png", AMEKAJI,
-    cut=colors_of(G / "j12_avatar_male_joy_amekaji.jpg", ["#5479AD", "#904240"], then=rows(150, 545), reach=6, tol=45))
+    cut=lambda m: blobs([0])(no_skin(smooth(colors_of(G / "j12_avatar_male_joy_amekaji.jpg", ["#5479AD", "#904240"],
+                                                           then=rows(150, 545), reach=6, tol=45)), reach=4)(m)))
 job("amekaji", "av_amekaji_bottom", P / "o13_avatar_amekaji_region.png", AMEKAJI, cut=bottom_rows(548, 805))
 # 靴は元より大きく描かれたので、shift_part.py で靴底を素体の足元にそろえたもの (アメカジ -17px、トラッド -18px)
 job("amekaji", "av_amekaji_feet", P / "o13_avatar_amekaji_feet.png", AMEKAJI)
@@ -343,6 +380,22 @@ job("trad", "av_trad_top_std", P / "o14_avatar_trad.png", TRAD, cut=rows(300, 60
 job("trad", "av_trad_top_joy", P / "j13_avatar_male_joy_trad.png", TRAD)
 job("trad", "av_trad_feet", P / "o14_avatar_trad_feet.png", TRAD)
 job("trad", "wan_trad_head", P / "w14_wan_trad.png", WAN_TRAD, base=WAN_BASE)
+# カラフルポップ (仕様書の原宿。ID は pop) とロック (2026-11-07、出す順は 7 か月目)。判定は 2 つとも「直して進める」。
+# ポップ: よく知られたスマイルマークに近い黄色い丸の顔をやめ、黄色い花の顔 (5 枚の丸い花びら、丸い点の目) にした。
+# T シャツは紫と黄の 2 色で、胸の柄は花の顔 1 つ。下絵のズボンは茶色に変わったので、上は高さで切る。
+# ロック: ライダースは墨色と銀の 2 色、ジッパーは銀の太い線 1 本、前を閉じる。首元の V の肌を残すため肌の色も入れる
+POP = [L, "#BA9DDF", "#F3D951"]
+ROCK = [L, "#3F3F41", "#A8A8A6", "#F0C2AB", "#111111"]
+WAN_POP = [L, "#F8DF45", "#F0A242"]
+WAN_ROCK = [L, "#2A251F", "#AEAFAA"]
+job("pop", "av_pop_head", P / "o15_avatar_harajuku.png", POP, cut=rows(0, 300))
+job("pop", "av_pop_top_std", P / "o15_avatar_harajuku.png", POP, cut=rows(300, 588))
+job("pop", "av_pop_top_joy", P / "j14_avatar_male_joy_harajuku.png", POP)
+job("pop", "wan_pop_head", P / "w15_wan_harajuku.png", WAN_POP, base=WAN_BASE)
+job("rock", "av_rock_face", P / "o16_avatar_rock.png", ROCK, cut=rows(0, 290), line=False, blob=30)
+job("rock", "av_rock_top_std", P / "o16_avatar_rock.png", ROCK, cut=rows(290, 560))
+job("rock", "av_rock_top_joy", P / "j15_avatar_male_joy_rock.png", ROCK)
+job("rock", "wan_rock_neck", P / "w16_wan_rock.png", WAN_ROCK, base=WAN_BASE)
 # ハートのサングラスの下に、ピンクの毛の切れ端が 2 つ浮いていた (デザイナーのチェック) ので、いちばん大きいかたまりだけ残す
 job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=lambda m: blobs([0])(rows(0, 330)(m)))
 job("gyaru", "av_gyaru_top_std", P / "o01_avatar_gyaru.png", GYARU, cut=rows(330, 780))
@@ -366,11 +419,15 @@ job("consa", "av_consa_bottom", P / "o04_avatar_consa.png", CONSA, cut=bottom_ro
 job("consa", "av_consa_feet", P / "o04_avatar_consa.png", CONSA, cut=rows(805, 1024))
 job("consa", "wan_consa_neck", P / "w05_wan_consa.png", WAN_CONSA, base=WAN_BASE)
 job("newyear", "av_newyear_neck", P / "o05_avatar_newyear.png", NEWYEAR, cut=blobs([0]))
-job("newyear", "av_newyear_hand", P / "o05_avatar_newyear.png", NEWYEAR, cut=blobs([1, 2, 3]))
+# 羽子板は、手ごと描いた絵から切ると指の切れ端が残り、細かい絵柄 (鶴) がまだらになった (デザイナーのチェック)。
+# 金の地は肌の色に近く、色では指と分けられないので、2026-11-07 に Gemini で羽子板だけを描き直し (gen/n01_hagoita)、
+# 元の羽子板と同じ向き・長さ・先の位置に合わせて置いた絵 (parts3/n01_hagoita.png) を使う。持ち手のこげ茶は線の色になる
+HAGOITA = [L, "#D4AE57", "#C7283C", "#3F8F4E"]
+job("newyear", "av_newyear_hand", P / "n01_hagoita.png", HAGOITA, clean=False)
 job("newyear", "wan_newyear_head", P / "w01_wan_newyear.png", WAN_NEWYEAR, base=WAN_BASE, cut=topmost)
 job("newyear", "wan_newyear_neck", P / "w01_wan_newyear.png", WAN_NEWYEAR, base=WAN_BASE, cut=below_top)
 job("xmas", "av_xmas_head", P / "o06_avatar_xmas.png", XMAS, cut=rows(0, 330))
-job("xmas", "av_xmas_hand", P / "o06_avatar_xmas.png", XMAS, cut=rows(330, 1024))
+job("xmas", "av_xmas_hand", P / "o06_avatar_xmas.png", XMAS, cut=no_skin(rows(330, 1024)), clean=False)
 
 
 def cut_png(src, cut, tmp):
