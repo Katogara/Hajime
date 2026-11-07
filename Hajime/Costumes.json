@@ -160,6 +160,14 @@
       ]
     },
     {
+      "id": "preppy", "character": "avatar", "shelf": "fashion", "name": "プレッピー", "note": "きちんと、やわらかく", "order": 20,
+      "items": [
+        {"part": "top", "name": "ひし形柄のニットベスト", "over": true, "art": {"std": "av_preppy_top_std", "joy": "av_preppy_top_joy"}},
+        {"part": "bottom", "name": "キャメルのロングプリーツ", "art": {"all": "av_preppy_bottom"}},
+        {"part": "feet", "name": "えんじのローファー", "art": {"all": "av_preppy_feet"}}
+      ]
+    },
+    {
       "id": "newyear", "character": "avatar", "shelf": "season", "name": "正月", "month": 1, "order": 1,
       "items": [
         {"part": "neck", "name": "水引柄のスカーフ", "art": {"all": "av_newyear_neck"}},
@@ -285,6 +293,12 @@
       "id": "kotori", "character": "wan", "shelf": "fashion", "name": "森の小鳥", "note": "ぬくもりを着て", "order": 19,
       "items": [
         {"part": "neck", "name": "小鳥もようのスカーフ", "art": {"all": "wan_kotori_neck"}}
+      ]
+    },
+    {
+      "id": "preppy", "character": "wan", "shelf": "fashion", "name": "プレッピー", "note": "きちんと、やわらかく", "order": 20,
+      "items": [
+        {"part": "neck", "name": "ひし形柄のネクタイ", "art": {"all": "wan_preppy_neck"}}
       ]
     },
     {
