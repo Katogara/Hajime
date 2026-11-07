@@ -455,6 +455,17 @@ job("kotori", "av_kotori_top_joy", P / "j19b_avatar_male_joy_kotori_region.png",
     cut=lambda m: blobs([0])(no_skin(smooth(colors_of(G / "j19b_avatar_male_joy_kotori.jpg", ["#5F7E9A", "#F3EDCD"],
                                                        then=rows(120, 570), reach=6, tol=60)), reach=4)(m)))
 job("kotori", "wan_kotori_neck", P / "w21d_wan_kotori.png", WAN_KOTORI, base=WAN_BASE)
+# プレッピー (2026-11-07、出す順は 11 か月目)。判定は 2 人が「直して進める」、マーケターは「そのまま」。紺のベスト・灰色のプリーツ・
+# ローファーは日本の女子高生の制服に重なり、紺と金の斜めじまのネクタイは大学や連隊のネクタイの典型 (ブランドディレクター) なので、
+# ベストは生成りに緑のひし形、スカートはキャメルのふくらはぎ丈でひだを減らし、ネクタイはベストとそろいのひし形にした。
+# ローファーは茶色が線に紛れる (デザイナー) のでえんじ。素体には脚の絵がないので、スカートの部品に足首の肌を含める
+PREPPY = [L, "#F1E9D2", "#3E8A3A", "#CE9C69", "#F1C7AE", "#7A2E35"]
+WAN_PREPPY = [L, "#F1E9D2", "#3E8A3A"]
+job("preppy", "av_preppy_top_std", P / "o22c_avatar_preppy.png", PREPPY, cut=rows(290, 528))
+job("preppy", "av_preppy_top_joy", P / "j20_avatar_male_joy_preppy.png", PREPPY)
+job("preppy", "av_preppy_bottom", P / "o22c_avatar_preppy.png", PREPPY, cut=bottom_rows(528, 812))
+job("preppy", "av_preppy_feet", P / "o22c_avatar_preppy.png", PREPPY, cut=rows(800, 1024))
+job("preppy", "wan_preppy_neck", P / "w22c_wan_preppy.png", WAN_PREPPY, base=WAN_BASE, cut=blobs([0]))
 # ハートのサングラスの下に、ピンクの毛の切れ端が 2 つ浮いていた (デザイナーのチェック) ので、いちばん大きいかたまりだけ残す
 job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=lambda m: blobs([0])(rows(0, 330)(m)))
 job("gyaru", "av_gyaru_top_std", P / "o01_avatar_gyaru.png", GYARU, cut=rows(330, 780))
