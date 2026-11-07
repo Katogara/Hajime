@@ -396,6 +396,16 @@ job("rock", "av_rock_face", P / "o16_avatar_rock.png", ROCK, cut=rows(0, 290), l
 job("rock", "av_rock_top_std", P / "o16_avatar_rock.png", ROCK, cut=rows(290, 560))
 job("rock", "av_rock_top_joy", P / "j15_avatar_male_joy_rock.png", ROCK)
 job("rock", "wan_rock_neck", P / "w16_wan_rock.png", WAN_ROCK, base=WAN_BASE)
+# ナチュラル (2026-11-07、出す順は 8 か月目)。判定は 3 人とも「直して進める」。シャツは立ち襟と胸ポケットで軍服や作業着に
+# 見えるので開襟にしてポケットをなくし (ブランドディレクター)、緑を少し鮮やかに、ボタンは糸なし (デザイナー)。
+# スカーフは房をなくして短く (マーケター・デザイナー)。サボは描き直さず、靴底を -13px そろえた。首元の V の肌を残すため肌の色も入れる
+NATURAL = [L, "#93AE6B", "#D3A16E", "#F1C9B0"]
+SABOT = [L, "#D29254", "#8A5A3A"]
+WAN_NATURAL = [L, "#99B06A"]
+job("natural", "av_natural_top_std", P / "o17c_avatar_natural.png", NATURAL, cut=rows(290, 600))
+job("natural", "av_natural_top_joy", P / "j16_avatar_male_joy_natural.png", NATURAL)
+job("natural", "av_natural_feet", P / "o17_avatar_natural_feet.png", SABOT)
+job("natural", "wan_natural_neck", P / "w17_wan_natural.png", WAN_NATURAL, base=WAN_BASE)
 # ハートのサングラスの下に、ピンクの毛の切れ端が 2 つ浮いていた (デザイナーのチェック) ので、いちばん大きいかたまりだけ残す
 job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=lambda m: blobs([0])(rows(0, 330)(m)))
 job("gyaru", "av_gyaru_top_std", P / "o01_avatar_gyaru.png", GYARU, cut=rows(330, 780))
