@@ -124,6 +124,13 @@
       ]
     },
     {
+      "id": "natural", "character": "avatar", "shelf": "fashion", "name": "ナチュラル", "note": "さらっと軽く", "order": 15,
+      "items": [
+        {"part": "top", "name": "リネンシャツ", "art": {"std": "av_natural_top_std", "joy": "av_natural_top_joy"}},
+        {"part": "feet", "name": "木のサボ", "art": {"all": "av_natural_feet"}}
+      ]
+    },
+    {
       "id": "newyear", "character": "avatar", "shelf": "season", "name": "正月", "month": 1, "order": 1,
       "items": [
         {"part": "neck", "name": "水引柄のスカーフ", "art": {"all": "av_newyear_neck"}},
@@ -219,6 +226,12 @@
       "id": "rock", "character": "wan", "shelf": "fashion", "name": "ロック", "note": "ステージに立つ気分で", "order": 14,
       "items": [
         {"part": "neck", "name": "スタッズの首輪", "art": {"all": "wan_rock_neck"}}
+      ]
+    },
+    {
+      "id": "natural", "character": "wan", "shelf": "fashion", "name": "ナチュラル", "note": "さらっと軽く", "order": 15,
+      "items": [
+        {"part": "neck", "name": "麻のスカーフ", "art": {"all": "wan_natural_neck"}}
       ]
     },
     {
