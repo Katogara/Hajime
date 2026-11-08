@@ -14,6 +14,8 @@ struct ClosetView: View {
     @State private var edited: Wardrobe?
     /// 最後に押したタイル。台座の下の帯に、その名前を省略せずに出す
     @State private var pick: TryOnPick?
+    /// 上の台座を大喜びのポーズで見せる
+    @State private var joyPose = false
 
     private let catalog = CostumeCatalog.shared
     private let pieceColumns = [GridItem(.adaptive(minimum: 76), spacing: 10, alignment: .top)]
@@ -52,6 +54,7 @@ struct ClosetView: View {
                 .padding(16)
             }
         }
+        .environment(\.figureRendersAsync, true)
         .popBackground()
         .navigationTitle("きせかえ")
         .navigationBarTitleDisplayMode(.inline)
@@ -80,19 +83,30 @@ struct ClosetView: View {
     }
 
     /// 上の台座。アバター (選んでいれば) とワンのすけに、試着中の服を着せて並べる。
-    /// 一覧と同じふだんの姿 (アバターは「ふつう」、ワンのすけは手を振る) で見せ、ポーズは切り替えない
-    /// (大喜びは褒める画面だけで見せる。切り替えのボタンは、今のポーズの説明に読まれたため外した)
+    /// ふだんは一覧と同じ姿 (アバターは「ふつう」、ワンのすけは手を振る) で見せる。
+    /// 右上の切り替えで大喜び (ワンのすけはばんざい) にもできる。2026-11-01 に一度外したが、
+    /// 大喜びの服の絵を確かめる手段がないので、2026-11-08 にユーザーの指示で戻した
     private var stage: some View {
         VStack(spacing: 8) {
             HStack(alignment: .bottom, spacing: -10) {
                 if let avatar = model.avatar {
-                    AvatarImage(figure: avatar, pose: .normal)
+                    AvatarImage(figure: avatar, pose: joyPose ? .joy : .normal)
                         .frame(width: 170, height: 170)
                 }
-                WanImage(pose: .wave, facing: model.avatar == nil ? nil : .left)
+                WanImage(pose: joyPose ? .banzai : .wave, facing: model.avatar == nil ? nil : .left)
                     .frame(width: model.avatar == nil ? 170 : 110, height: model.avatar == nil ? 170 : 110)
             }
             .environment(\.dressing, Dressing(look: model.look, wardrobe: trying))
+            .frame(maxWidth: .infinity)
+            .overlay(alignment: .topTrailing) {
+                Picker("ポーズ", selection: $joyPose) {
+                    Text("ふつう").tag(false)
+                    Text("大喜び").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .fixedSize()
+                .padding(.trailing, 12)
+            }
             captionBand
         }
         .padding(.top, 12)
@@ -176,10 +190,10 @@ struct ClosetView: View {
         }
     }
 
-    /// 2 点以上あるテーマは、ひとそろいを一度に試着できる (ほかの部位は脱ぐ)。先頭の「いつもの」で全部脱ぐ
+    /// 2 点以上あるテーマ (setWith で借りるものも) は、ひとそろいを一度に試着できる (ほかの部位は脱ぐ)。先頭の「いつもの」で全部脱ぐ
     @ViewBuilder
     private var setSection: some View {
-        let sets = catalog.themes(for: character).filter { $0.items.count >= 2 }
+        let sets = catalog.sets(for: character)
         if !sets.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 sectionTitle("セット")
@@ -191,11 +205,12 @@ struct ClosetView: View {
                         figure(wearing: [:])
                     }
                     ForEach(sets) { theme in
-                        tile(theme.name, selected: trying[character] == theme.fullSet, side: 84) {
-                            change { $0 = theme.fullSet }
+                        let set = catalog.fullSet(theme)
+                        tile(theme.name, selected: trying[character] == set, side: 84) {
+                            change { $0 = set }
                             pick = .set(character, theme: theme.id)
                         } picture: {
-                            figure(wearing: theme.fullSet)
+                            figure(wearing: set)
                         }
                     }
                 }
@@ -321,12 +336,17 @@ struct ClosetView: View {
                     .background(RoundedRectangle(cornerRadius: 16, style: .continuous).fill(Pop.card))
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(Pop.orange, lineWidth: selected ? 4 : 0))
-                Text(name)
-                    .font(.system(.caption2, design: .rounded, weight: .bold))
-                    .foregroundStyle(Pop.ink)
-                    .lineLimit(2, reservesSpace: true)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity, alignment: .top)
+                // 名前は省略しない (「ノルディック柄のニッ…」と切れていた。2026-11-08 のユーザーの指摘)。
+                // 文節で折り返し、3 行になる名前はその行だけ高くする。2 行ぶんの高さはいつも取る
+                ZStack(alignment: .top) {
+                    Text(verbatim: "あ\nあ").hidden()
+                    PhraseText(name)
+                        .foregroundStyle(Pop.ink)
+                        .multilineTextAlignment(.center)
+                }
+                .font(.system(.caption2, design: .rounded, weight: .bold))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .top)
             }
             .contentShape(Rectangle())
         }

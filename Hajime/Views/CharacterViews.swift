@@ -80,17 +80,51 @@ private struct AnchorEffect: ViewModifier {
 @MainActor
 enum FigureRenderer {
     private static let cache = NSCache<NSString, UIImage>()
-    private static let context = CIContext()
-    static let line = CIColor(red: 0x5A / 255.0, green: 0x3A / 255.0, blue: 0x22 / 255.0)
+    nonisolated(unsafe) private static let context = CIContext()
+    nonisolated(unsafe) static let line = CIColor(red: 0x5A / 255.0, green: 0x3A / 255.0, blue: 0x22 / 255.0)
+
+    /// 同じ小物の絵でもポーズでずらし方が違うので、ずらし方も含めた並び全体をキーにする
+    static func key(_ layers: [FigureLayer], side: CGFloat, scale: CGFloat, border: Bool) -> String {
+        "\(layers)-\(Int(side * scale))-\(border)"
+    }
+
+    /// 作ってある画像だけを返す (なければ nil。作らない)
+    static func cached(_ layers: [FigureLayer], side: CGFloat, scale: CGFloat, border: Bool = true) -> UIImage? {
+        cache.object(forKey: key(layers, side: side, scale: scale, border: border) as NSString)
+    }
 
     static func image(_ layers: [FigureLayer], side: CGFloat, scale: CGFloat, border: Bool = true) -> UIImage? {
         guard side > 0 else { return nil }
-        // 同じ小物の絵でもポーズでずらし方が違うので、ずらし方も含めた並び全体をキーにする
-        let key = "\(layers)-\(Int(side * scale))-\(border)" as NSString
-        if let hit = cache.object(forKey: key) { return hit }
+        let name = key(layers, side: side, scale: scale, border: border) as NSString
+        if let hit = cache.object(forKey: name) { return hit }
+        let renderer = ImageRenderer(content: FigureStack(layers: layers, side: side))
+        renderer.scale = scale
+        guard let cg = renderer.cgImage, let made = outlined(cg, border: border) else { return nil }
+        let image = UIImage(cgImage: made, scale: scale, orientation: .up)
+        cache.setObject(image, forKey: name)
+        return image
+    }
+
+    /// image と同じ画像を作るが、重い線とふちの処理を裏で行い、そのあいだ画面を止めない (きせかえで使う)。
+    /// 2026-11-08 のユーザーの報告「マッシュ・チェックのハンチングとすばやく選んですぐ下へスクロールすると、
+    /// 髪型のところに急に戻り、そのあと自動で再開する」を受けた。帽子を選ぶと台座と髪型のタイル 4 つを
+    /// 画面の処理の中で作り直していて、そのあいだスクロールが止まっていた
+    static func render(_ layers: [FigureLayer], side: CGFloat, scale: CGFloat, border: Bool = true) async -> UIImage? {
+        guard side > 0 else { return nil }
+        let name = key(layers, side: side, scale: scale, border: border) as NSString
+        if let hit = cache.object(forKey: name) { return hit }
         let renderer = ImageRenderer(content: FigureStack(layers: layers, side: side))
         renderer.scale = scale
         guard let cg = renderer.cgImage else { return nil }
+        let made = await Task.detached(priority: .userInitiated) { outlined(cg, border: border) }.value
+        guard let made, !Task.isCancelled else { return nil }
+        let image = UIImage(cgImage: made, scale: scale, orientation: .up)
+        cache.setObject(image, forKey: name)
+        return image
+    }
+
+    /// 外形の線と白ふちを付ける (どのスレッドからでも呼べる)
+    nonisolated private static func outlined(_ cg: CGImage, border: Bool) -> CGImage? {
         let base = CIImage(cgImage: cg)
         let extent = base.extent
         let unit = extent.width / 1024
@@ -109,10 +143,7 @@ enum FigureRenderer {
         var out = paint(line, mask: dilate(6))
         if border { out = out.composited(over: paint(.white, mask: dilate(6 + 24))) }
         out = paint(line, mask: ring).composited(over: base.composited(over: out))
-        guard let made = context.createCGImage(out, from: extent) else { return nil }
-        let image = UIImage(cgImage: made, scale: scale, orientation: .up)
-        cache.setObject(image, forKey: key)
-        return image
+        return context.createCGImage(out, from: extent)
     }
 
     private static let pieceCache = NSCache<NSString, UIImage>()
@@ -175,12 +206,18 @@ private struct FigureView: View {
     var flip = false
     var border = true
     @Environment(\.displayScale) private var displayScale
+    @Environment(\.figureRendersAsync) private var rendersAsync
+    /// 裏で作り終えた画像 (rendersAsync のとき)。新しい画像ができるまでは前の画像を見せておく
+    @State private var shown: UIImage?
 
     var body: some View {
         GeometryReader { geo in
             let side = min(geo.size.width, geo.size.height)
+            let image = rendersAsync
+                ? FigureRenderer.cached(layers, side: side, scale: displayScale, border: border) ?? shown
+                : FigureRenderer.image(layers, side: side, scale: displayScale, border: border)
             Group {
-                if let image = FigureRenderer.image(layers, side: side, scale: displayScale, border: border) {
+                if let image {
                     Image(uiImage: image).resizable()
                 } else {
                     Color.clear
@@ -189,8 +226,28 @@ private struct FigureView: View {
             .frame(width: side, height: side)
             .scaleEffect(x: flip ? -1 : 1, y: 1)
             .frame(width: geo.size.width, height: geo.size.height)
+            .task(id: FigureRenderer.key(layers, side: side, scale: displayScale, border: border)) {
+                guard rendersAsync,
+                      FigureRenderer.cached(layers, side: side, scale: displayScale, border: border) == nil,
+                      let made = await FigureRenderer.render(layers, side: side, scale: displayScale, border: border)
+                else { return }
+                shown = made
+            }
         }
         .aspectRatio(1, contentMode: .fit)
+    }
+}
+
+private struct FigureRendersAsyncKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// 全身の絵を裏で作る (きせかえのように、着替えるたびに何枚も作り直す画面で使う)。
+    /// ImageRenderer で画像にする画面 (シェアのカード) では裏の処理を待てないので、ふだんは false
+    var figureRendersAsync: Bool {
+        get { self[FigureRendersAsyncKey.self] }
+        set { self[FigureRendersAsyncKey.self] = newValue }
     }
 }
 
