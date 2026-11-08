@@ -461,11 +461,40 @@ job("kotori", "wan_kotori_neck", P / "w21d_wan_kotori.png", WAN_KOTORI, base=WAN
 # ローファーは茶色が線に紛れる (デザイナー) のでえんじ。素体には脚の絵がないので、スカートの部品に足首の肌を含める
 PREPPY = [L, "#F1E9D2", "#3E8A3A", "#CE9C69", "#F1C7AE", "#7A2E35"]
 WAN_PREPPY = [L, "#F1E9D2", "#3E8A3A"]
-job("preppy", "av_preppy_top_std", P / "o22c_avatar_preppy.png", PREPPY, cut=rows(290, 528))
+def rim_drop(color, then=None, edge=6, tol=90):
+    """部品の外側のふち (edge px 以内) にある color に近い点を消す。線と背景のあいだのにじみが濃い緑に塗られ、
+    ベストの輪郭の外に緑の細い線が出ていた (2026-11-08、衣装の目利きチームのチェック)"""
+    rgb = np.array([int(color[i:i + 2], 16) for i in (1, 3, 5)])
+
+    def f(m):
+        m = then(m) if then else m
+        img = _current["img"][..., :3].astype(int)
+        rim = m & ~ndimage.binary_erosion(m, iterations=edge)
+        # 襟ぐりの V の帯まで消すと色が変わったので、脇 (左右の 1/4) だけにする
+        xs = np.nonzero(m.any(0))[0]
+        q = (xs.max() - xs.min()) // 4
+        side = np.zeros_like(m)
+        side[:, :xs.min() + q] = True
+        side[:, xs.max() - q:] = True
+        return m & ~(rim & side & (np.abs(img - rgb).sum(-1) < tol))
+    return f
+
+
+job("preppy", "av_preppy_top_std", P / "o22c_avatar_preppy.png", PREPPY, cut=rim_drop("#3E8A3A", rows(290, 528)))
 job("preppy", "av_preppy_top_joy", P / "j20_avatar_male_joy_preppy.png", PREPPY)
 job("preppy", "av_preppy_bottom", P / "o22c_avatar_preppy.png", PREPPY, cut=bottom_rows(528, 812))
 job("preppy", "av_preppy_feet", P / "o22c_avatar_preppy.png", PREPPY, cut=rows(800, 1024))
 job("preppy", "wan_preppy_neck", P / "w22c_wan_preppy.png", WAN_PREPPY, base=WAN_BASE, cut=blobs([0]))
+# 追加の 2 品 (2026-11-08、衣装の目利きチームの案)。紺のアンクルスラックスは、上下をそろえたい人向け (マーケター)。
+# 折り目のある紺のズボンは男子の制服に見える (ブランドディレクター) ので、折り目を描かず裾を 1 回折り返し、くるぶしを見せる。
+# 濃紺は線に沈む (デザイナー) ので明るめの #42578C。スカートと同じく足首の肌を部品に含める
+SLACKS = [L, "#42578C", "#F1C7AE"]
+job("preppy", "av_preppy_bottom2", P / "o23_avatar_slacks.png", SLACKS, cut=bottom_rows(520, 812))
+# ちょうちょのベビーT。おなかは出さない (ブランドディレクター、マーケター)。ピンクの身ごろはマゼンタの背景で抜ける (サングラスの前例) ので水色にし、
+# 素体の緑の袖を隠すため白い長袖を重ねる (デザイナー)。胸のちょうちょはワンのすけのヘアクリップとおそろい
+BABYT = [L, "#9AD3E3", "#FEFDFB", "#F29BC4"]
+job("y2k", "av_y2k_top_std", P / "o24_avatar_babyt.png", BABYT)
+job("y2k", "av_y2k_top_joy", P / "j21_avatar_male_joy_babyt.png", BABYT, cut=lambda m: blobs([0])(rows(0, 560)(m)))
 # ハートのサングラスの下に、ピンクの毛の切れ端が 2 つ浮いていた (デザイナーのチェック) ので、いちばん大きいかたまりだけ残す
 job("gyaru", "av_gyaru_head", P / "o01_avatar_gyaru.png", GYARU, cut=lambda m: blobs([0])(rows(0, 330)(m)))
 job("gyaru", "av_gyaru_top_std", P / "o01_avatar_gyaru.png", GYARU, cut=rows(330, 780))
