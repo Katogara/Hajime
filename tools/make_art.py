@@ -529,6 +529,21 @@ job("xmas", "av_xmas_head", P / "o06_avatar_xmas.png", XMAS, cut=rows(0, 330))
 job("xmas", "av_xmas_hand", P / "o06_avatar_xmas.png", XMAS, cut=no_skin(rows(330, 1024)), clean=False)
 
 
+def rims(name):
+    """外周の線を 8px にそろえる部品 (svg_layers.py の --rim)。2026-11-08 のユーザーの指摘で足した:
+    きせかえのタイルで大きく見せる頭とめがね (外周の線の太さが一定でなく粗が目立つ) と、
+    左わきの線が細く見えたひし形柄のニットベスト (取り出すとき素体の線と重なった分が抜けた)"""
+    return name.endswith("_head") and name not in GLASSES or name in {"av_preppy_top_std"}
+
+
+# めがねは、色の付いたふち (銀・金・灰色) まで茶色の線で覆ってしまうので --rim をかけず、外形のガタガタだけをならす
+GLASSES = {"av_gyaru_head"}
+
+
+def smooths(name):
+    return name.endswith("_face") or name in GLASSES
+
+
 def cut_png(src, cut, tmp):
     img = np.asarray(Image.open(src).convert("RGBA")).copy()
     _current["img"] = img
@@ -551,6 +566,8 @@ def main(names):
                    "--min-blob", str(blob)]
             cmd += ["--align-from", str(base)] if base else []
             cmd += ["--line-target", "8"] if line else []
+            cmd += ["--rim", "8"] if rims(name) else []
+            cmd += ["--smooth", "2"] if smooths(name) else []
             r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
             print(r.stdout.strip() or r.stderr.strip()[-600:])
             if r.returncode:

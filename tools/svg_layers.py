@@ -177,6 +177,18 @@ def build(a):
     mapped = move(mapped, s, dx, dy, pivot, 0)
     solid = move(solid.astype(np.uint8), s, dx, dy, pivot, 0).astype(bool)
 
+    if a.smooth:
+        # 外形のガタガタをならす (2026-11-08、ユーザーの指摘「めがねの部品は外周の線の太さが一定でない」)。
+        # 閉じてから開く。足したところは、いちばん近い色にする
+        r = a.smooth
+        y, x = np.ogrid[-r:r + 1, -r:r + 1]
+        disk = x * x + y * y <= r * r
+        sm = ndimage.binary_opening(ndimage.binary_closing(np.pad(solid, r + 1), disk), disk)[r + 1:-r - 1, r + 1:-r - 1]
+        added = sm & ~solid
+        if added.any():
+            _, (iy, ix) = ndimage.distance_transform_edt(~solid, return_indices=True)
+            mapped[added] = mapped[iy[added], ix[added]]
+        solid = sm
     line = solid & (np.abs(mapped.astype(int) - LINE).sum(-1) == 0)
     if a.line_target:
         # 内側の線を決まりの太さ（外形はアプリで合成のあとに付ける）にそろえる。
@@ -189,6 +201,26 @@ def build(a):
             y, x = np.ogrid[-r:r + 1, -r:r + 1]
             line |= ndimage.binary_dilation(big, x * x + y * y <= r * r) & solid
             mapped[line] = LINE
+    if a.rim:
+        # 外周の線の太さをそろえる (2026-11-08、ユーザーの指摘「拡大率の高い頭・めがねの部品は、外周の線の太さが一定でない」
+        # 「ひし形柄のニットベストの左わきの線が非常に細い」)。外から rim px の帯は線にする。
+        # 外周の線が rim より太いところ (線の芯が 0.9 rim より深い) は、外から rim px より奥を塗りに戻す。
+        # 奥を見るのは外から 3 rim px までにし、内側の線 (太さ 8 前後) は芯が浅いので変えない
+        n = a.rim
+        inside = ndimage.distance_transform_edt(np.pad(solid, 1))[1:-1, 1:-1]
+        r = int(np.ceil(0.9 * n))
+        y, x = np.ogrid[-r:r + 1, -r:r + 1]
+        core = line & (ndimage.distance_transform_edt(np.pad(line, 1))[1:-1, 1:-1] > 0.9 * n)
+        thick = ndimage.binary_dilation(core, x * x + y * y <= r * r) & line
+        deep = thick & (inside > n) & (inside <= 3 * n)
+        band = solid & (inside <= n)
+        line = (line & ~deep) | band
+        # 塗りに戻したところは、いちばん近い塗りの色にする
+        others = solid & ~line
+        if deep.any() and others.any():
+            _, (iy, ix) = ndimage.distance_transform_edt(~others, return_indices=True)
+            mapped[deep] = mapped[iy[deep], ix[deep]]
+        mapped[band] = LINE
     fill_px = solid & ~line
     # 線の下は、いちばん近い塗りの色で埋める（線を上に重ねたときにすき間が出ないように）
     filled = mapped.copy()
@@ -244,4 +276,6 @@ if __name__ == "__main__":
     ap.add_argument("--height", type=float)
     ap.add_argument("--min-blob", type=int, default=300, help="これより小さい離れた点はごみとして消す（まつ毛は 10）")
     ap.add_argument("--line-target", type=float, help="内側の線をこの太さ（px）まで太らせる。決まりは 8。顔のパーツの部品には付けない")
+    ap.add_argument("--smooth", type=int, help="部品の外形のガタガタを、この半径（px）でならす（めがね）")
+    ap.add_argument("--rim", type=int, help="部品の外周の線をこの太さ（px）にそろえる。細いところは足し、太いところは塗りに戻す")
     sys.exit(0 if build(ap.parse_args()) else 1)
