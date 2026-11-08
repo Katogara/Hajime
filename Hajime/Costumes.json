@@ -164,14 +164,14 @@
       "id": "preppy", "character": "avatar", "shelf": "fashion", "name": "プレッピー", "note": "きちんと、やわらかく", "order": 20,
       "items": [
         {"part": "top", "name": "ひし形柄のニットベスト", "over": true, "art": {"std": "av_preppy_top_std", "joy": "av_preppy_top_joy"}},
-        {"part": "bottom", "name": "キャメルのロングプリーツ", "art": {"all": "av_preppy_bottom"}},
+        {"part": "bottom", "name": "キャメルのロングプリーツ", "art": {"all": "av_preppy_bottom"}, "feetOver": true},
         {"part": "feet", "name": "えんじのローファー", "art": {"all": "av_preppy_feet"}}
       ]
     },
     {
-      "id": "preppy_navy", "character": "avatar", "shelf": "fashion", "name": "きれいめ紺", "note": "足首を見せて、すっきり", "order": 21,
+      "id": "preppy_navy", "character": "avatar", "shelf": "fashion", "name": "きれいめ紺", "note": "足首を見せて、すっきり", "order": 21, "setWith": "preppy",
       "items": [
-        {"part": "bottom", "name": "紺のアンクルスラックス", "art": {"all": "av_preppy_bottom2"}}
+        {"part": "bottom", "name": "紺のアンクルスラックス", "art": {"all": "av_preppy_bottom2"}, "feetOver": true}
       ]
     },
     {

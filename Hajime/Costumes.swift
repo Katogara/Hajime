@@ -54,6 +54,9 @@ struct CostumeTheme: Codable, Identifiable, Equatable {
     var month: Int?
     var order: Int
     var items: [CostumeItem]
+    /// セットで借りるテーマの ID。そのテーマのひとそろいに、このテーマの品を重ねてセットにする
+    /// (例: きれいめ紺 = プレッピーのベストとローファー + 紺のスラックス。1 テーマに同じ部位は 1 点なので別のテーマにしている)
+    var setWith: String? = nil
 
     /// キャラクターとテーマの組で一意 (ワンのすけとアバターに同じテーマ名がある)
     var key: String { "\(character.rawValue).\(id)" }
@@ -81,6 +84,8 @@ struct CostumeItem: Codable, Equatable {
     var hairLine: [Double]?
     /// 手の小物: 素体の手より後ろに描き、手で握っているように見せる (羽子板)。なければ手の前に描く (プレゼントの箱)
     var grip: Bool?
+    /// 下の服: 靴をこの服より上に描く (足首の肌を部品に含めた服)
+    var feetOver: Bool?
 
     func art(for pose: String) -> String? {
         art[pose] ?? art["all"]
@@ -142,6 +147,26 @@ struct CostumeCatalog: Codable, Equatable {
         themes.first { $0.character == character && $0.id == id }
     }
 
+    /// セットで着る部位ごとのテーマ。setWith があれば、借りるテーマのひとそろいに自分の品を重ねる
+    func fullSet(_ theme: CostumeTheme) -> [CostumePart: String] {
+        var parts = theme.setWith.flatMap { self.theme(theme.character, $0) }?.fullSet ?? [:]
+        parts.merge(theme.fullSet) { _, own in own }
+        return parts
+    }
+
+    /// きせかえの「セット」に並べるテーマ (セットにすると 2 点以上になるもの)
+    func sets(for character: CostumeCharacter) -> [CostumeTheme] {
+        themes(for: character).filter { fullSet($0).count >= 2 }
+    }
+
+    /// セットの品名 (部位の順)
+    func setNames(_ theme: CostumeTheme) -> [String] {
+        let parts = fullSet(theme)
+        return CostumePart.allCases.compactMap { part in
+            parts[part].flatMap { self.theme(theme.character, $0)?.item(part)?.name }
+        }
+    }
+
     func anchor(for pose: WanPose) -> WanAnchor {
         wanAnchors.poses[pose.rawValue] ?? .identity
     }
@@ -189,7 +214,7 @@ struct TryOnCaption: Equatable {
             }
         case .set(let character, let id):
             if let id, let theme = catalog.theme(character, id) {
-                self.init(name: "\(theme.name)のセット", detail: theme.items.map(\.name).joined(separator: "・"))
+                self.init(name: "\(theme.name)のセット", detail: catalog.setNames(theme).joined(separator: "・"))
             } else {
                 self.init(name: character == .avatar ? "いつもの服" : "なし", detail: "セット")
             }
@@ -463,7 +488,10 @@ enum FigureRig {
         let handItem = pose == .joy ? nil : worn(.hand)
         if let item = handItem, item.grip == true, let art = item.art(for: p) { layers += pair(art) }
         layers += pair("av_\(p)_hands")
-        for part in [CostumePart.feet, .bottom, .top] {
+        // 足首の肌を含む下 (プレッピーのスカートとスラックス) は、靴を下より上に描く。
+        // 下の肌がローファーの履き口に重なり、足首に線が入って見えたため (2026-11-08 のユーザーの指摘)
+        let order: [CostumePart] = worn(.bottom)?.feetOver == true ? [.bottom, .feet, .top] : [.feet, .bottom, .top]
+        for part in order {
             if let item = worn(part), let art = item.art(for: p) {
                 if item.layersOver { layers += pair("av_\(p)_\(part.rawValue)") }
                 layers += pair(art)
