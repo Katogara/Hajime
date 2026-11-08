@@ -150,6 +150,7 @@
       "id": "y2k", "character": "avatar", "shelf": "fashion", "name": "Y2K", "note": "きらっと懐かしく", "order": 18,
       "items": [
         {"part": "face", "name": "ピンクの楕円サングラス", "art": {"all": "av_y2k_face"}},
+        {"part": "top", "name": "ちょうちょのベビーT", "art": {"std": "av_y2k_top_std", "joy": "av_y2k_top_joy"}},
         {"part": "feet", "name": "ぷっくり厚底スニーカー", "art": {"all": "av_y2k_feet"}}
       ]
     },
@@ -165,6 +166,12 @@
         {"part": "top", "name": "ひし形柄のニットベスト", "over": true, "art": {"std": "av_preppy_top_std", "joy": "av_preppy_top_joy"}},
         {"part": "bottom", "name": "キャメルのロングプリーツ", "art": {"all": "av_preppy_bottom"}},
         {"part": "feet", "name": "えんじのローファー", "art": {"all": "av_preppy_feet"}}
+      ]
+    },
+    {
+      "id": "preppy_navy", "character": "avatar", "shelf": "fashion", "name": "きれいめ紺", "note": "足首を見せて、すっきり", "order": 21,
+      "items": [
+        {"part": "bottom", "name": "紺のアンクルスラックス", "art": {"all": "av_preppy_bottom2"}}
       ]
     },
     {
