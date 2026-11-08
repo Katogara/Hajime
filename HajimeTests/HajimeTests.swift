@@ -568,6 +568,32 @@ final class CostumeTests: XCTestCase {
         XCTAssertTrue(joy.contains("av_street_top_joy_fill"))
     }
 
+    /// 足首の肌を含む下 (スラックス) は靴より後ろ、ふつうの下は靴より前に描く
+    func testFeetOverBottomWithAnkle() {
+        let look = AvatarLook.initial(for: .male)
+        var wardrobe = Wardrobe()
+        wardrobe.avatar[.bottom] = "preppy_navy"
+        wardrobe.avatar[.feet] = "preppy"
+        var names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        XCTAssertLessThan(names.firstIndex(of: "av_preppy_bottom2_line")!, names.firstIndex(of: "av_preppy_feet_fill")!)
+        wardrobe.avatar[.bottom] = "consa"
+        names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        XCTAssertLessThan(names.firstIndex(of: "av_preppy_feet_line")!, names.firstIndex(of: "av_consa_bottom_fill")!)
+    }
+
+    /// きれいめ紺は 1 品だけのテーマだが、プレッピーのひとそろいを借りてセットに並ぶ (プレッピーの次)
+    func testBorrowedSet() {
+        let navy = catalog.theme(.avatar, "preppy_navy")!
+        let set = catalog.fullSet(navy)
+        XCTAssertEqual(set[.bottom], "preppy_navy")
+        XCTAssertEqual(set[.top], "preppy")
+        XCTAssertEqual(set[.feet], "preppy")
+        let ids = catalog.sets(for: .avatar).map(\.id)
+        XCTAssertEqual(ids.firstIndex(of: "preppy_navy"), ids.firstIndex(of: "preppy").map { $0 + 1 })
+        XCTAssertTrue(catalog.setNames(navy).contains("紺のアンクルスラックス"))
+        XCTAssertFalse(catalog.setNames(navy).contains("キャメルのロングプリーツ"))
+    }
+
     func testGrippedHandItemSitsBehindHands() {
         var wardrobe = Wardrobe()
         wardrobe.avatar[.hand] = "newyear"
