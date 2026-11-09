@@ -18,8 +18,9 @@ struct ClosetView: View {
     @State private var joyPose = false
 
     private let catalog = CostumeCatalog.shared
-    private let pieceColumns = [GridItem(.adaptive(minimum: 76), spacing: 10, alignment: .top)]
-    private let figureColumns = [GridItem(.adaptive(minimum: 96), spacing: 10, alignment: .top)]
+    /// タイルの最小の幅 (服 1 点と髪型、全身の絵)
+    private let pieceMinimum: CGFloat = 76
+    private let figureMinimum: CGFloat = 96
 
     /// 着ている服 (着られないあいだは初期の服)
     private var worn: Wardrobe { model.devWearAll ? model.wardrobe : Wardrobe() }
@@ -168,7 +169,7 @@ struct ClosetView: View {
         if !savedOutfits.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 sectionTitle("保存したコーデ")
-                LazyVGrid(columns: figureColumns, spacing: 12) {
+                TileGrid(minimum: figureMinimum) {
                     ForEach(Array(savedOutfits.enumerated()), id: \.element.id) { index, outfit in
                         tile("コーデ \(savedOutfits.count - index)", selected: trying[character] == outfit.parts, side: 84) {
                             change { $0 = outfit.parts }
@@ -197,7 +198,7 @@ struct ClosetView: View {
         if !sets.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 sectionTitle("セット")
-                LazyVGrid(columns: figureColumns, spacing: 12) {
+                TileGrid(minimum: figureMinimum) {
                     tile(character == .avatar ? "いつもの" : "なし", selected: trying[character].isEmpty, side: 84) {
                         change { $0 = [:] }
                         pick = .set(character, theme: nil)
@@ -237,7 +238,7 @@ struct ClosetView: View {
     private func hairSection(_ look: AvatarLook) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionTitle("髪型と髪の色（無料）")
-            LazyVGrid(columns: pieceColumns, spacing: 12) {
+            TileGrid(minimum: pieceMinimum) {
                 ForEach(HairStyle.allCases, id: \.self) { hair in
                     let next = AvatarLook(body: look.body, hair: hair, hairColor: look.hairColor)
                     tile(hair.label, selected: look.hair == hair) {
@@ -275,7 +276,7 @@ struct ClosetView: View {
     private func partSection(_ part: CostumePart) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionTitle(part.label)
-            LazyVGrid(columns: pieceColumns, spacing: 12) {
+            TileGrid(minimum: pieceMinimum) {
                 tile(character == .avatar ? "いつもの" : "なし", selected: trying[character][part] == nil) {
                     change { $0[part] = nil }
                     pick = .piece(character, part, theme: nil)
@@ -362,5 +363,57 @@ struct ClosetView: View {
             }
         }
         edited = nil
+    }
+}
+
+/// タイルを幅に合わせた列数で上から並べる。LazyVGrid の代わり。
+/// LazyVGrid は画面の外のタイルを作り直すときに高さを見積もるので、着替えるたびに上の段 (セット、髪型) の絵が
+/// 作り直されると、スクロールの位置が髪型の段まで飛んでいた (2026-11-08・11-10 のユーザーの指摘
+/// 「帽子や靴を選ぶと、髪型と髪の色の場所までスクロールが上がる」)。全部のタイルを毎回きちんと測って並べる
+struct TileGrid: Layout {
+    var minimum: CGFloat
+    var spacing: CGFloat = 10
+    var rowSpacing: CGFloat = 12
+
+    private func columns(_ width: CGFloat) -> Int {
+        max(1, Int((width + spacing) / (minimum + spacing)))
+    }
+
+    private func cellWidth(_ width: CGFloat, _ count: Int) -> CGFloat {
+        max(0, (width - spacing * CGFloat(count - 1)) / CGFloat(count))
+    }
+
+    /// 行ごとの高さ (その行でいちばん高いタイル)
+    private func rowHeights(_ subviews: Subviews, width: CGFloat) -> [CGFloat] {
+        let count = columns(width)
+        let cell = cellWidth(width, count)
+        return stride(from: 0, to: subviews.count, by: count).map { start in
+            subviews[start..<min(start + count, subviews.count)]
+                .map { $0.sizeThatFits(ProposedViewSize(width: cell, height: nil)).height }
+                .max() ?? 0
+        }
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let width = proposal.width ?? minimum * 4 + spacing * 3
+        let rows = rowHeights(subviews, width: width)
+        let height = rows.reduce(0, +) + rowSpacing * CGFloat(max(rows.count - 1, 0))
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let count = columns(bounds.width)
+        let cell = cellWidth(bounds.width, count)
+        let rows = rowHeights(subviews, width: bounds.width)
+        var y = bounds.minY
+        for (row, height) in rows.enumerated() {
+            for col in 0..<count {
+                let i = row * count + col
+                guard i < subviews.count else { break }
+                subviews[i].place(at: CGPoint(x: bounds.minX + CGFloat(col) * (cell + spacing), y: y),
+                                  anchor: .topLeading, proposal: ProposedViewSize(width: cell, height: height))
+            }
+            y += height + rowSpacing
+        }
     }
 }
