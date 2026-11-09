@@ -581,6 +581,18 @@ final class CostumeTests: XCTestCase {
         XCTAssertLessThan(names.firstIndex(of: "av_preppy_feet_line")!, names.firstIndex(of: "av_consa_bottom_fill")!)
     }
 
+    /// キャメルのロングプリーツは靴より上に描き、裾から下の脚だけを靴より下に描く (高さのある靴が裾にかぶらない)
+    func testSkirtOverShoesWithLegsUnder() {
+        let look = AvatarLook.initial(for: .male)
+        var wardrobe = Wardrobe()
+        wardrobe.avatar[.bottom] = "preppy"
+        wardrobe.avatar[.feet] = "y2k"
+        let names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        let feet = try! XCTUnwrap(names.firstIndex { $0.hasSuffix("_feet_fill") })
+        XCTAssertLessThan(names.firstIndex(of: "av_preppy_bottom_legs_line")!, feet)
+        XCTAssertLessThan(feet, names.firstIndex(of: "av_preppy_bottom_fill")!)
+    }
+
     /// きれいめ紺は 1 品だけのテーマだが、プレッピーのひとそろいを借りてセットに並ぶ (プレッピーの次)
     func testBorrowedSet() {
         let navy = catalog.theme(.avatar, "preppy_navy")!
