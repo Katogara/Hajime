@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>部品の削りツール</title>
+<style>
+  :root { --bg:#FFF8EE; --panel:#fff; --ink:#3b2a1d; --sub:#7a6656; --accent:#e0607e; --line:#e6d8c8; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif; height:100vh; display:flex; flex-direction:column; }
+  header { display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center; padding:10px 16px; background:var(--panel); border-bottom:1px solid var(--line); }
+  header .group { display:flex; gap:6px; align-items:center; }
+  button, label.btn { font:inherit; font-size:14px; padding:6px 12px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); cursor:pointer; }
+  button:hover, label.btn:hover { background:#fbf1e6; }
+  button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+  button.main { background:#3b8f6a; color:#fff; border-color:#3b8f6a; }
+  input[type=file] { display:none; }
+  #name { font-weight:bold; }
+  #stage { flex:1; position:relative; overflow:hidden; cursor:none; touch-action:none; }
+  #view { position:absolute; inset:0; }
+  #empty { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; color:var(--sub); line-height:1.9; padding:16px; pointer-events:none; }
+  footer { padding:6px 16px; font-size:12px; color:var(--sub); background:var(--panel); border-top:1px solid var(--line); }
+  .size { width:120px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="group">
+    <label class="btn">画像を開く<input id="file" type="file" accept="image/png" multiple></label>
+    <span id="name">（まだ開いていません）</span>
+  </div>
+  <div class="group">
+    <button id="modeCut" class="on" title="キー: B">削る印を塗る</button>
+    <button id="modeBack" title="キー: E">印を消す</button>
+    <button id="modeHand" title="スペースを押しながらドラッグでも動かせます">手のひら</button>
+  </div>
+  <div class="group">
+    筆の太さ <input id="size" class="size" type="range" min="1" max="40" value="6"> <span id="sizeVal">6</span>px
+  </div>
+  <div class="group">
+    <button id="zoomOut">－</button><span id="zoomVal">100%</span><button id="zoomIn">＋</button>
+    <button id="fit">部品に合わせる</button>
+  </div>
+  <div class="group">
+    <button id="preview" title="キー: P">削ったあとを見る</button>
+    <button id="undo" title="Ctrl+Z">1つ戻す</button>
+    <button id="clear">印を全部消す</button>
+    <button id="save" class="main">印を保存</button>
+  </div>
+</header>
+<div id="stage">
+  <canvas id="view"></canvas>
+  <div id="empty">同じフォルダの「一覧.html」で品の絵を押すと、その部品がここで開きます。<br>
+    「画像を開く」で、「部品」フォルダの中の画像を選ぶこともできます。<br>
+    ここへドラッグして入れることもできます。<br>
+    続きから削るときは、部品の画像と、前に保存した「〜_erase.png」をいっしょに選んでください。</div>
+</div>
+<footer>赤く塗ったところが削られます。マウスのホイールで拡大・縮小、スペースを押しながらドラッグで画面を動かせます。保存した印はダウンロードフォルダに入ります。</footer>
+
+<script>
+const SIZE = 1024;
+const view = document.getElementById('view');
+const ctx = view.getContext('2d');
+const stage = document.getElementById('stage');
+const part = document.createElement('canvas'); part.width = part.height = SIZE;
+const mark = document.createElement('canvas'); mark.width = mark.height = SIZE;
+const mctx = mark.getContext('2d');
+const tmp = document.createElement('canvas'); tmp.width = tmp.height = SIZE;
+const tctx = tmp.getContext('2d');
+
+let loaded = false, baseName = 'part', needFit = false;
+let scale = 1, ox = 0, oy = 0;          // 画面の点 = 画像の点 * scale + (ox, oy)
+let mode = 'cut', brush = 6, preview = false, space = false;
+let drawing = false, panning = false, last = null, mouse = null;
+const undo = [];
+
+// 市松模様（透明なところを見分けるため）
+const checker = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 16;
+  const g = c.getContext('2d'); g.fillStyle = '#ffffff'; g.fillRect(0, 0, 16, 16);
+  g.fillStyle = '#ece6dd'; g.fillRect(0, 0, 8, 8); g.fillRect(8, 8, 8, 8);
+  return ctx.createPattern(c, 'repeat');
+})();
+
+function resize() {
+  const r = stage.getBoundingClientRect(), d = devicePixelRatio || 1;
+  view.width = r.width * d; view.height = r.height * d;
+  view.style.width = r.width + 'px'; view.style.height = r.height + 'px';
+  if (needFit) fit(); else draw();
+}
+
+function draw() {
+  const d = devicePixelRatio || 1;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = checker; ctx.fillRect(0, 0, view.width, view.height);
+  if (!loaded) return;
+  ctx.setTransform(scale * d, 0, 0, scale * d, ox * d, oy * d);
+  ctx.imageSmoothingEnabled = false;
+  if (preview) {
+    tctx.clearRect(0, 0, SIZE, SIZE);
+    tctx.globalCompositeOperation = 'source-over'; tctx.drawImage(part, 0, 0);
+    tctx.globalCompositeOperation = 'destination-out'; tctx.drawImage(mark, 0, 0);
+    tctx.globalCompositeOperation = 'source-over';
+    ctx.drawImage(tmp, 0, 0);
+  } else {
+    ctx.drawImage(part, 0, 0);
+    ctx.globalAlpha = 0.55; ctx.drawImage(mark, 0, 0); ctx.globalAlpha = 1;
+  }
+  // 画像の枠
+  ctx.strokeStyle = '#c9b8a6'; ctx.lineWidth = 1 / scale; ctx.strokeRect(0, 0, SIZE, SIZE);
+  // 筆の大きさの丸
+  if (mouse && !panning && mode !== 'hand' && !space) {
+    const p = toImage(mouse);
+    ctx.beginPath(); ctx.arc(p.x, p.y, brush / 2, 0, Math.PI * 2);
+    ctx.lineWidth = 1.5 / scale; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+    ctx.lineWidth = 0.75 / scale; ctx.strokeStyle = '#000000'; ctx.stroke();
+  }
+  document.getElementById('zoomVal').textContent = Math.round(scale * 100) + '%';
+}
+
+function toImage(p) { return { x: (p.x - ox) / scale, y: (p.y - oy) / scale }; }
+function local(e) { const r = stage.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+
+let box = null;   // 一覧から開いたときは、部品の範囲を一覧が教える
+function fit() {
+  if (!loaded) return;
+  let x0 = SIZE, y0 = SIZE, x1 = -1, y1 = -1;
+  if (box) { [x0, y0, x1, y1] = box; }
+  else {
+    try {
+      const data = part.getContext('2d').getImageData(0, 0, SIZE, SIZE).data;
+      for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) {
+        if (data[(y * SIZE + x) * 4 + 3]) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      }
+    } catch (e) { /* 画像の中身を読めないときは全体を見せる */ }
+    if (x1 < 0) { x0 = y0 = 0; x1 = y1 = SIZE - 1; }
+    const m = 20; x0 -= m; y0 -= m; x1 += m; y1 += m;
+  }
+  const r = stage.getBoundingClientRect();
+  if (!r.width || !r.height) { needFit = true; return; }   // 画面がまだ大きさを持たないときは、あとで合わせる
+  needFit = false;
+  scale = Math.min(r.width / (x1 - x0), r.height / (y1 - y0), 16);
+  ox = r.width / 2 - (x0 + x1) / 2 * scale;
+  oy = r.height / 2 - (y0 + y1) / 2 * scale;
+  draw();
+}
+
+function zoomAt(f, p) {
+  const ns = Math.min(Math.max(scale * f, 0.2), 32);
+  const q = toImage(p);
+  scale = ns; ox = p.x - q.x * scale; oy = p.y - q.y * scale; draw();
+}
+
+function pushUndo() {
+  undo.push(mctx.getImageData(0, 0, SIZE, SIZE));
+  if (undo.length > 40) undo.shift();
+}
+
+function stroke(a, b) {
+  mctx.globalCompositeOperation = mode === 'back' ? 'destination-out' : 'source-over';
+  mctx.strokeStyle = mctx.fillStyle = '#ff2020';
+  mctx.lineWidth = brush; mctx.lineCap = mctx.lineJoin = 'round';
+  mctx.beginPath(); mctx.moveTo(a.x, a.y); mctx.lineTo(b.x + 0.01, b.y); mctx.stroke();
+  mctx.globalCompositeOperation = 'source-over';
+}
+
+function loadImage(file) {
+  return new Promise((ok, ng) => {
+    const img = new Image();
+    img.onload = () => { URL.revokeObjectURL(img.src); ok(img); };
+    img.onerror = ng;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
+async function openFiles(files) {
+  files = [...files].filter(f => /\.png$/i.test(f.name));
+  const marks = files.filter(f => /_erase\.png$/i.test(f.name));
+  const parts = files.filter(f => !/_erase\.png$/i.test(f.name));
+  if (parts.length) {
+    const f = parts[0];
+    box = null;
+    const img = await loadImage(f);
+    const g = part.getContext('2d'); g.clearRect(0, 0, SIZE, SIZE); g.drawImage(img, 0, 0, SIZE, SIZE);
+    mctx.clearRect(0, 0, SIZE, SIZE); undo.length = 0;
+    baseName = f.name.replace(/\.png$/i, '');
+    document.getElementById('name').textContent = baseName;
+    document.getElementById('empty').style.display = 'none';
+    loaded = true; fit();
+  }
+  if (marks.length && loaded) {
+    const img = await loadImage(marks[0]);
+    pushUndo(); mctx.clearRect(0, 0, SIZE, SIZE); mctx.drawImage(img, 0, 0, SIZE, SIZE); draw();
+  }
+}
+
+document.getElementById('file').onchange = e => { openFiles(e.target.files); e.target.value = ''; };
+stage.addEventListener('dragover', e => e.preventDefault());
+stage.addEventListener('drop', e => { e.preventDefault(); openFiles(e.dataTransfer.files); });
+
+function setMode(m) {
+  mode = m;
+  for (const [id, v] of [['modeCut', 'cut'], ['modeBack', 'back'], ['modeHand', 'hand']])
+    document.getElementById(id).classList.toggle('on', v === m);
+  stage.style.cursor = m === 'hand' ? 'grab' : 'none';
+  draw();
+}
+document.getElementById('modeCut').onclick = () => setMode('cut');
+document.getElementById('modeBack').onclick = () => setMode('back');
+document.getElementById('modeHand').onclick = () => setMode('hand');
+
+const size = document.getElementById('size');
+size.oninput = () => { brush = +size.value; document.getElementById('sizeVal').textContent = brush; draw(); };
+
+document.getElementById('zoomIn').onclick = () => { const r = stage.getBoundingClientRect(); zoomAt(1.25, { x: r.width / 2, y: r.height / 2 }); };
+document.getElementById('zoomOut').onclick = () => { const r = stage.getBoundingClientRect(); zoomAt(0.8, { x: r.width / 2, y: r.height / 2 }); };
+document.getElementById('fit').onclick = fit;
+const pv = document.getElementById('preview');
+function togglePreview() { preview = !preview; pv.classList.toggle('on', preview); draw(); }
+pv.onclick = togglePreview;
+function doUndo() { if (undo.length) { mctx.putImageData(undo.pop(), 0, 0); draw(); } }
+document.getElementById('undo').onclick = doUndo;
+document.getElementById('clear').onclick = () => { if (!loaded) return; pushUndo(); mctx.clearRect(0, 0, SIZE, SIZE); draw(); };
+document.getElementById('save').onclick = () => {
+  if (!loaded) return;
+  mark.toBlob(b => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(b); a.download = baseName + '_erase.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }, 'image/png');
+};
+
+stage.addEventListener('wheel', e => { e.preventDefault(); zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, local(e)); }, { passive: false });
+stage.addEventListener('contextmenu', e => e.preventDefault());
+stage.addEventListener('pointerdown', e => {
+  if (!loaded) return;
+  stage.setPointerCapture(e.pointerId);
+  const p = local(e);
+  if (mode === 'hand' || space || e.button === 1 || e.button === 2) {
+    panning = true; last = p; stage.style.cursor = 'grabbing'; return;
+  }
+  if (e.button !== 0) return;
+  pushUndo(); drawing = true; last = toImage(p); stroke(last, last); draw();
+});
+stage.addEventListener('pointermove', e => {
+  mouse = local(e);
+  if (panning) { ox += mouse.x - last.x; oy += mouse.y - last.y; last = mouse; draw(); return; }
+  if (drawing) { const q = toImage(mouse); stroke(last, q); last = q; }
+  draw();
+});
+function end() {
+  drawing = false;
+  if (panning) { panning = false; stage.style.cursor = (mode === 'hand' || space) ? 'grab' : 'none'; }
+}
+stage.addEventListener('pointerup', end);
+stage.addEventListener('pointercancel', end);
+stage.addEventListener('pointerleave', () => { mouse = null; draw(); });
+
+addEventListener('keydown', e => {
+  if (e.code === 'Space') { space = true; stage.style.cursor = 'grab'; e.preventDefault(); draw(); }
+  else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); doUndo(); }
+  else if (e.key === 'b' || e.key === 'B') setMode('cut');
+  else if (e.key === 'e' || e.key === 'E') setMode('back');
+  else if (e.key === 'p' || e.key === 'P') togglePreview();
+  else if (e.key === '[') { size.value = Math.max(1, brush - 1); size.oninput(); }
+  else if (e.key === ']') { size.value = Math.min(40, brush + 1); size.oninput(); }
+});
+addEventListener('keyup', e => { if (e.code === 'Space') { space = false; stage.style.cursor = mode === 'hand' ? 'grab' : 'none'; draw(); } });
+addEventListener('resize', resize);
+resize();
+
+// 一覧.html から「削りツール.html?f=部品/…png&box=x0,y0,x1,y1」で開いたとき
+(() => {
+  const q = new URLSearchParams(location.search), f = q.get('f');
+  if (!f) return;
+  const img = new Image();
+  img.onload = () => {
+    const g = part.getContext('2d'); g.clearRect(0, 0, SIZE, SIZE); g.drawImage(img, 0, 0, SIZE, SIZE);
+    mctx.clearRect(0, 0, SIZE, SIZE); undo.length = 0;
+    baseName = decodeURIComponent(f.split('/').pop()).replace(/\.png$/i, '');
+    document.getElementById('name').textContent = baseName;
+    document.getElementById('empty').style.display = 'none';
+    box = (q.get('box') || '').split(',').map(Number);
+    if (box.length !== 4 || box.some(isNaN)) box = null;
+    loaded = true; fit();
+  };
+  img.src = f;
+})();
+</script>
+</body>
+</html>

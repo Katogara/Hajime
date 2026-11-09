@@ -483,6 +483,11 @@ def rim_drop(color, then=None, edge=6, tol=90):
 job("preppy", "av_preppy_top_std", P / "o22c_avatar_preppy.png", PREPPY, cut=rim_drop("#3E8A3A", rows(290, 528)))
 job("preppy", "av_preppy_top_joy", P / "j20_avatar_male_joy_preppy.png", PREPPY)
 job("preppy", "av_preppy_bottom", P / "o22c_avatar_preppy.png", PREPPY, cut=bottom_rows(528, 812))
+# スカートの裾から下の脚は、靴より下に描く別の部品にする (2026-11-10、ユーザーの指摘
+# 「キャメルのロングプリーツと高さのある靴を合わせると、靴の方が上に出る。スカートは靴より上にあるべき」)。
+# 脚は y=868 (靴のいちばん低い履き口) までにして、元の絵の靴の切れ端を外す
+job("preppy", "av_preppy_bottom_legs", P / "o22c_avatar_preppy.png", PREPPY, cut=bottom_rows(528, 812))
+HEM = {"av_preppy_bottom": "#CE9C69:upper", "av_preppy_bottom_legs": "#CE9C69:lower:868"}
 job("preppy", "av_preppy_feet", P / "o22c_avatar_preppy.png", PREPPY, cut=rows(800, 1024))
 job("preppy", "wan_preppy_neck", P / "w22c_wan_preppy.png", WAN_PREPPY, base=WAN_BASE, cut=blobs([0]))
 # 追加の 2 品 (2026-11-08、衣装の目利きチームの案)。紺のアンクルスラックスは、上下をそろえたい人向け (マーケター)。
@@ -568,6 +573,12 @@ def main(names):
             cmd += ["--line-target", "8"] if line else []
             cmd += ["--rim", "8"] if rims(name) else []
             cmd += ["--smooth", "2"] if smooths(name) else []
+            cmd += ["--hem", HEM[name]] if name in HEM else []
+            # ユーザーが削り用ツール (tools/kezuri.html) で印を付けた部品は、そこを消す
+            # 印の名前は「アバター_ハートのサングラス（頭）__av_gyaru_head_erase.png」の形 (tools/export_parts.py)
+            marks = [p for p in (TOOLS / "erase").glob("*_erase.png")
+                     if p.name == f"{name}_erase.png" or p.name.endswith(f"__{name}_erase.png")]
+            cmd += ["--erase", str(max(marks, key=lambda p: p.stat().st_mtime))] if marks else []
             r = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8")
             print(r.stdout.strip() or r.stderr.strip()[-600:])
             if r.returncode:

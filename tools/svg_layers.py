@@ -177,6 +177,36 @@ def build(a):
     mapped = move(mapped, s, dx, dy, pivot, 0)
     solid = move(solid.astype(np.uint8), s, dx, dy, pivot, 0).astype(bool)
 
+    if a.erase:
+        # ユーザーが削り用ツール (tools/kezuri.html) で塗ったところを消す (2026-11-09)。
+        # 印の画像は 1024x1024 で、位置合わせのあとの座標。透明でない画素が「削る」印
+        mark = np.asarray(Image.open(a.erase).convert("RGBA").resize((SIZE, SIZE), Image.NEAREST))[..., 3] > 0
+        solid &= ~mark
+
+    if a.hem:
+        # スカートを、裾から上 (靴より上に描く) と裾から下の脚 (靴より下に描く) に分ける (2026-11-10)。
+        # 「キャメルのロングプリーツと高さのある靴を合わせると、靴が上に出る。スカートは靴より上にあるべき」(ユーザーの指摘)。
+        # 列ごとに、布の色のいちばん下 + 裾の線の太さを裾とする
+        color, side, *limit = a.hem.split(":")
+        rgb = [int(color[i:i + 2], 16) for i in (1, 3, 5)]
+        cloth = solid & (np.abs(mapped.astype(int) - rgb).sum(-1) == 0)
+        # 脚のあたりに散った布の色の点は裾に数えない (布はひだの線で何枚にも分かれるので、小さなかたまりだけを外す)
+        lab, n = ndimage.label(cloth)
+        if n:
+            sizes = ndimage.sum(cloth, lab, range(1, n + 1))
+            cloth = np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s >= 400])
+        ys = np.arange(SIZE)[:, None]
+        has = cloth.any(0)
+        bottom = np.where(has, SIZE - 1 - np.argmax(cloth[::-1], 0), -1)
+        hem = np.where(has, bottom + 8, -1)
+        # 布の色のない列 (ひだの線、両端の輪郭) は、近くの列の裾の高さを使う
+        hem = np.where(has, hem, ndimage.maximum_filter1d(hem, 25))
+        upper = ys <= hem[None, :]
+        if side == "upper":
+            solid &= upper
+        else:
+            solid &= ~upper & (ys < (int(limit[0]) if limit else SIZE))
+
     if a.smooth:
         # 外形のガタガタをならす (2026-11-08、ユーザーの指摘「めがねの部品は外周の線の太さが一定でない」)。
         # 閉じてから開く。足したところは、いちばん近い色にする
@@ -278,4 +308,6 @@ if __name__ == "__main__":
     ap.add_argument("--line-target", type=float, help="内側の線をこの太さ（px）まで太らせる。決まりは 8。顔のパーツの部品には付けない")
     ap.add_argument("--smooth", type=int, help="部品の外形のガタガタを、この半径（px）でならす（めがね）")
     ap.add_argument("--rim", type=int, help="部品の外周の線をこの太さ（px）にそろえる。細いところは足し、太いところは塗りに戻す")
+    ap.add_argument("--hem", help="布の色:upper で裾から上だけ、布の色:lower:Y で裾から下 (y<Y) の脚だけを残す。例 #CE9C69:upper")
+    ap.add_argument("--erase",help="削る印の画像（1024x1024、透明でないところを消す）。tools/erase/ に置いたもの")
     sys.exit(0 if build(ap.parse_args()) else 1)
