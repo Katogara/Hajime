@@ -84,8 +84,10 @@ struct CostumeItem: Codable, Equatable {
     var hairLine: [Double]?
     /// 手の小物: 素体の手より後ろに描き、手で握っているように見せる (羽子板)。なければ手の前に描く (プレゼントの箱)
     var grip: Bool?
-    /// 下の服: 靴をこの服より上に描く (足首の肌を部品に含めた服)
+    /// 下の服: 靴をこの服より上に描く (足首の肌を部品に含めた服。紺のアンクルスラックス)
     var feetOver: Bool?
+    /// 下の服: 靴より下に描く部品 (スカートの裾から下の脚)。服そのものは靴より上に描く
+    var under: String?
 
     func art(for pose: String) -> String? {
         art[pose] ?? art["all"]
@@ -488,8 +490,11 @@ enum FigureRig {
         let handItem = pose == .joy ? nil : worn(.hand)
         if let item = handItem, item.grip == true, let art = item.art(for: p) { layers += pair(art) }
         layers += pair("av_\(p)_hands")
-        // 足首の肌を含む下 (プレッピーのスカートとスラックス) は、靴を下より上に描く。
-        // 下の肌がローファーの履き口に重なり、足首に線が入って見えたため (2026-11-08 のユーザーの指摘)
+        // 足首の肌を含むズボン (紺のアンクルスラックス) は、靴をズボンより上に描く。
+        // 下の肌がローファーの履き口に重なり、足首に線が入って見えたため (2026-11-08 のユーザーの指摘)。
+        // スカートは靴より上に描き、裾から下の脚 (under) だけを靴より下に描く。スカートでも靴を上にすると、
+        // 高さのある靴がスカートの裾にかぶった (2026-11-10 のユーザーの指摘)
+        if let legs = worn(.bottom)?.under { layers += pair(legs) }
         let order: [CostumePart] = worn(.bottom)?.feetOver == true ? [.bottom, .feet, .top] : [.feet, .bottom, .top]
         for part in order {
             if let item = worn(part), let art = item.art(for: p) {

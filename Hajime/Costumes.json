@@ -164,7 +164,7 @@
       "id": "preppy", "character": "avatar", "shelf": "fashion", "name": "プレッピー", "note": "きちんと、やわらかく", "order": 20,
       "items": [
         {"part": "top", "name": "ひし形柄のニットベスト", "over": true, "art": {"std": "av_preppy_top_std", "joy": "av_preppy_top_joy"}},
-        {"part": "bottom", "name": "キャメルのロングプリーツ", "art": {"all": "av_preppy_bottom"}, "feetOver": true},
+        {"part": "bottom", "name": "キャメルのロングプリーツ", "art": {"all": "av_preppy_bottom"}, "under": "av_preppy_bottom_legs"},
         {"part": "feet", "name": "えんじのローファー", "art": {"all": "av_preppy_feet"}}
       ]
     },
