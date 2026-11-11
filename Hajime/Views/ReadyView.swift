@@ -32,7 +32,7 @@ struct ReadyView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .popCard(tint: Pop.orange)
-                PhraseText("まずは一歩だけ。終わらせなくていい。")
+                PhraseText("まずは一歩だけ、やってみよ。終わらせなくて大丈夫だよ")
                     .font(.system(.subheadline, design: .rounded, weight: .medium))
                     .foregroundStyle(Pop.ink.opacity(0.65))
                 Spacer()

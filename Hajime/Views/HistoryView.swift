@@ -21,7 +21,7 @@ struct HistoryView: View {
                         StatCard(emoji: "⚡️", value: stats.medianDelay.map(StartStats.format) ?? "—",
                                  label: "通知から始めるまで", color: Pop.yellow)
                     }
-                    PhraseText("通知から始めるまでの時間は、この7日間に通知から始めた分の中央値です。人に見せたくないものは、記録を長押しすると秘密❤️にできます。")
+                    PhraseText("通知から始めるまでの時間は、この7日間に通知から始めた分の中央値です。人に見せたくないものは、記録を長押しすると秘密❤️にできます。秘密❤️にすると、通知にもやることの名前と一歩を出しません。")
                         .font(.system(.caption, design: .rounded))
                         .foregroundStyle(Pop.ink.opacity(0.55))
                     if days.isEmpty {

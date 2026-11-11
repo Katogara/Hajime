@@ -63,7 +63,7 @@ struct IntroView: View {
     private var usage: some View {
         IntroPage(pose: .clap, line: "通知が来たら、2回タップするだけ。それでもう、はじめてるよ", title: "使い方") {
             IntroStep(number: 1, text: "やることと、すぐ終わる「最初の一歩」を登録する（例：筋トレなら「ウェアに着替える」）")
-            IntroStep(number: 2, text: "決めた時刻に通知が届いたら、長押しして「始める」。まずはたっぷり褒めます")
+            IntroStep(number: 2, text: "決めた時刻に通知が届いたら、長押しして「はじめる」。まずはたっぷり褒めます")
             IntroStep(number: 3, text: "一歩をやったら「やりました！」。やらなかったら「やっぱりやめます」")
             PhraseText("続きに夢中で押し忘れても大丈夫。\(StartTask.firstMinutes)分たったら、代わりに「やりました！」を押しておきます。")
                 .font(.system(.subheadline, design: .rounded))

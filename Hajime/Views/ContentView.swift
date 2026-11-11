@@ -241,7 +241,7 @@ private struct TaskListView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("🌱")
                 .font(.system(size: 48))
-            HeadlineText("なかなか始められないこと、ありますか？")
+            HeadlineText("なかなか始められないこと、ある？")
                 .font(.system(.title3, design: .rounded, weight: .heavy))
                 .foregroundStyle(Pop.ink)
             PhraseText("決めた時刻に、最初の一歩だけを通知でお知らせします。「はじめる」を押したら、たっぷり褒めます。")
@@ -446,10 +446,10 @@ private struct DonePraise: View {
                     .rotationEffect(.degrees(6 * wave))
             }
             VStack(alignment: .leading, spacing: 2) {
-                HeadlineText("できた！えらすぎる！")
+                HeadlineText("始めたね！")
                     .font(.system(.headline, design: .rounded, weight: .black))
                     .foregroundStyle(Pop.orange)
-                PhraseText("今日のぶん、ちゃんと始められました")
+                PhraseText("今日のぶん、ちゃんと始めたね")
                     .font(.system(.caption, design: .rounded, weight: .semibold))
                     .foregroundStyle(Pop.ink.opacity(0.6))
             }

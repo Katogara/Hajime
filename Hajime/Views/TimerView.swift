@@ -50,7 +50,7 @@ struct TimerView: View {
                 .frame(maxWidth: .infinity, minHeight: 56)
             }
             .buttonStyle(PopButtonStyle(color: Pop.green, shade: Pop.greenDeep, depth: 6))
-            PhraseText("⏰ \(session.minutes)分たったら、続きに夢中なあなたの代わりに、やりましたボタンを押しておきますね（のこり \(Self.clock(remaining))）")
+            PhraseText("⏰ 続きに夢中でも大丈夫。\(session.minutes)分たったら、ぼくが「やりました！」を押しておくね（のこり \(Self.clock(remaining))）")
                 .font(.system(.caption, design: .rounded, weight: .semibold))
                 .monospacedDigit()
                 .multilineTextAlignment(.center)

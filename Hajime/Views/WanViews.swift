@@ -110,7 +110,7 @@ struct CheerBand: View {
 
     var body: some View {
         WanBand(pose: cheer.kind == .continued ? .clap : .banzai, title: line.title,
-                text: cheer.levelUp.map { "Lv.\($0) になったよ。\(line.sub)" } ?? line.sub)
+                text: cheer.levelUp.map { "Lv.\($0) だよ。\(line.sub)" } ?? line.sub)
     }
 }
 
@@ -207,7 +207,7 @@ struct SouvenirView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-                PhraseText("もらったおみやげは「これまでのつみあげ」で見られます")
+                PhraseText("もらったおみやげは「これまでのつみあげ」で見られるよ")
                     .font(.system(.caption, design: .rounded, weight: .semibold))
                     .foregroundStyle(Pop.brown.opacity(0.6))
             }

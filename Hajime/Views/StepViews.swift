@@ -271,7 +271,7 @@ struct StepTipsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("お風呂")
                             .font(.system(.subheadline, weight: .bold))
-                        Text("「起き上がる」から。はじめるだけでいい。")
+                        Text("時間だよ！まずは「起き上がる」からね")
                             .font(.system(.subheadline))
                     }
                     Spacer(minLength: 0)

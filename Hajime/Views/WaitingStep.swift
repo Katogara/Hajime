@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// 最初の一歩を、画面の主役として大きく見せる。
-/// `beckoning` のあいだは、文字が一文字ずつ順にぴょこっと跳ねて「まってるよ」と呼びかける。
+/// `beckoning` のあいだは、文字が一文字ずつ順にぴょこっと跳ねて「ここからだよ」と呼びかける (待っているようには言わない)。
 struct WaitingStep: View {
     let step: String
     var beckoning = true
@@ -28,7 +28,7 @@ struct WaitingStep: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Text(beckoning ? "👀 まってるよ" : "👣 まずはこれ")
+            Text(beckoning ? "🐾 ここからだよ" : "👣 まずはこれ")
                 .font(.system(.subheadline, design: .rounded, weight: .heavy))
                 .foregroundStyle(Pop.orange)
                 .padding(.horizontal, 12)
