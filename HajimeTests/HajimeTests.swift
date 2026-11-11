@@ -412,6 +412,30 @@ final class WanTests: XCTestCase {
         }
     }
 
+    func testPromptNotificationText() {
+        for seed in 0..<12 {
+            // ふつうはやることの名前がタイトル、本文に一歩が入る
+            let first = WanLines.notification(kind: .first, step: "起き上がる", title: "お風呂", secret: false, seed: seed)
+            XCTAssertEqual(first.title, "お風呂")
+            XCTAssertTrue(first.body.contains("「起き上がる」"))
+            XCTAssertFalse(first.body.contains("{"))
+            // 秘密❤️は名前も一歩も出さない
+            for kind in [Prompt.Kind.first, .nudge] {
+                let secret = WanLines.notification(kind: kind, step: "起き上がる", title: "お風呂", secret: true, seed: seed)
+                XCTAssertEqual(secret.title, WanLines.secretPromptTitle)
+                XCTAssertFalse(secret.body.contains("起き上がる"))
+                XCTAssertFalse(secret.body.contains("{"))
+            }
+            // 一歩が長いときは、決まった部分が短い本文だけ
+            let long = "着替えとタオルとシャンプーを用意する"
+            let nudge = WanLines.notification(kind: .nudge, step: long, title: "お風呂", secret: false, seed: seed)
+            XCTAssertTrue(nudge.body.contains(long))
+            XCTAssertLessThanOrEqual(nudge.body.count - long.count, WanLines.shortFixed)
+        }
+        XCTAssertTrue(WanLines.started.filter { !$0.usesTask }.count >= 4)
+        XCTAssertTrue(WanLines.continued.filter { !$0.usesTask }.count >= 4)
+    }
+
     func testFacingFlipsOnlyOppositeSides() {
         XCTAssertTrue(Facing.left.needsFlip(toFace: .right))
         XCTAssertTrue(Facing.right.needsFlip(toFace: .left))
