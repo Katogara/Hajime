@@ -18,27 +18,27 @@ private enum NotificationID {
     }
 }
 
-/// 通知から届いた「始める」の操作
+/// 通知から届いた「はじめる」の操作
 struct PromptResponse {
     var taskID: UUID
     var kind: Prompt.Kind
     var promptDate: Date
-    /// 通知の「始める」ボタンで、すぐタイマーを始める (通知本体のタップなら一歩を見せてから)
+    /// 通知の「はじめる」ボタンで、すぐタイマーを始める (通知本体のタップなら一歩を見せてから)
     var startNow: Bool
 }
 
 /// 着手を促す通知と、タイマー終了の通知
 @MainActor
 final class Notifier: NSObject, UNUserNotificationCenterDelegate {
-    /// 促す通知の「始める」が押されたとき・通知がタップされたとき
+    /// 促す通知の「はじめる」が押されたとき・通知がタップされたとき
     var onStart: (@MainActor (PromptResponse) -> Void)?
 
     private let center = UNUserNotificationCenter.current()
 
     override init() {
         super.init()
-        // 促した瞬間に迷わせないよう、促す通知のボタンは「始める」の 1 つだけにする
-        let start = UNNotificationAction(identifier: NotificationID.startAction, title: "始める", options: [.foreground])
+        // 促した瞬間に迷わせないよう、促す通知のボタンは「はじめる」の 1 つだけにする
+        let start = UNNotificationAction(identifier: NotificationID.startAction, title: "はじめる", options: [.foreground])
         center.setNotificationCategories([
             UNNotificationCategory(identifier: NotificationID.promptCategory, actions: [start], intentIdentifiers: []),
             // 時間がたったら自動で「やりました！」にするので、ボタンは置かない
@@ -54,7 +54,8 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     }
 
     /// 促す通知を予約し直す。予約は iOS が持つので、アプリを終了していても届く。
-    func schedulePrompts(_ prompts: [Prompt], tasks: [StartTask], calendar: Calendar = .current) async {
+    func schedulePrompts(_ prompts: [Prompt], tasks: [StartTask], secretTaskIDs: Set<UUID> = [],
+                         calendar: Calendar = .current) async {
         // 要らなくなった予約だけを消す。同じ ID の予約は add で置き換わるので消さない
         // (消す処理は iOS の中で遅れて実行されるため、全部消してから入れ直すと、入れ直した予約まで消えることがある)
         let wanted = Set(prompts.map(NotificationID.prompt))
@@ -66,13 +67,11 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
             guard let task = byID[prompt.taskID] else { continue }
             let plan = task.plan(for: prompt.kind)
             let content = UNMutableNotificationContent()
-            content.title = task.title
-            switch prompt.kind {
-            case .first:
-                content.body = Phrases.wrapped("「\(plan.step)」から。はじめるだけでいい。")
-            case .nudge:
-                content.body = Phrases.wrapped("「\(plan.step)」だけでいい。はじめるだけでいい。")
-            }
+            let text = WanLines.notification(kind: prompt.kind, step: plan.step, title: task.title,
+                                             secret: secretTaskIDs.contains(task.id),
+                                             seed: Int(prompt.date.timeIntervalSince1970 / 60))
+            content.title = text.title
+            content.body = Phrases.wrapped(text.body)
             content.sound = .default
             content.categoryIdentifier = NotificationID.promptCategory
             content.userInfo = [
@@ -110,8 +109,8 @@ final class Notifier: NSObject, UNUserNotificationCenterDelegate {
     /// 時間がたったときの通知。続きに夢中になっているかもしれないので、代わりに「やりました！」を押しておいたと知らせる。
     func scheduleTimerEnd(at date: Date, minutes: Int) {
         let content = UNMutableNotificationContent()
-        content.title = "\(minutes)分たちました"
-        content.body = Phrases.wrapped("続きに夢中なあなたの代わりに、「やりました！」を押しておきました。")
+        content.title = "\(minutes)分たったよ"
+        content.body = Phrases.wrapped(WanLines.timerEnd[Int(date.timeIntervalSince1970) % WanLines.timerEnd.count])
         content.sound = .default
         content.categoryIdentifier = NotificationID.timerCategory
         center.add(UNNotificationRequest(

@@ -224,6 +224,7 @@ final class AppModel {
             secretTaskIDs.remove(taskID)
         }
         store(secretTaskIDs, StoreKey.secretTasks)
+        refreshSchedule()   // 通知にも、やることの名前と一歩を出さなくする
     }
 
     // MARK: - アバター
@@ -478,10 +479,11 @@ final class AppModel {
         autoContinueIfDue()
         let prompts = ReminderSchedule.prompts(for: tasks, startedDays: ReminderSchedule.startedDays(records), now: .now)
         let tasks = tasks
+        let secret = secretTaskIDs
         let previous = scheduling
         scheduling = Task {
             await previous?.value
-            await notifier.schedulePrompts(prompts, tasks: tasks)
+            await notifier.schedulePrompts(prompts, tasks: tasks, secretTaskIDs: secret)
         }
     }
 
