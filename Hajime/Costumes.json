@@ -189,6 +189,37 @@
       ]
     },
     {
+      "id": "setsubun", "character": "avatar", "shelf": "season", "name": "節分", "month": 2, "order": 2,
+      "items": [
+        {"part": "hand", "name": "豆の升", "art": {"all": "av_setsubun_hand"}, "grip": true}
+      ]
+    },
+    {
+      "id": "hanami", "character": "avatar", "shelf": "season", "name": "花見", "month": 4, "order": 4,
+      "items": [
+        {"part": "hand", "name": "花見団子", "art": {"all": "av_hanami_hand"}, "grip": true}
+      ]
+    },
+    {
+      "id": "tanabata", "character": "avatar", "shelf": "season", "name": "七夕", "month": 7, "order": 7,
+      "items": [
+        {"part": "head", "name": "星のバケットハット", "art": {"all": "av_tanabata_head"}, "hairLine": [278, 90]}
+      ]
+    },
+    {
+      "id": "matsuri", "character": "avatar", "shelf": "season", "name": "夏祭り", "month": 8, "order": 8,
+      "items": [
+        {"part": "head", "name": "麦わら帽", "art": {"all": "av_matsuri_head"}, "hairLine": [252, 95]},
+        {"part": "hand", "name": "金魚のうちわ", "art": {"all": "av_matsuri_hand"}, "grip": true}
+      ]
+    },
+    {
+      "id": "aki", "character": "avatar", "shelf": "season", "name": "紅葉狩り", "month": 11, "order": 11,
+      "items": [
+        {"part": "neck", "name": "もみじ柄のマフラー", "art": {"all": "av_aki_neck"}}
+      ]
+    },
+    {
       "id": "gyaru", "character": "wan", "shelf": "fashion", "name": "ギャル系", "note": "キラキラ・元気", "order": 1,
       "items": [
         {"part": "head", "name": "ハートのサングラス", "art": {"all": "wan_gyaru_head"}}
@@ -320,6 +351,27 @@
       "items": [
         {"part": "head", "name": "獅子舞の頭", "art": {"all": "wan_newyear_head"}},
         {"part": "neck", "name": "紅白の水引", "art": {"all": "wan_newyear_neck"}}
+      ]
+    },
+    {
+      "id": "tsuyu", "character": "wan", "shelf": "season", "name": "梅雨", "month": 6, "order": 6,
+      "items": [
+        {"part": "head", "name": "かえるのレインハット", "art": {"all": "wan_tsuyu_head"}},
+        {"part": "neck", "name": "しずく柄の首巻き", "art": {"all": "wan_tsuyu_neck"}}
+      ]
+    },
+    {
+      "id": "tsukimi", "character": "wan", "shelf": "season", "name": "お月見", "month": 9, "order": 9,
+      "items": [
+        {"part": "head", "name": "うさぎの耳", "art": {"all": "wan_tsukimi_head"}},
+        {"part": "neck", "name": "月見団子の首飾り", "art": {"all": "wan_tsukimi_neck"}}
+      ]
+    },
+    {
+      "id": "aki", "character": "wan", "shelf": "season", "name": "紅葉狩り", "month": 11, "order": 11,
+      "items": [
+        {"part": "head", "name": "どんぐりの帽子", "art": {"all": "wan_aki_head"}},
+        {"part": "neck", "name": "もみじの首飾り", "art": {"all": "wan_aki_neck"}}
       ]
     }
   ]
