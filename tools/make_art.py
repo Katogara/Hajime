@@ -534,6 +534,40 @@ job("xmas", "av_xmas_head", P / "o06_avatar_xmas.png", XMAS, cut=rows(0, 330))
 job("xmas", "av_xmas_hand", P / "o06_avatar_xmas.png", XMAS, cut=no_skin(rows(330, 1024)), clean=False)
 
 
+def filled(then):
+    """穴を埋める (首巻きの地の色だけで取ったとき、中の柄が穴になるため)"""
+    def f(m):
+        return ndimage.binary_fill_holes(then(m)) & m
+    return f
+
+
+# 季節もの 2〜11 月 (2026-11-13)。下絵は gen/w23〜w32 (ワンのすけ)、o25〜o34 (アバター)、
+# 手に持つ小物は単独で描かせて (n02〜n04) tools/place_item.py で立ち姿の右手に置いたもの (parts3/h_*.png)。
+# 衣装の目利きチームの判定 (2026-11-13): 白い面は生成り #F3EADB にする (デザイナー)、ワンのすけの首の小物は
+# 首まわりの毛が入るので小物の色だけで取る。帽子は髪を切る hairLine を Costumes.json に書く
+KINARI = "#F3EADB"
+WAN_TSUYU = [L, "#C9CF4E", KINARI]
+WAN_TSUYU_NECK = [L, "#8CCDEB", KINARI]
+job("tsuyu", "wan_tsuyu_head", P / "w27_wan_tsuyu.png", WAN_TSUYU, base=WAN_BASE, cut=topmost)
+job("tsuyu", "wan_tsuyu_neck", P / "w27_wan_tsuyu.png", WAN_TSUYU_NECK, base=WAN_BASE,
+    cut=filled(colors_of(G / "w27_wan_tsuyu.jpg", ["#87BFD2"], then=rows(400, 700), reach=6, tol=60)))
+# うさ耳は判定で 2 対 1 (マーケター「強い」、ブランドディレクター問題なし、デザイナーは月の髪飾りに替える案) で残した
+job("tsukimi", "wan_tsukimi_head", P / "w30_wan_tsukimi.png", [L, KINARI, "#F0BEA4"], base=WAN_BASE, cut=topmost)
+job("tsukimi", "wan_tsukimi_neck", P / "w30_wan_tsukimi.png", [L, KINARI, "#F3D44A"], base=WAN_BASE,
+    cut=filled(colors_of(G / "w30_wan_tsukimi.jpg", ["#FDFDFD", "#F2CF4A"], then=rows(470, 700), reach=6, tol=22)))
+# どんぐりは茶色が線に紛れる (デザイナー) ので、塗りを明るい黄土色に替える
+job("aki", "wan_aki_head", P / "w32_wan_aki.png", [L, "#BF8145", "#7D4E30"], base=WAN_BASE, cut=topmost,
+    recolor={"#BF8145": "#D6A55A", "#7D4E30": "#B07D46"})
+job("aki", "wan_aki_neck", P / "w32_wan_aki.png", [L, "#C65740"], base=WAN_BASE,
+    cut=lambda m: blobs([0, 1, 2])(colors_of(G / "w32_wan_aki.jpg", ["#C65740"], then=rows(480, 700), reach=8, tol=60)(m)))
+job("aki", "av_aki_neck", P / "o34_avatar_aki.png", [L, "#D9A24D", "#C65740"], cut=blobs([0]))
+job("tanabata", "av_tanabata_head", P / "o30_avatar_tanabata.png", [L, "#2E3F7A", "#F3D44A"], cut=blobs([0]))
+job("matsuri", "av_matsuri_head", P / "o31_avatar_matsuri.png", [L, "#E9C77B", "#2E3F7A"], cut=blobs([0]))
+job("matsuri", "av_matsuri_hand", P / "h_matsuri_uchiwa.png", [L, "#A8DBF0", "#C9443A", "#C9A27A"], clean=False)
+job("setsubun", "av_setsubun_hand", P / "h_setsubun_masu.png", [L, "#F2C891", "#C9A26E"], clean=False)
+job("hanami", "av_hanami_hand", P / "h_hanami_dango.png", [L, "#F0A2BA", "#AABB79", KINARI], clean=False)
+
+
 def rims(name):
     """外周の線を 8px にそろえる部品 (svg_layers.py の --rim)。2026-11-08 のユーザーの指摘で足した:
     きせかえのタイルで大きく見せる頭とめがね (外周の線の太さが一定でなく粗が目立つ) と、
