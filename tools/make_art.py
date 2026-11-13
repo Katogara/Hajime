@@ -612,6 +612,16 @@ job("matsuri", "wan_matsuri_neck", P / "w29b_wan_matsuri.png", [L, "#2E3F7A", KI
     cut=wan_neck("w29b_wan_matsuri.jpg", ["#303E6F"]))
 job("tsukimi", "av_tsukimi_head", P / "o32b_avatar_tsukimi.png", [L, "#2E3F7A", "#F3D44A"],
     cut=hat("o32b_avatar_tsukimi.jpg", ["#354271", "#DBBE68"]))
+# 18 時からの残り: とんがり帽 (紫が主。墨色は線に紛れる) と手の小物 (gen/n05_hand4c、n06_hand2 を place_item.py で置いた)。
+# 月見団子は三方にのせず、お皿にピラミッドに積んでススキを添えた (枕団子に見せない)。焼きいもは半分に割った短い形
+job("halloween", "av_halloween_head", P / "o33b_avatar_halloween.png", [L, "#A959D7", KINARI],
+    cut=hat("o33b_avatar_halloween.jpg", ["#A959D7", "#F2E7D3"], bottom=320))
+job("halloween", "av_halloween_hand", P / "h_halloween_bucket.png", [L, "#9B6CC9"], clean=False)
+job("tsuyu", "av_tsuyu_hand", P / "h_tsuyu_kasa.png", [L, "#9BD0E2", "#7A5A3A"], clean=False)
+job("tanabata", "av_tanabata_hand", P / "h_tanabata_sasa.png", [L, "#3C905F", "#8CCDEB", "#C9A26E"], clean=False)
+job("kodomo", "av_kodomo_hand", P / "h_kodomo_koi.png", [L, "#3E7CC9", "#E5BD82", KINARI], clean=False)
+job("tsukimi", "av_tsukimi_hand", P / "h_tsukimi_dango.png", [L, KINARI, "#CEEAF7", "#C19851"], clean=False)
+job("aki", "av_aki_hand", P / "h_aki_imo.png", [L, "#B2875B", "#F4D946", "#954979"], clean=False)
 job("halloween", "wan_halloween_head", P / "w31b_wan_halloween.png", [L, "#A664C2"], base=WAN_BASE, cut=topmost)
 job("halloween", "wan_halloween_neck", P / "w31b_wan_halloween.png", [L, "#9B6CC9", "#5FA35A"], base=WAN_BASE,
     cut=wan_neck("w31b_wan_halloween.jpg", ["#A664C2", "#5FA35A"], top=540))
