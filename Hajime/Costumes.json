@@ -191,13 +191,34 @@
     {
       "id": "setsubun", "character": "avatar", "shelf": "season", "name": "節分", "month": 2, "order": 2,
       "items": [
+        {"part": "head", "name": "豆つぶ柄のニット帽", "art": {"all": "av_setsubun_head"}, "hairLine": [265, 88]},
         {"part": "hand", "name": "豆の升", "art": {"all": "av_setsubun_hand"}, "grip": true}
+      ]
+    },
+    {
+      "id": "hina", "character": "avatar", "shelf": "season", "name": "桃の節句", "month": 3, "order": 3,
+      "items": [
+        {"part": "head", "name": "桃の花のベレー帽", "art": {"all": "av_hina_head"}, "hairLine": [263, 92]},
+        {"part": "neck", "name": "桃と若草のしまスカーフ", "art": {"all": "av_hina_neck"}}
       ]
     },
     {
       "id": "hanami", "character": "avatar", "shelf": "season", "name": "花見", "month": 4, "order": 4,
       "items": [
+        {"part": "head", "name": "桜もようのキャップ", "art": {"all": "av_hanami_head"}, "hairLine": [279, 83]},
         {"part": "hand", "name": "花見団子", "art": {"all": "av_hanami_hand"}, "grip": true}
+      ]
+    },
+    {
+      "id": "kodomo", "character": "avatar", "shelf": "season", "name": "こどもの日", "month": 5, "order": 5,
+      "items": [
+        {"part": "neck", "name": "鯉のぼりの手ぬぐい", "art": {"all": "av_kodomo_neck"}}
+      ]
+    },
+    {
+      "id": "tsuyu", "character": "avatar", "shelf": "season", "name": "梅雨", "month": 6, "order": 6,
+      "items": [
+        {"part": "head", "name": "水色のレインハット", "art": {"all": "av_tsuyu_head"}, "hairLine": [262, 90]}
       ]
     },
     {
@@ -211,6 +232,12 @@
       "items": [
         {"part": "head", "name": "麦わら帽", "art": {"all": "av_matsuri_head"}, "hairLine": [252, 95]},
         {"part": "hand", "name": "金魚のうちわ", "art": {"all": "av_matsuri_hand"}, "grip": true}
+      ]
+    },
+    {
+      "id": "tsukimi", "character": "avatar", "shelf": "season", "name": "お月見", "month": 9, "order": 9,
+      "items": [
+        {"part": "head", "name": "満月のキャスケット", "art": {"all": "av_tsukimi_head"}, "hairLine": [257, 95]}
       ]
     },
     {
@@ -351,6 +378,55 @@
       "items": [
         {"part": "head", "name": "獅子舞の頭", "art": {"all": "wan_newyear_head"}},
         {"part": "neck", "name": "紅白の水引", "art": {"all": "wan_newyear_neck"}}
+      ]
+    },
+    {
+      "id": "setsubun", "character": "wan", "shelf": "season", "name": "節分", "month": 2, "order": 2,
+      "items": [
+        {"part": "head", "name": "福鬼のツノ", "art": {"all": "wan_setsubun_head"}},
+        {"part": "neck", "name": "豆の升の首飾り", "art": {"all": "wan_setsubun_neck"}}
+      ]
+    },
+    {
+      "id": "hina", "character": "wan", "shelf": "season", "name": "桃の節句", "month": 3, "order": 3,
+      "items": [
+        {"part": "head", "name": "桃の花の髪飾り", "art": {"all": "wan_hina_head"}},
+        {"part": "neck", "name": "桃と若草の首飾り", "art": {"all": "wan_hina_neck"}}
+      ]
+    },
+    {
+      "id": "hanami", "character": "wan", "shelf": "season", "name": "花見", "month": 4, "order": 4,
+      "items": [
+        {"part": "head", "name": "桜のひと枝", "art": {"all": "wan_hanami_head"}},
+        {"part": "neck", "name": "桜もようの首巻き", "art": {"all": "wan_hanami_neck"}}
+      ]
+    },
+    {
+      "id": "kodomo", "character": "wan", "shelf": "season", "name": "こどもの日", "month": 5, "order": 5,
+      "items": [
+        {"part": "head", "name": "紙のかぶと", "art": {"all": "wan_kodomo_head"}},
+        {"part": "neck", "name": "鯉のぼりの首飾り", "art": {"all": "wan_kodomo_neck"}}
+      ]
+    },
+    {
+      "id": "tanabata", "character": "wan", "shelf": "season", "name": "七夕", "month": 7, "order": 7,
+      "items": [
+        {"part": "head", "name": "星の髪飾り", "art": {"all": "wan_tanabata_head"}},
+        {"part": "neck", "name": "短冊の首飾り", "art": {"all": "wan_tanabata_neck"}}
+      ]
+    },
+    {
+      "id": "matsuri", "character": "wan", "shelf": "season", "name": "夏祭り", "month": 8, "order": 8,
+      "items": [
+        {"part": "head", "name": "金魚の帽子", "art": {"all": "wan_matsuri_head"}},
+        {"part": "neck", "name": "井桁もようの首巻き", "art": {"all": "wan_matsuri_neck"}}
+      ]
+    },
+    {
+      "id": "halloween", "character": "wan", "shelf": "season", "name": "ハロウィン", "month": 10, "order": 10,
+      "items": [
+        {"part": "head", "name": "コウモリの羽のカチューシャ", "art": {"all": "wan_halloween_head"}},
+        {"part": "neck", "name": "むらさきかぼちゃの首飾り", "art": {"all": "wan_halloween_neck"}}
       ]
     },
     {
