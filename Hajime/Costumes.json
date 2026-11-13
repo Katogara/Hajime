@@ -212,19 +212,22 @@
     {
       "id": "kodomo", "character": "avatar", "shelf": "season", "name": "こどもの日", "month": 5, "order": 5,
       "items": [
-        {"part": "neck", "name": "鯉のぼりの手ぬぐい", "art": {"all": "av_kodomo_neck"}}
+        {"part": "neck", "name": "鯉のぼりの手ぬぐい", "art": {"all": "av_kodomo_neck"}},
+        {"part": "hand", "name": "小さな鯉のぼり", "art": {"all": "av_kodomo_hand"}, "grip": true}
       ]
     },
     {
       "id": "tsuyu", "character": "avatar", "shelf": "season", "name": "梅雨", "month": 6, "order": 6,
       "items": [
-        {"part": "head", "name": "水色のレインハット", "art": {"all": "av_tsuyu_head"}, "hairLine": [262, 90]}
+        {"part": "head", "name": "水色のレインハット", "art": {"all": "av_tsuyu_head"}, "hairLine": [262, 90]},
+        {"part": "hand", "name": "水色の傘", "art": {"all": "av_tsuyu_hand"}, "grip": true}
       ]
     },
     {
       "id": "tanabata", "character": "avatar", "shelf": "season", "name": "七夕", "month": 7, "order": 7,
       "items": [
-        {"part": "head", "name": "星のバケットハット", "art": {"all": "av_tanabata_head"}, "hairLine": [278, 90]}
+        {"part": "head", "name": "星のバケットハット", "art": {"all": "av_tanabata_head"}, "hairLine": [278, 90]},
+        {"part": "hand", "name": "笹飾り", "art": {"all": "av_tanabata_hand"}, "grip": true}
       ]
     },
     {
@@ -237,13 +240,22 @@
     {
       "id": "tsukimi", "character": "avatar", "shelf": "season", "name": "お月見", "month": 9, "order": 9,
       "items": [
-        {"part": "head", "name": "満月のキャスケット", "art": {"all": "av_tsukimi_head"}, "hairLine": [257, 95]}
+        {"part": "head", "name": "満月のキャスケット", "art": {"all": "av_tsukimi_head"}, "hairLine": [257, 95]},
+        {"part": "hand", "name": "お皿の月見団子", "art": {"all": "av_tsukimi_hand"}, "grip": true}
+      ]
+    },
+    {
+      "id": "halloween", "character": "avatar", "shelf": "season", "name": "ハロウィン", "month": 10, "order": 10,
+      "items": [
+        {"part": "head", "name": "とんがり帽", "art": {"all": "av_halloween_head"}, "hairLine": [260, 90]},
+        {"part": "hand", "name": "かぼちゃのバケツ", "art": {"all": "av_halloween_hand"}, "grip": true}
       ]
     },
     {
       "id": "aki", "character": "avatar", "shelf": "season", "name": "紅葉狩り", "month": 11, "order": 11,
       "items": [
-        {"part": "neck", "name": "もみじ柄のマフラー", "art": {"all": "av_aki_neck"}}
+        {"part": "neck", "name": "もみじ柄のマフラー", "art": {"all": "av_aki_neck"}},
+        {"part": "hand", "name": "焼きいも", "art": {"all": "av_aki_hand"}, "grip": true}
       ]
     },
     {
