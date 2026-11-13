@@ -568,6 +568,55 @@ job("setsubun", "av_setsubun_hand", P / "h_setsubun_masu.png", [L, "#F2C891", "#
 job("hanami", "av_hanami_hand", P / "h_hanami_dango.png", [L, "#F0A2BA", "#AABB79", KINARI], clean=False)
 
 
+def hat(src, colors, top=0, bottom=340, tol=55):
+    """アバターの帽子を、帽子の色とそのそばの線だけで取り、穴を埋める。下絵の帽子の下に描かれた前髪や耳を外すため
+    (前髪はアプリで選んだ髪型を hairLine で切って見せる)"""
+    return filled(colors_of(G / src, colors, then=rows(top, bottom), reach=6, tol=tol))
+
+
+def wan_neck(src, colors, tol=60, top=420, bottom=780):
+    """ワンのすけの首の小物を、小物の色だけで取る (首まわりの毛と、首にかけたひもは外す)"""
+    return lambda m: blobs([0, 1, 2])(filled(colors_of(G / src, colors, then=rows(top, bottom), reach=6, tol=tol))(m))
+
+
+# 判定のあとに描き直したもの (2026-11-13 の午後)
+job("setsubun", "wan_setsubun_head", P / "w23b_wan_setsubun.png", [L, "#D9503F"], base=WAN_BASE, cut=topmost)
+job("setsubun", "wan_setsubun_neck", P / "w23b_wan_setsubun.png", [L, "#EFBE81", "#C98A5A"], base=WAN_BASE,
+    cut=wan_neck("w23b_wan_setsubun.jpg", ["#EFBE81", "#E8B06B"], tol=50, top=520))
+job("setsubun", "av_setsubun_head", P / "o25b_avatar_setsubun.png", [L, "#394E77", KINARI],
+    cut=hat("o25b_avatar_setsubun.jpg", ["#394E77", "#C9C3B8"]))
+job("hina", "wan_hina_head", P / "w24c_wan_hina_head.png", [L, "#EE7F9F", "#F3D44A", "#62A87F"], base=WAN_BASE, cut=topmost)
+job("hina", "wan_hina_neck", P / "w24b_wan_hina.png", [L, "#EE7F9F", "#8DBF6A"], base=WAN_BASE,
+    cut=lambda m: filled(colors_of(G / "w24b_wan_hina.jpg", ["#E96A7E", "#93BE6E"], then=rows(440, 700), reach=6, tol=60))(m))
+job("hina", "av_hina_head", P / "o26c_avatar_hina.png", [L, "#F8B8C8", "#E26B8C"],
+    cut=hat("o26c_avatar_hina.jpg", ["#FAB2C4", "#DC6A8B"], bottom=212, tol=35))
+job("hina", "av_hina_neck", P / "o26c_avatar_hina.png", [L, "#E05A86", "#8DBF6A"],
+    cut=lambda m: blobs([0])(filled(colors_of(G / "o26c_avatar_hina.jpg", ["#DB5184", "#89B264"], then=rows(290, 650), reach=6, tol=55))(m)))
+# 髪飾りは 64pt で読めるよう、元の絵を 1.2 倍にした (マーケター)
+job("hanami", "wan_hanami_head", P / "w25b_wan_hanami_head.png", [L, "#F9C9D4", "#9A6B3F"], base=WAN_BASE)
+job("hanami", "wan_hanami_neck", P / "w25_wan_hanami.png", [L, "#F9C9D4", KINARI], base=WAN_BASE,
+    cut=wan_neck("w25_wan_hanami.jpg", ["#FAB6C0", "#F6C6C7"], tol=45))
+job("hanami", "av_hanami_head", P / "o27b_avatar_hanami.png", [L, "#F6BFC6", KINARI],
+    cut=hat("o27b_avatar_hanami.jpg", ["#F4B9C1", "#F9E3D1"], tol=45))
+job("kodomo", "wan_kodomo_head", P / "w26_wan_kodomo.png", [L, "#BFE0EF"], base=WAN_BASE, cut=topmost)
+job("kodomo", "wan_kodomo_neck", P / "w26b_wan_kodomo_neck.png", [L, "#3E7CC9", KINARI], base=WAN_BASE,
+    cut=wan_neck("w26b_wan_kodomo_neck.jpg", ["#437EC0"], top=560))
+job("kodomo", "av_kodomo_neck", P / "o28b_avatar_kodomo.png", [L, "#2E3F7A", "#8CCDEB"], cut=blobs([0]))
+job("tsuyu", "av_tsuyu_head", P / "o29_avatar_tsuyu.png", [L, "#8CCDEB", "#64AACB", KINARI],
+    cut=hat("o29_avatar_tsuyu.jpg", ["#7DC3E2", "#61A8C5", "#B2DCEE", "#F5F5F5"], tol=45))
+job("tanabata", "wan_tanabata_head", P / "w28b_wan_tanabata.png", [L, "#F3D44A"], base=WAN_BASE, cut=topmost)
+job("tanabata", "wan_tanabata_neck", P / "w28b_wan_tanabata.png", [L, "#8CCDEB"], base=WAN_BASE,
+    cut=wan_neck("w28b_wan_tanabata.jpg", ["#89CDE9"]))
+job("matsuri", "wan_matsuri_head", P / "w29b_wan_matsuri.png", [L, "#E45847", KINARI], base=WAN_BASE, cut=topmost)
+job("matsuri", "wan_matsuri_neck", P / "w29b_wan_matsuri.png", [L, "#2E3F7A", KINARI], base=WAN_BASE,
+    cut=wan_neck("w29b_wan_matsuri.jpg", ["#303E6F"]))
+job("tsukimi", "av_tsukimi_head", P / "o32b_avatar_tsukimi.png", [L, "#2E3F7A", "#F3D44A"],
+    cut=hat("o32b_avatar_tsukimi.jpg", ["#354271", "#DBBE68"]))
+job("halloween", "wan_halloween_head", P / "w31b_wan_halloween.png", [L, "#A664C2"], base=WAN_BASE, cut=topmost)
+job("halloween", "wan_halloween_neck", P / "w31b_wan_halloween.png", [L, "#9B6CC9", "#5FA35A"], base=WAN_BASE,
+    cut=wan_neck("w31b_wan_halloween.jpg", ["#A664C2", "#5FA35A"], top=540))
+
+
 def rims(name):
     """外周の線を 8px にそろえる部品 (svg_layers.py の --rim)。2026-11-08 のユーザーの指摘で足した:
     きせかえのタイルで大きく見せる頭とめがね (外周の線の太さが一定でなく粗が目立つ) と、
