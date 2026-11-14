@@ -2,7 +2,8 @@ import SwiftUI
 
 /// きせかえ (一覧の右上のハンガーから開く)。上の台座の 2 人に試着がすぐ反映される。
 /// 「もとにもどす」「コーデを保存」「着る」は、いつでも押せるよう右上に置く。
-/// 髪型と髪の色は無料で、選ぶとすぐ保存する。服は課金を作るまで、開発中の確かめ用の設定がオンのときだけ着られる。
+/// 髪型と髪の色は無料で、服と同じく「着る」を押すまでは試着にする (前は選ぶとすぐ保存していたが、2026-11-14 のユーザーの指摘
+/// 「髪型を変えると、保存していないのに戻るボタンで保存される」で改めた)。服は課金を作るまで、開発中の確かめ用の設定がオンのときだけ着られる。
 /// 服は絵で選ぶ (文字の横並びはスクロールが長くなるため)。テーマのひとそろいは「セット」で一度に試着できる。
 /// 試着の組み合わせは「コーデ」として保存し、あとで呼び出せる (買っていない服も入れられる)。NEW の印や「人気」の並びは付けない
 struct ClosetView: View {
@@ -12,6 +13,8 @@ struct ClosetView: View {
     /// 試着で変えた組み合わせ。変えるまでは nil で、いま着ている服をそのまま見せる
     /// (開いたときに写しておくと、写す前の空の組み合わせが残ることがあるため)
     @State private var edited: Wardrobe?
+    /// 試着で変えた髪型と髪の色。変えるまでは nil で、いまの姿をそのまま見せる
+    @State private var editedLook: AvatarLook?
     /// 最後に押したタイル。台座の下の帯に、その名前を省略せずに出す
     @State private var pick: TryOnPick?
     /// 上の台座を大喜びのポーズで見せる
@@ -25,6 +28,11 @@ struct ClosetView: View {
     /// 着ている服 (着られないあいだは初期の服)
     private var worn: Wardrobe { model.devWearAll ? model.wardrobe : Wardrobe() }
     private var trying: Wardrobe { edited ?? worn }
+    private var tryingLook: AvatarLook? { editedLook ?? model.look }
+    /// 髪型か髪の色を、いまの姿から変えているか
+    private var lookChanged: Bool { editedLook != nil && editedLook != model.look }
+    /// 服を、いま着ているものから変えているか (着られるときだけ数える)
+    private var clothesChanged: Bool { model.devWearAll && trying != model.wardrobe }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -40,7 +48,7 @@ struct ClosetView: View {
                 VStack(alignment: .leading, spacing: 22) {
                     outfitSection
                     setSection
-                    if character == .avatar, let look = model.look {
+                    if character == .avatar, let look = tryingLook {
                         hairSection(look)
                     }
                     ForEach(parts, id: \.self) { part in
@@ -64,10 +72,10 @@ struct ClosetView: View {
                 Button("閉じる") { dismiss() }
             }
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button { edited = nil; pick = nil } label: {
+                Button { edited = nil; editedLook = nil; pick = nil } label: {
                     Image(systemName: "arrow.uturn.backward")
                 }
-                .disabled(trying == worn)
+                .disabled(trying == worn && !lookChanged)
                 .accessibilityLabel("もとにもどす")
                 Button { model.saveOutfit(character, trying[character]) } label: {
                     Image(systemName: isSaved(trying[character]) ? "bookmark.fill" : "bookmark")
@@ -77,7 +85,7 @@ struct ClosetView: View {
                 // 着られないあいだも見せておき、押せない理由は一覧の下に書く
                 Button("着る") { wearTrying() }
                     .fontWeight(.bold)
-                    .disabled(!model.devWearAll || trying == model.wardrobe)
+                    .disabled(!lookChanged && !clothesChanged)
             }
         }
         .sensoryFeedback(.selection, trigger: trying)
@@ -97,7 +105,7 @@ struct ClosetView: View {
                 WanImage(pose: joyPose ? .banzai : .wave, facing: model.avatar == nil ? nil : .left)
                     .frame(width: model.avatar == nil ? 170 : 110, height: model.avatar == nil ? 170 : 110)
             }
-            .environment(\.dressing, Dressing(look: model.look, wardrobe: trying))
+            .environment(\.dressing, Dressing(look: tryingLook, wardrobe: trying))
             .frame(maxWidth: .infinity)
             .overlay(alignment: .topTrailing) {
                 Picker("ポーズ", selection: $joyPose) {
@@ -242,7 +250,7 @@ struct ClosetView: View {
                 ForEach(HairStyle.allCases, id: \.self) { hair in
                     let next = AvatarLook(body: look.body, hair: hair, hairColor: look.hairColor)
                     tile(hair.label, selected: look.hair == hair) {
-                        model.setLook(next)
+                        editedLook = next
                         pick = .hair(hair)
                     } picture: {
                         // 全身の絵を大きく置き、頭のあたりだけを丸く切り取る
@@ -260,7 +268,7 @@ struct ClosetView: View {
                     Button {
                         var next = look
                         next.hairColor = color
-                        model.setLook(next)
+                        editedLook = next
                     } label: {
                         Circle().fill(color.color)
                             .frame(width: 34, height: 34)
@@ -357,6 +365,12 @@ struct ClosetView: View {
     }
 
     private func wearTrying() {
+        if lookChanged, let look = editedLook {
+            model.setLook(look)
+        }
+        editedLook = nil
+        // 服は着られるときだけ着る (髪型と髪の色は無料なので、いつでも着られる)
+        guard model.devWearAll else { return }
         for c in CostumeCharacter.allCases {
             for part in CostumePart.allCases where trying[c][part] != model.wardrobe[c][part] {
                 model.wear(c, part, theme: trying[c][part])
