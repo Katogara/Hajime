@@ -96,11 +96,17 @@ struct HeadlineText: View {
         self.text = text
     }
 
+    // ViewThatFits は、折り返せる Text を「折り返せば収まる」と見なして最初の案を選んでしまう。
+    // 1 行の案と句読点で分けた案は、横に折り返せないよう fixedSize で固め、本当に幅に収まるときだけ選ばれるようにする
+    // (固めないと、文節を無視した位置で iOS に無理やり折り返される。例:「あなたの「／はじめる」を」)
     var body: some View {
         ViewThatFits(in: .horizontal) {
             Text(verbatim: Phrases.unbreakable(text))
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
             if let lines = Phrases.punctuationLines(text) {
                 Text(verbatim: lines)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             PhraseText(text)
         }
