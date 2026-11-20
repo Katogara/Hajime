@@ -692,10 +692,18 @@ final class CostumeTests: XCTestCase {
     func testWanNeckItemRemovesBandanaOnlyWhereDrawn() {
         var wardrobe = Wardrobe()
         wardrobe.wan[.neck] = "consa"
-        let wave = FigureRig.wan(pose: .wave, wardrobe: wardrobe, catalog: catalog, hasAsset: exists).map(\.asset)
-        XCTAssertEqual(wave.first, "wan_wave_nobandana_fill")
-        let clap = FigureRig.wan(pose: .clap, wardrobe: wardrobe, catalog: catalog, hasAsset: exists)
+        // 2026-11-20 から、すべてのポーズにバンダナなしの絵がある
+        for pose in WanPose.allCases {
+            let layers = FigureRig.wan(pose: pose, wardrobe: wardrobe, catalog: catalog, hasAsset: exists).map(\.asset)
+            XCTAssertEqual(layers.first, "wan_\(pose.rawValue)_nobandana_fill")
+        }
+        // 絵がないポーズでは、バンダナのある絵のまま
+        let clap = FigureRig.wan(pose: .clap, wardrobe: wardrobe, catalog: catalog,
+                                 hasAsset: { !$0.hasSuffix("_nobandana_fill") && self.exists($0) })
         XCTAssertEqual(clap.first?.asset, "wan_clap_fill")
+        // 首の小物がなければ、バンダナのある絵
+        XCTAssertEqual(FigureRig.wan(pose: .clap, wardrobe: Wardrobe(), catalog: catalog, hasAsset: exists).first?.asset,
+                       "wan_clap_fill")
         // 手を振る絵以外では、小物を頭の位置に合わせて動かす
         XCTAssertNotNil(clap.last?.anchor)
         XCTAssertNil(FigureRig.wan(pose: .wave, wardrobe: wardrobe, catalog: catalog, hasAsset: exists).last?.anchor)
