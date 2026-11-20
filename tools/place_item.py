@@ -48,7 +48,13 @@ if n:
     sizes = ndimage.sum(keep, lab, range(1, n + 1))
     # いちばん大きい小物と、それに近い大きさの部分 (団子の後ろのススキなど、離れて描かれた一部) だけ
     keep = np.isin(lab, [i + 1 for i, s in enumerate(sizes) if s >= 0.08 * sizes.max()])
-keep = ndimage.binary_fill_holes(keep)
+filled = ndimage.binary_fill_holes(keep)
+# 穴のうち、背景のマゼンタが入っているもの (マグの取っ手の内側など) は埋めずに抜く (2026-11-20)
+holes, nh = ndimage.label(filled & ~keep)
+if nh:
+    bg_holes = [i for i in range(1, nh + 1) if (mag & (holes == i)).sum() >= 10]
+    filled &= ~np.isin(holes, bg_holes)
+keep = filled
 # Gemini がステッカーの白いふちを付けることがある (アプリで白ふちを付けるので二重になる)。外側から白い点をはがす
 white = img.mean(-1) > 200  # 白いふちと、ふちにまじったマゼンタのにじみ。内側はこげ茶の線で止まる
 for _ in range(40):

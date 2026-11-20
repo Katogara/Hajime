@@ -314,6 +314,18 @@ for pose, src in [("wave", G / "r01_wan_wave.jpg"), ("banzai", G / "r02_wan_banz
                   ("gift", T / "04_wan_gift.jpg"), ("wow", T / "05_wan_wow.jpg")]:
     job("wan", f"wan_{pose}", src, WAN, base=None)
 job("wan", "wan_wave_nobandana", G / "r10_wan_wave_nobandana.jpg", WAN, base=WAN_BASE)
+# ほかのポーズのバンダナなし (2026-11-20)。手を振る以外のポーズで首の小物を着けると、下から水色のバンダナがはみ出していた。
+# Gemini で各ポーズの絵からバンダナだけを消した (位置と大きさは align_to_base.py で元の絵とずれ 0 を確かめた)。
+# てへとびっくりは 1 回目の絵 (r23・r26) で大きさや輪郭が変わったので、描き直した r23b・r26b を使う
+for pose, src, bare in [("banzai", G / "r02_wan_banzai.jpg", "r20_wan_banzai_nobandana"),
+                        ("clap", G / "r03_wan_clap.jpg", "r21_wan_clap_nobandana"),
+                        ("blink", G / "r04_wan_blink.jpg", "r22_wan_blink_nobandana"),
+                        ("tehe", T / "01_wan_tehe.jpg", "r23b_wan_tehe_nobandana"),
+                        ("nod", T / "02_wan_nod.jpg", "r24_wan_nod_nobandana"),
+                        ("gift", T / "04_wan_gift.jpg", "r25_wan_gift_nobandana"),
+                        ("wow", T / "05_wan_wow.jpg", "r26b_wan_wow_nobandana")]:
+    # 白と薄いクリーム色のむら (顔と胸の点々) を tools/even_fill.py でならした絵から作る
+    job("wan", f"wan_{pose}_nobandana", G / f"{bare}_even.png", WAN, base=src)
 
 # 服（テーマごと）。名前は「種類_テーマ_部位_ポーズ」。下・足・頭・首・手は2つのポーズで同じ絵を使う
 # ストリートは 2026-11-05 に描き直した（パーカーを大きめに、矢印を太く。前の版は b01・j01 と PARKA の色）。
@@ -622,6 +634,13 @@ job("tanabata", "av_tanabata_hand", P / "h_tanabata_sasa.png", [L, "#3C905F", "#
 job("kodomo", "av_kodomo_hand", P / "h_kodomo_koi.png", [L, "#3E7CC9", "#E5BD82", KINARI], clean=False)
 job("tsukimi", "av_tsukimi_hand", P / "h_tsukimi_dango.png", [L, KINARI, "#CEEAF7", "#C19851"], clean=False)
 job("aki", "av_aki_hand", P / "h_aki_imo.png", [L, "#B2875B", "#F4D946", "#954979"], clean=False)
+# 2026-11-20: 手の小物の位置を直した。前は素体の手のかたまりの中心 (632, 552) に置いていたが、そこは袖に隠れる手首で、
+# 見えている手の中心は (634, 614)。握る小物は上着より奥に描くので、升・お皿・焼きいもは袖に隠れ、鯉のぼりや笹は肩から
+# 生えて見えた。h_*.png と n01_hagoita.png を右へ 2・下へ 62 ずらし (元の絵は parts3/old_hand_20261120/)、
+# 手のひらにのせるものと柄の細いものは Costumes.json の grip を外して全部の上に描く。grip のまま: 傘・バケツ・羽子板・マグ。
+# 同じ日に、作者が描く予定だった手の小物 2 つを gen/n07_hand_soda_mug から place_item.py で作った
+job("kissa", "av_kissa_hand", P / "h_kissa_soda.png", [L, "#6CBF52", KINARI, "#C8E6F2", "#C8283C"], clean=False)
+job("outdoor", "av_outdoor_hand", P / "h_outdoor_mug.png", [L, KINARI, "#D9CDAA", "#86B8E8"], clean=False)
 job("halloween", "wan_halloween_head", P / "w31b_wan_halloween.png", [L, "#A664C2"], base=WAN_BASE, cut=topmost)
 job("halloween", "wan_halloween_neck", P / "w31b_wan_halloween.png", [L, "#9B6CC9", "#5FA35A"], base=WAN_BASE,
     cut=wan_neck("w31b_wan_halloween.jpg", ["#A664C2", "#5FA35A"], top=540))
