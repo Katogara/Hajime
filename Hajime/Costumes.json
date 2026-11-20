@@ -74,7 +74,8 @@
       "id": "kissa", "character": "avatar", "shelf": "fashion", "name": "レトロ喫茶", "note": "クリームソーダ気分で", "order": 8,
       "items": [
         {"part": "top", "name": "グラスのワッペンのベスト", "over": true, "art": {"std": "av_kissa_top_std", "joy": "av_kissa_top_joy"}},
-        {"part": "bottom", "name": "クリーム色のスラックス", "art": {"all": "av_kissa_bottom"}}
+        {"part": "bottom", "name": "クリーム色のスラックス", "art": {"all": "av_kissa_bottom"}},
+        {"part": "hand", "name": "クリームソーダ", "art": {"all": "av_kissa_hand"}}
       ]
     },
     {
@@ -82,7 +83,8 @@
       "items": [
         {"part": "head", "name": "山のバケットハット", "art": {"all": "av_outdoor_head"}, "hairLine": [282, 90]},
         {"part": "top", "name": "フィッシングベスト", "over": true, "art": {"std": "av_outdoor_top_std", "joy": "av_outdoor_top_joy"}},
-        {"part": "feet", "name": "登山靴", "art": {"all": "av_outdoor_feet"}}
+        {"part": "feet", "name": "登山靴", "art": {"all": "av_outdoor_feet"}},
+        {"part": "hand", "name": "ホーローマグ", "art": {"all": "av_outdoor_hand"}, "grip": true}
       ]
     },
     {
@@ -192,7 +194,7 @@
       "id": "setsubun", "character": "avatar", "shelf": "season", "name": "節分", "month": 2, "order": 2,
       "items": [
         {"part": "head", "name": "豆つぶ柄のニット帽", "art": {"all": "av_setsubun_head"}, "hairLine": [265, 88]},
-        {"part": "hand", "name": "豆の升", "art": {"all": "av_setsubun_hand"}, "grip": true}
+        {"part": "hand", "name": "豆の升", "art": {"all": "av_setsubun_hand"}}
       ]
     },
     {
@@ -206,14 +208,14 @@
       "id": "hanami", "character": "avatar", "shelf": "season", "name": "花見", "month": 4, "order": 4,
       "items": [
         {"part": "head", "name": "桜もようのキャップ", "art": {"all": "av_hanami_head"}, "hairLine": [279, 83]},
-        {"part": "hand", "name": "花見団子", "art": {"all": "av_hanami_hand"}, "grip": true}
+        {"part": "hand", "name": "花見団子", "art": {"all": "av_hanami_hand"}}
       ]
     },
     {
       "id": "kodomo", "character": "avatar", "shelf": "season", "name": "こどもの日", "month": 5, "order": 5,
       "items": [
         {"part": "neck", "name": "鯉のぼりの手ぬぐい", "art": {"all": "av_kodomo_neck"}},
-        {"part": "hand", "name": "小さな鯉のぼり", "art": {"all": "av_kodomo_hand"}, "grip": true}
+        {"part": "hand", "name": "小さな鯉のぼり", "art": {"all": "av_kodomo_hand"}}
       ]
     },
     {
@@ -227,21 +229,21 @@
       "id": "tanabata", "character": "avatar", "shelf": "season", "name": "七夕", "month": 7, "order": 7,
       "items": [
         {"part": "head", "name": "星のバケットハット", "art": {"all": "av_tanabata_head"}, "hairLine": [278, 90]},
-        {"part": "hand", "name": "笹飾り", "art": {"all": "av_tanabata_hand"}, "grip": true}
+        {"part": "hand", "name": "笹飾り", "art": {"all": "av_tanabata_hand"}}
       ]
     },
     {
       "id": "matsuri", "character": "avatar", "shelf": "season", "name": "夏祭り", "month": 8, "order": 8,
       "items": [
         {"part": "head", "name": "麦わら帽", "art": {"all": "av_matsuri_head"}, "hairLine": [252, 95]},
-        {"part": "hand", "name": "金魚のうちわ", "art": {"all": "av_matsuri_hand"}, "grip": true}
+        {"part": "hand", "name": "金魚のうちわ", "art": {"all": "av_matsuri_hand"}}
       ]
     },
     {
       "id": "tsukimi", "character": "avatar", "shelf": "season", "name": "お月見", "month": 9, "order": 9,
       "items": [
         {"part": "head", "name": "満月のキャスケット", "art": {"all": "av_tsukimi_head"}, "hairLine": [257, 95]},
-        {"part": "hand", "name": "お皿の月見団子", "art": {"all": "av_tsukimi_hand"}, "grip": true}
+        {"part": "hand", "name": "お皿の月見団子", "art": {"all": "av_tsukimi_hand"}}
       ]
     },
     {
@@ -255,7 +257,7 @@
       "id": "aki", "character": "avatar", "shelf": "season", "name": "紅葉狩り", "month": 11, "order": 11,
       "items": [
         {"part": "neck", "name": "もみじ柄のマフラー", "art": {"all": "av_aki_neck"}},
-        {"part": "hand", "name": "焼きいも", "art": {"all": "av_aki_hand"}, "grip": true}
+        {"part": "hand", "name": "焼きいも", "art": {"all": "av_aki_hand"}}
       ]
     },
     {

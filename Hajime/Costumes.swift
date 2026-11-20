@@ -511,7 +511,7 @@ enum FigureRig {
         return layers
     }
 
-    /// ワンのすけ。首の小物を付けるときはバンダナを外した絵にする (そのポーズの絵があるときだけ。今は手を振る絵だけ)
+    /// ワンのすけ。首の小物を付けるときはバンダナを外した絵にする (そのポーズの絵があるときだけ。2026-11-20 から全ポーズにある)
     static func wan(pose: WanPose, wardrobe: Wardrobe, catalog: CostumeCatalog = .shared,
                     hasAsset: (String) -> Bool = assetExists) -> [FigureLayer] {
         let neck = wardrobe.wan[.neck].flatMap { catalog.theme(.wan, $0)?.item(.neck) }
