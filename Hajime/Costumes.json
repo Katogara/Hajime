@@ -84,7 +84,7 @@
         {"part": "head", "name": "山のバケットハット", "art": {"all": "av_outdoor_head"}, "hairLine": [282, 90]},
         {"part": "top", "name": "フィッシングベスト", "over": true, "art": {"std": "av_outdoor_top_std", "joy": "av_outdoor_top_joy"}},
         {"part": "feet", "name": "登山靴", "art": {"all": "av_outdoor_feet"}},
-        {"part": "hand", "name": "ホーローマグ", "art": {"all": "av_outdoor_hand"}, "grip": true}
+        {"part": "hand", "name": "ホーローマグ", "art": {"all": "av_outdoor_hand"}}
       ]
     },
     {
@@ -180,7 +180,7 @@
       "id": "newyear", "character": "avatar", "shelf": "season", "name": "正月", "month": 1, "order": 1,
       "items": [
         {"part": "neck", "name": "水引柄のスカーフ", "art": {"all": "av_newyear_neck"}},
-        {"part": "hand", "name": "羽子板", "art": {"all": "av_newyear_hand"}, "grip": true}
+        {"part": "hand", "name": "羽子板", "art": {"all": "av_newyear_hand"}}
       ]
     },
     {
@@ -250,7 +250,7 @@
       "id": "halloween", "character": "avatar", "shelf": "season", "name": "ハロウィン", "month": 10, "order": 10,
       "items": [
         {"part": "head", "name": "とんがり帽", "art": {"all": "av_halloween_head"}, "hairLine": [260, 90]},
-        {"part": "hand", "name": "かぼちゃのバケツ", "art": {"all": "av_halloween_hand"}, "grip": true}
+        {"part": "hand", "name": "かぼちゃのバケツ", "art": {"all": "av_halloween_hand"}}
       ]
     },
     {
