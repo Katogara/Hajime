@@ -641,6 +641,23 @@ job("aki", "av_aki_hand", P / "h_aki_imo.png", [L, "#B2875B", "#F4D946", "#95497
 # 同じ日に、作者が描く予定だった手の小物 2 つを gen/n07_hand_soda_mug から place_item.py で作った
 job("kissa", "av_kissa_hand", P / "h_kissa_soda.png", [L, "#6CBF52", KINARI, "#C8E6F2", "#C8283C"], clean=False)
 job("outdoor", "av_outdoor_hand", P / "h_outdoor_mug.png", [L, KINARI, "#D9CDAA", "#86B8E8"], clean=False)
+
+
+def right_hand(m):
+    """立ち姿の右手 (見る人から見て右) のうち、袖の下から見えている部分だけを残す。
+    手に持つ小物の上に重ねて、指が小物の手前にかかって見えるようにする (2026-11-21)"""
+    top = np.asarray(Image.open(P / "std_top.png").convert("RGBA"))[..., 3] > 128
+    out = np.zeros_like(m)
+    out[500:620, 590:690] = m[500:620, 590:690]
+    return out & ~top
+
+
+job("avatar_body", "av_std_rhand", P / "std_hands.png", AV, cut=right_hand, clean=False)
+# 2026-11-21: 2026-11-20 の位置の直しはまちがいだった。PNG の小物は SVG にするとき素体に合わせて下へ 64 動くが、
+# 前の確かめは PNG の小物を SVG の体に重ねていたので、手が 64 上に見えていた。ずらした 62 で、どの小物も手より下に垂れた。
+# ユーザーの指摘「手に持つものが全て手の後ろに置かれているのがおかしい。傘のみ後ろ手に持つのが一般的なので正しい」を受け、
+# 傘のほかは、小物を体より手前に描き、その上に右手 (av_std_rhand) を重ねて指をかける。小物は持つところが指の下に来るよう
+# スクラッチの shift_hand_items.py でずらした (元の絵は parts3/old_hand_20261121/)。grip (体と手の後ろ) は傘だけ
 job("halloween", "wan_halloween_head", P / "w31b_wan_halloween.png", [L, "#A664C2"], base=WAN_BASE, cut=topmost)
 job("halloween", "wan_halloween_neck", P / "w31b_wan_halloween.png", [L, "#9B6CC9", "#5FA35A"], base=WAN_BASE,
     cut=wan_neck("w31b_wan_halloween.jpg", ["#A664C2", "#5FA35A"], top=540))
