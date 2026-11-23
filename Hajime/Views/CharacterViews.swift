@@ -227,9 +227,16 @@ private struct FigureView: View {
             .scaleEffect(x: flip ? -1 : 1, y: 1)
             .frame(width: geo.size.width, height: geo.size.height)
             .task(id: FigureRenderer.key(layers, side: side, scale: displayScale, border: border)) {
-                guard rendersAsync,
-                      FigureRenderer.cached(layers, side: side, scale: displayScale, border: border) == nil,
-                      let made = await FigureRenderer.render(layers, side: side, scale: displayScale, border: border)
+                guard rendersAsync else { return }
+                // 作ってあった画像を見せたときも shown を入れ替える。前は裏で作ったときだけ入れ替えていたので、
+                // 帽子を試着 (裏で作る) → 帽子を外す (作ってあった画像) → 靴を選ぶ (裏で作る) と、靴ができるまでのあいだ
+                // shown に残っていた帽子の姿が一瞬出ていた (2026-11-23 のユーザーの報告
+                // 「パーツを選んだ瞬間、さっき外した服を一瞬着て外し、選んだパーツが付く」)
+                if let hit = FigureRenderer.cached(layers, side: side, scale: displayScale, border: border) {
+                    shown = hit
+                    return
+                }
+                guard let made = await FigureRenderer.render(layers, side: side, scale: displayScale, border: border)
                 else { return }
                 shown = made
             }
