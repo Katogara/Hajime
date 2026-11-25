@@ -53,7 +53,7 @@ struct IntroView: View {
         IntroPage(pose: .wave, line: "ぼく、ワンのすけ。あなたの「はじめる」を応援する柴犬だよ",
                   title: "始める直前が、いちばんつらい") {
             PhraseText("やらなきゃと思うほど、なかなか始められない。でも始めてしまえば、意外とすんなり進む。")
-            PhraseText("このアプリはあなたの「はじめる」を応援します！")
+            HeadlineText("このアプリはあなたの「はじめる」を応援します！")
                 .font(.system(.title3, design: .rounded, weight: .black))
                 .foregroundStyle(Pop.orange)
             PhraseText("手伝うのは「始めること」だけ。やることの管理はしませんし、終わらせなくていいアプリです。")

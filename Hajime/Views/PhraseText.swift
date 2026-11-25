@@ -108,7 +108,79 @@ struct HeadlineText: View {
                 Text(verbatim: lines)
                     .fixedSize(horizontal: true, vertical: false)
             }
-            PhraseText(text)
+            PhraseFlow(text: text)
+        }
+    }
+}
+
+/// 文節ごとに別の Text にして並べ、文節の間だけで折り返す。
+/// PhraseText (文節の中を Word Joiner でつなぐ) でも、iOS が「あなたの「／はじめる」を」と括弧の直後で折り返した
+/// (2026-11-17 に ViewThatFits を直したあとも、2026-11-25 のユーザーの画面で同じ切れ方が残っていた)。
+/// 1 つの Text の中の折り返しは iOS に任せるしかないので、見出しは文節を並べる位置を自分で決める
+private struct PhraseFlow: View {
+    let text: String
+    @Environment(\.multilineTextAlignment) private var alignment
+
+    var body: some View {
+        PhraseFlowLayout(alignment: alignment) {
+            ForEach(Array(Phrases.split(text).enumerated()), id: \.offset) { _, phrase in
+                Text(verbatim: Phrases.unbreakable(phrase))
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(verbatim: text))
+    }
+}
+
+/// 文節を左から詰め、幅を超える文節から次の行にする。行は multilineTextAlignment に合わせて寄せる。
+/// 1 つの文節だけで幅を超えるときは、その文節の中で折り返す
+private struct PhraseFlowLayout: Layout {
+    var alignment: TextAlignment
+
+    private struct Row {
+        var range: Range<Int>
+        var sizes: [CGSize]
+        var width: CGFloat { sizes.reduce(0) { $0 + $1.width } }
+        var height: CGFloat { sizes.map(\.height).max() ?? 0 }
+    }
+
+    private func rows(_ subviews: Subviews, width: CGFloat?) -> [Row] {
+        var rows: [Row] = []
+        var current = Row(range: 0..<0, sizes: [])
+        for (index, subview) in subviews.enumerated() {
+            let size = subview.sizeThatFits(ProposedViewSize(width: width, height: nil))
+            if let width, !current.sizes.isEmpty, current.width + size.width > width + 0.5 {
+                rows.append(current)
+                current = Row(range: index..<index, sizes: [])
+            }
+            current.sizes.append(size)
+            current.range = current.range.lowerBound..<(index + 1)
+        }
+        if !current.sizes.isEmpty { rows.append(current) }
+        return rows
+    }
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = rows(subviews, width: proposal.width)
+        return CGSize(width: rows.map(\.width).max() ?? 0, height: rows.reduce(0) { $0 + $1.height })
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY
+        for row in rows(subviews, width: bounds.width) {
+            var x: CGFloat
+            switch alignment {
+            case .leading: x = bounds.minX
+            case .trailing: x = bounds.maxX - row.width
+            default: x = bounds.minX + (bounds.width - row.width) / 2
+            }
+            for (offset, index) in row.range.enumerated() {
+                let size = row.sizes[offset]
+                subviews[index].place(at: CGPoint(x: x, y: y + (row.height - size.height) / 2), anchor: .topLeading,
+                                      proposal: ProposedViewSize(width: size.width, height: size.height))
+                x += size.width
+            }
+            y += row.height
         }
     }
 }
