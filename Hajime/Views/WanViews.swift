@@ -79,7 +79,7 @@ struct WanBand: View {
                         if let emoji {
                             Text(emoji).font(.system(size: 30))
                         }
-                        PhraseText(text)
+                        HeadlineText(text)  // 読点の前で折り返さないよう、せりふは HeadlineText で出す
                             .font(.system(.subheadline, design: .rounded, weight: .bold))
                             .foregroundStyle(Pop.brown)
                     }
@@ -195,7 +195,7 @@ struct SouvenirView: View {
                         .hopping(height: 8, period: 1)
                     SpeechBubble(tail: .leading) {
                         VStack(alignment: .leading, spacing: 6) {
-                            PhraseText(line)
+                            HeadlineText(line)
                                 .font(.system(.headline, design: .rounded, weight: .heavy))
                                 .foregroundStyle(Pop.brown)
                             if let item = souvenir.item {
@@ -235,7 +235,7 @@ struct WelcomeBubble: View {
                         HeadlineText(line.title)
                             .font(.system(.headline, design: .rounded, weight: .black))
                             .foregroundStyle(Pop.orangeDeep)
-                        PhraseText(line.sub)
+                        HeadlineText(line.sub)
                             .font(.system(.subheadline, design: .rounded, weight: .semibold))
                             .foregroundStyle(Pop.brown)
                     }
