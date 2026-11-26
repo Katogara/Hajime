@@ -635,17 +635,17 @@ final class CostumeTests: XCTestCase {
 
     func testGrippedHandItemSitsBehindHands() {
         var wardrobe = Wardrobe()
-        wardrobe.avatar[.hand] = "tsuyu"
+        wardrobe.avatar[.hand] = "halloween"
         let look = AvatarLook.initial(for: .male)
         var names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
-        // 傘は後ろ手に持つので、素体の手より後ろに描き、右手は重ねない
-        XCTAssertEqual(names.filter { $0 == "av_tsuyu_hand_line" }.count, 1)
-        XCTAssertLessThan(names.firstIndex(of: "av_tsuyu_hand_line")!, names.firstIndex(of: "av_std_hands_fill")!)
-        XCTAssertFalse(names.contains("av_std_rhand_fill"))
-        // かぼちゃのバケツも後ろ手 (2026-11-26 のユーザーの指示)
-        wardrobe.avatar[.hand] = "halloween"
-        names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        // 後ろ手はかぼちゃのバケツだけ: 素体の手より後ろに描き、右手は重ねない (2026-11-26 のユーザーの指示)
+        XCTAssertEqual(names.filter { $0 == "av_halloween_hand_line" }.count, 1)
         XCTAssertLessThan(names.firstIndex(of: "av_halloween_hand_line")!, names.firstIndex(of: "av_std_hands_fill")!)
+        XCTAssertFalse(names.contains("av_std_rhand_fill"))
+        // 傘は後ろ手だと先が足より下に出て不自然なので、前に持つ (同じ日のユーザーの指示)
+        wardrobe.avatar[.hand] = "tsuyu"
+        names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        XCTAssertEqual(names.last, "av_tsuyu_hand_line")
         // 羽子板は手の前に持つ: 手と服の前 (全部の上)。右手は重ねない
         wardrobe.avatar[.hand] = "newyear"
         names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
