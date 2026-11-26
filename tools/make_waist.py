@@ -30,7 +30,9 @@ TOP = 586  # 腰の上端 (SVG。初期のズボンの上端 591 より少し上
 W = 8  # 線の太さ
 CENTER = (500, 524)  # 股の線を消す範囲 (x)
 # 引き伸ばす元の行 (SVG の y): 上端の線・裾の名残りより下で、折れ線がまっすぐな行
-SOURCE = {"fuwari": 652, "ouchi": 646, "amekaji": 622, "consa": 640}
+SOURCE = {"fuwari": 652, "ouchi": 646, "amekaji": 622, "consa": 648}
+# ベージュのパンツは、上端 (裾の名残りがあり左右に広がる) を make_art.py の cut で描かないので (y 640 から下だけ)、
+# 腰はこの帯だけでまっすぐにつなぐ。1 回目は上端の幅まで広げたので、腰回りが左右に膨らんだ (11-26 のユーザーの指摘)
 
 
 def load(name):
@@ -59,14 +61,10 @@ for theme in sys.argv[1:]:
     light = [p for p in row if p[3] > 200 and sum(int(v) for v in p[:3]) > 250]
     fill = Counter(tuple(int(v) for v in p[:3]) for p in light).most_common(1)[0][0] + (255,)
     out = np.zeros((1024, 1024, 4), np.uint8)
-    for y in range(TOP, src):
+    for y in range(TOP, src + 1):  # 元の行まで重ね、ズボンとのつなぎ目に線の切れ目を作らない
         t = (y - TOP) / (src - TOP)
         l = int(round(ls + (li - ls) * t))
         r = int(round(rs + (ri - rs) * t))
-        # もとのズボンがこの高さより下で広いときは、はみ出さず段もつかないよう広げる (ベージュのパンツの腰の端)
-        cols = np.nonzero(m[y:src + 1].any(axis=0))[0]
-        if m[y].any() and len(cols):
-            l, r = min(l, cols.min()), max(r, cols.max())
         xs = np.clip(np.round(np.linspace(0, ri - li, r - l + 1)).astype(int), 0, ri - li)
         out[y, l:r + 1] = row[xs]
         out[y, l:r + 1, 3] = 255
@@ -76,6 +74,12 @@ for theme in sys.argv[1:]:
         seg[dark] = fill
         if y < TOP + W:
             out[y, l:r + 1] = LINE
+    # 帯の下端のすぐ下は、ズボンの脇の線だけを写して重ねる。帯の地の色が線の上に 1 ピクセル出て、
+    # 脇の線に切れ目が見えたため (ベージュのパンツ)
+    for y in range(src + 1, src + 5):
+        dark = (item[y, :, :3].astype(int).sum(-1) < 300) & (item[y, :, 3] > 200)
+        dark[CENTER[0]:CENTER[1] + 1] = False
+        out[y][dark] = item[y][dark]
     png = np.zeros_like(out)
     png[:1024 - SHIFT] = out[SHIFT:]
     Image.fromarray(png).save(P / f"waist_{theme}.png")

@@ -534,7 +534,9 @@ job("shibuya", "av_shibuya_feet", P / "o03_avatar_shibuya.png", SHIBUYA, cut=row
 job("shibuya", "wan_shibuya_head", P / "w04_wan_shibuya.png", WAN_SHIBUYA, base=WAN_BASE)
 job("consa", "av_consa_top_std", P / "o04_avatar_consa.png", CONSA, cut=rows(0, 530))
 job("consa", "av_consa_top_joy", P / "j05_avatar_male_joy_consa.png", CONSA)
-job("consa", "av_consa_bottom", P / "o04_avatar_consa.png", CONSA, cut=bottom_rows(530, 805))
+# ベージュのパンツの上端 (SVG の y 593〜639) には上着の裾の名残りがあり、左右にも広がっているので描かない。
+# 腰は av_consa_bottom_waist (make_waist.py) がまっすぐにつなぐ (2026-11-26 のユーザーの指摘「腰回りが左右に膨らむ」)
+job("consa", "av_consa_bottom", P / "o04_avatar_consa.png", CONSA, cut=bottom_rows(576, 805))
 job("consa", "av_consa_feet", P / "o04_avatar_consa.png", CONSA, cut=rows(805, 1024))
 job("consa", "wan_consa_neck", P / "w05_wan_consa.png", WAN_CONSA, base=WAN_BASE)
 job("newyear", "av_newyear_neck", P / "o05_avatar_newyear.png", NEWYEAR, cut=blobs([0]))
