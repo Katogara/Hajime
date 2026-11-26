@@ -549,6 +549,14 @@ job("xmas", "av_xmas_head", P / "o06_avatar_xmas.png", XMAS, cut=rows(0, 330))
 job("xmas", "av_xmas_hand", P / "o06_avatar_xmas.png", XMAS, cut=no_skin(rows(330, 1024)), clean=False)
 
 
+# 腰の帯: 元の絵で上着に隠れていた腰が描かれていないズボンの上に足す (下絵は tools/make_waist.py で作る。2026-11-26)。
+# アプリでは Costumes.json の "under" でズボンの下に描く
+job("fuwari", "av_fuwari_bottom_waist", P / "waist_fuwari.png", [L, "#B5ABA0"], clean=False)
+job("ouchi", "av_ouchi_bottom_waist", P / "waist_ouchi.png", [L, "#B9B7B2"], clean=False)
+job("kissa", "av_kissa_bottom_waist", P / "waist_kissa.png", [L, "#E6CF7A"], clean=False)
+job("amekaji", "av_amekaji_bottom_waist", P / "waist_amekaji.png", [L, "#A4603B"], clean=False)
+
+
 def filled(then):
     """穴を埋める (首巻きの地の色だけで取ったとき、中の柄が穴になるため)"""
     def f(m):
