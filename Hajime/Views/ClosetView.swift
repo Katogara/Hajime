@@ -319,7 +319,8 @@ struct ClosetView: View {
 
     private func pieceLayers(_ item: CostumeItem) -> [FigureLayer] {
         guard let art = item.art(for: character == .avatar ? "std" : "all") ?? item.art.values.first else { return [] }
-        return FigureRig.pair(art)
+        // ズボンの腰 (waist) もアイコンに重ねる。着たときと同じ形に見せる (2026-11-26 のユーザーの指摘「ベージュのパンツのアイコンが前のまま」)
+        return FigureRig.pair(art) + (item.waist.map { FigureRig.pair($0) } ?? [])
     }
 
     private func sectionTitle(_ text: String) -> some View {
