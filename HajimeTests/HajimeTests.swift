@@ -633,6 +633,18 @@ final class CostumeTests: XCTestCase {
         XCTAssertFalse(catalog.setNames(navy).contains("キャメルのロングプリーツ"))
     }
 
+    /// 腰が描かれていないズボンは、腰の帯をズボンの下に描き、丈の短い上着とのあいだに隙間を作らない (2026-11-26 のユーザーの指摘)
+    func testLowWaistBottomsHaveWaistBand() {
+        let look = AvatarLook.initial(for: .male)
+        for theme in ["fuwari", "ouchi", "kissa", "amekaji"] {
+            var wardrobe = Wardrobe()
+            wardrobe.avatar[.bottom] = theme
+            let names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+            XCTAssertLessThan(names.firstIndex(of: "av_\(theme)_bottom_waist_line")!,
+                              names.firstIndex(of: "av_\(theme)_bottom_fill")!, theme)
+        }
+    }
+
     func testGrippedHandItemSitsBehindHands() {
         var wardrobe = Wardrobe()
         wardrobe.avatar[.hand] = "halloween"
