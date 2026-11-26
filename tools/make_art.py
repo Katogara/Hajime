@@ -550,11 +550,13 @@ job("xmas", "av_xmas_hand", P / "o06_avatar_xmas.png", XMAS, cut=no_skin(rows(33
 
 
 # 腰の帯: 元の絵で上着に隠れていた腰が描かれていないズボンの上に足す (下絵は tools/make_waist.py で作る。2026-11-26)。
-# アプリでは Costumes.json の "under" でズボンの下に描く
-job("fuwari", "av_fuwari_bottom_waist", P / "waist_fuwari.png", [L, "#B5ABA0"], clean=False)
-job("ouchi", "av_ouchi_bottom_waist", P / "waist_ouchi.png", [L, "#B9B7B2"], clean=False)
+# クリーム色のスラックスは "under" でズボンの下に敷く帯。ほかは "over" でズボンの上に重ね、
+# ズボンの 1 行を上へ引き伸ばした腰で、もとの上端の線や上着の裾の名残りを隠す (11-26 の 2 回目)
+job("fuwari", "av_fuwari_bottom_waist", P / "waist_fuwari.png", FUWARI, clean=False)
+job("ouchi", "av_ouchi_bottom_waist", P / "waist_ouchi.png", OUCHI, clean=False)
 job("kissa", "av_kissa_bottom_waist", P / "waist_kissa.png", [L, "#E6CF7A"], clean=False)
-job("amekaji", "av_amekaji_bottom_waist", P / "waist_amekaji.png", [L, "#A4603B"], clean=False)
+job("amekaji", "av_amekaji_bottom_waist", P / "waist_amekaji.png", AMEKAJI, clean=False)
+job("consa", "av_consa_bottom_waist", P / "waist_consa.png", CONSA, clean=False)
 
 
 def filled(then):
