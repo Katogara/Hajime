@@ -82,7 +82,7 @@ struct CostumeItem: Codable, Equatable {
     /// 帽子: [y, w]。髪は高さ y (1024 のキャンバス) より上を描かず、その高さではつばの幅 (真ん中から左右に w) に収め、
     /// 下へ行くほど広げる。ボブやマッシュが帽子の外にはみ出さず、帽子の下から広がって見えるようにする
     var hairLine: [Double]?
-    /// 手の小物: 体と素体の手より後ろに描き、後ろ手に持っているように見せる (水色の傘とかぼちゃのバケツ)。
+    /// 手の小物: 体と素体の手より後ろに描き、後ろ手に持っているように見せる (かぼちゃのバケツだけ)。
     /// なければ全部の上 (手と服の前) に描き、手の前に持って見せる (羽子板・プレゼントの箱など)
     var grip: Bool?
     /// 下の服: 靴をこの服より上に描く (足首の肌を部品に含めた服。紺のアンクルスラックス)
@@ -487,7 +487,7 @@ enum FigureRig {
         // 髪の色は塗りだけに付ける (こげ茶は絵の色のまま)。帽子をかぶっていれば、帽子の下から広がる形に切る
         layers += pair("av_hair_\(look.hair.rawValue)", tint: look.hairColor == .brown ? nil : look.hairColor.hex,
                        clip: worn(.head)?.hairClip)
-        // 手の小物は大喜びでは出さない。grip (後ろ手に持つ傘とかぼちゃのバケツ) は体と手の後ろ、それ以外は全部の上 (手と服の前)
+        // 手の小物は大喜びでは出さない。grip (後ろ手に持つかぼちゃのバケツ) は体と手の後ろ、それ以外は全部の上 (手と服の前)
         let handItem = pose == .joy ? nil : worn(.hand)
         if let item = handItem, item.grip == true, let art = item.art(for: p) { layers += pair(art) }
         layers += pair("av_\(p)_hands")
@@ -508,11 +508,12 @@ enum FigureRig {
         for part in [CostumePart.neck, .face, .head] {
             if let art = worn(part)?.art(for: p) { layers += pair(art) }
         }
-        // 後ろ手でない小物 (傘とかぼちゃのバケツのほか全部) は、手の前に持つので全部の上に描く。
+        // 後ろ手でない小物 (かぼちゃのバケツのほか全部) は、手の前に持つので全部の上に描く。
         // 経緯 (どれも 2026-11 のユーザーの指摘):
         // - 11-21: 小物を全部の上に描き、その上に右手 (av_std_rhand) を重ねて指をかけた
         // - 11-26: 「手に持つものが手首を貫通している」。小物を上の服の奥へ移し、棒の小物は外側へ傾けて袖から離した
         // - 11-26: 「後ろ手は水色の傘とかぼちゃのバケツ、ほかは手の前に持って」。右手を重ねるのをやめた
+        // - 11-26: 「傘は後ろ手だと先が足より下に出て違和感がある。前に持って、棒に手が重なるよう上げて」。傘の grip を外した
         // - 11-26: 「袖が前だと物が服の中にあるように見える。服の前に物を」。上の服より手前 (全部の上) に戻した
         if let item = handItem, item.grip != true, let art = item.art(for: p) { layers += pair(art) }
         return layers

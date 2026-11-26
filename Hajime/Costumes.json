@@ -222,7 +222,7 @@
       "id": "tsuyu", "character": "avatar", "shelf": "season", "name": "梅雨", "month": 6, "order": 6,
       "items": [
         {"part": "head", "name": "水色のレインハット", "art": {"all": "av_tsuyu_head"}, "hairLine": [262, 90]},
-        {"part": "hand", "name": "水色の傘", "art": {"all": "av_tsuyu_hand"}, "grip": true}
+        {"part": "hand", "name": "水色の傘", "art": {"all": "av_tsuyu_hand"}}
       ]
     },
     {
