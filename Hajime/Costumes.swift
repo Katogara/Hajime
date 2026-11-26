@@ -91,7 +91,7 @@ struct CostumeItem: Codable, Equatable {
     var under: String?
     /// 下の服: 服のすぐ上 (上の服の下) に重ねる部品。腰が描かれていないズボンの腰 (tools/make_waist.py)。
     /// 下に敷く帯では折れ線が切れ、もとの上端の線が股の上に残ったため、上に重ねて隠す (2026-11-26 のユーザーの指摘)
-    var over: String?
+    var waist: String?
 
     func art(for pose: String) -> String? {
         art[pose] ?? art["all"]
@@ -504,7 +504,7 @@ enum FigureRig {
             if let item = worn(part), let art = item.art(for: p) {
                 if item.layersOver { layers += pair("av_\(p)_\(part.rawValue)") }
                 layers += pair(art)
-                if part == .bottom, let waist = item.over { layers += pair(waist) }
+                if part == .bottom, let waist = item.waist { layers += pair(waist) }
             } else {
                 layers += pair("av_\(p)_\(part.rawValue)")
             }
