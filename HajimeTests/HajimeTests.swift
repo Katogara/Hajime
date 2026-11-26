@@ -633,15 +633,22 @@ final class CostumeTests: XCTestCase {
         XCTAssertFalse(catalog.setNames(navy).contains("キャメルのロングプリーツ"))
     }
 
-    /// 腰が描かれていないズボンは、腰の帯をズボンの下に描き、丈の短い上着とのあいだに隙間を作らない (2026-11-26 のユーザーの指摘)
+    /// 腰が描かれていないズボンは腰を足し、丈の短い上着とのあいだに隙間を作らない (2026-11-26 のユーザーの指摘)。
+    /// クリーム色のスラックスはズボンの下に敷く帯。ほかはズボンの上・上着の下に重ね、もとの上端の線や裾の名残りを隠す (同じ日の 2 回目)
     func testLowWaistBottomsHaveWaistBand() {
         let look = AvatarLook.initial(for: .male)
-        for theme in ["fuwari", "ouchi", "kissa", "amekaji"] {
+        func layers(_ theme: String) -> [String] {
             var wardrobe = Wardrobe()
             wardrobe.avatar[.bottom] = theme
-            let names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
-            XCTAssertLessThan(names.firstIndex(of: "av_\(theme)_bottom_waist_line")!,
-                              names.firstIndex(of: "av_\(theme)_bottom_fill")!, theme)
+            return FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
+        }
+        let kissa = layers("kissa")
+        XCTAssertLessThan(kissa.firstIndex(of: "av_kissa_bottom_waist_line")!, kissa.firstIndex(of: "av_kissa_bottom_fill")!)
+        for theme in ["fuwari", "ouchi", "amekaji", "consa"] {
+            let names = layers(theme)
+            let waist = names.firstIndex(of: "av_\(theme)_bottom_waist_fill")!
+            XCTAssertGreaterThan(waist, names.firstIndex(of: "av_\(theme)_bottom_line")!, theme)
+            XCTAssertLessThan(waist, names.firstIndex(of: "av_std_top_fill")!, theme)
         }
     }
 
