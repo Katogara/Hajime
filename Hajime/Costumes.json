@@ -42,7 +42,7 @@
       "id": "consa", "character": "avatar", "shelf": "fashion", "name": "コンサバ系", "note": "きちんと・やわらか", "order": 4,
       "items": [
         {"part": "top", "name": "パールとカーディガン", "art": {"std": "av_consa_top_std", "joy": "av_consa_top_joy"}},
-        {"part": "bottom", "name": "ベージュのパンツ", "art": {"all": "av_consa_bottom"}},
+        {"part": "bottom", "name": "ベージュのパンツ", "art": {"all": "av_consa_bottom"}, "over": "av_consa_bottom_waist"},
         {"part": "feet", "name": "ベージュのローファー", "art": {"all": "av_consa_feet"}}
       ]
     },
@@ -59,14 +59,14 @@
       "items": [
         {"part": "face", "name": "丸めがね", "art": {"all": "av_fuwari_face"}},
         {"part": "top", "name": "雲のニットベスト", "over": true, "art": {"std": "av_fuwari_top_std", "joy": "av_fuwari_top_joy"}},
-        {"part": "bottom", "name": "ワイドスラックス", "art": {"all": "av_fuwari_bottom"}, "under": "av_fuwari_bottom_waist"}
+        {"part": "bottom", "name": "ワイドスラックス", "art": {"all": "av_fuwari_bottom"}, "over": "av_fuwari_bottom_waist"}
       ]
     },
     {
       "id": "ouchi", "character": "avatar", "shelf": "fashion", "name": "おうちゆる", "note": "きょうは休む日でいい", "order": 7,
       "items": [
         {"part": "top", "name": "大きなボタンのパジャマ", "art": {"std": "av_ouchi_top_std", "joy": "av_ouchi_top_joy"}},
-        {"part": "bottom", "name": "パジャマのパンツ", "art": {"all": "av_ouchi_bottom"}, "under": "av_ouchi_bottom_waist"},
+        {"part": "bottom", "name": "パジャマのパンツ", "art": {"all": "av_ouchi_bottom"}, "over": "av_ouchi_bottom_waist"},
         {"part": "feet", "name": "ふわふわのルームスリッパ", "art": {"all": "av_ouchi_feet"}}
       ]
     },
@@ -99,7 +99,7 @@
       "id": "amekaji", "character": "avatar", "shelf": "fashion", "name": "古着アメカジ", "note": "着古した味がいい", "order": 11,
       "items": [
         {"part": "top", "name": "星のパッチワークシャツ", "art": {"std": "av_amekaji_top_std", "joy": "av_amekaji_top_joy"}},
-        {"part": "bottom", "name": "コーデュロイパンツ", "art": {"all": "av_amekaji_bottom"}, "under": "av_amekaji_bottom_waist"},
+        {"part": "bottom", "name": "コーデュロイパンツ", "art": {"all": "av_amekaji_bottom"}, "over": "av_amekaji_bottom_waist"},
         {"part": "feet", "name": "ワークブーツ", "art": {"all": "av_amekaji_feet"}}
       ]
     },
