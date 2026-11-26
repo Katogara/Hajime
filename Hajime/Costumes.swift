@@ -83,7 +83,7 @@ struct CostumeItem: Codable, Equatable {
     /// 下へ行くほど広げる。ボブやマッシュが帽子の外にはみ出さず、帽子の下から広がって見えるようにする
     var hairLine: [Double]?
     /// 手の小物: 体と素体の手より後ろに描き、後ろ手に持っているように見せる (傘だけ)。
-    /// なければ体より手前に描き、その上に右手 (av_std_rhand) を重ねて指をかける (羽子板・プレゼントの箱など)
+    /// なければ下の服より手前・上の服 (袖) より奥に描き、いちばん上に右手 (av_std_rhand) を重ねて指をかける (羽子板・プレゼントの箱など)
     var grip: Bool?
     /// 下の服: 靴をこの服より上に描く (足首の肌を部品に含めた服。紺のアンクルスラックス)
     var feetOver: Bool?
@@ -487,7 +487,7 @@ enum FigureRig {
         // 髪の色は塗りだけに付ける (こげ茶は絵の色のまま)。帽子をかぶっていれば、帽子の下から広がる形に切る
         layers += pair("av_hair_\(look.hair.rawValue)", tint: look.hairColor == .brown ? nil : look.hairColor.hex,
                        clip: worn(.head)?.hairClip)
-        // 手の小物は大喜びでは出さない。grip (後ろ手に持つ傘) は体と手の後ろ、それ以外は全部の上に描いて右手を重ねる
+        // 手の小物は大喜びでは出さない。grip (後ろ手に持つ傘) は体と手の後ろ、それ以外は上の服のすぐ奥に描いて右手を重ねる
         let handItem = pose == .joy ? nil : worn(.hand)
         if let item = handItem, item.grip == true, let art = item.art(for: p) { layers += pair(art) }
         layers += pair("av_\(p)_hands")
@@ -497,7 +497,12 @@ enum FigureRig {
         // 高さのある靴がスカートの裾にかぶった (2026-11-10 のユーザーの指摘)
         if let legs = worn(.bottom)?.under { layers += pair(legs) }
         let order: [CostumePart] = worn(.bottom)?.feetOver == true ? [.bottom, .feet, .top] : [.feet, .bottom, .top]
+        // 握らない小物 (傘のほか全部) は下の服より手前、上の服より奥に描き、最後に右手だけを重ねて指が小物にかかって見えるようにする。
+        // 2026-11-21 は上の服より手前に描いていたが、袖口と手首の上に小物が重なり、棒が手首を貫いて見えた
+        // (2026-11-26 のユーザーの指摘「手に持つものが手首を貫通している」)。棒の小物は外側へ傾けて袖から離した
+        let frontItem = handItem.flatMap { $0.grip == true ? nil : $0.art(for: p) }
         for part in order {
+            if part == .top, let art = frontItem { layers += pair(art) }
             if let item = worn(part), let art = item.art(for: p) {
                 if item.layersOver { layers += pair("av_\(p)_\(part.rawValue)") }
                 layers += pair(art)
@@ -508,11 +513,8 @@ enum FigureRig {
         for part in [CostumePart.neck, .face, .head] {
             if let art = worn(part)?.art(for: p) { layers += pair(art) }
         }
-        // 握らない小物 (傘のほか全部) は体より手前に描き、その上に右手だけを重ねて、指が小物にかかって見えるようにする
-        // (2026-11-21 のユーザーの指摘「手に持つものが全て手の後ろに置かれているのがおかしい。傘のみ後ろ手に持つのが一般的」)
-        if let item = handItem, item.grip != true, let art = item.art(for: p) {
-            layers += pair(art) + pair("av_std_rhand")
-        }
+        // 右手は全部の上 (2026-11-21 のユーザーの指摘「手に持つものが全て手の後ろに置かれているのがおかしい。傘のみ後ろ手に持つのが一般的」)
+        if frontItem != nil { layers += pair("av_std_rhand") }
         return layers
     }
 
