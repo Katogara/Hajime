@@ -433,8 +433,11 @@ job("mode", "av_mode_top_std", P / "o18c_avatar_mode.png", MODE, cut=rows(290, 7
 job("mode", "av_mode_top_joy", P / "j17_avatar_male_joy_mode.png", MODE)
 job("mode", "av_mode_feet", P / "o18_avatar_mode_feet.png", MODE)
 job("mode", "wan_mode_neck", P / "w18_wan_mode.png", WAN_MODE, base=WAN_BASE)
+# ゴーグルは枠とレンズの色で取るので、レンズの白い反射の太いところが穴になり、下の顔 (肌と目の線) が透けて
+# 傷のような太い線に見えた (2026-11-26 のユーザーの指摘)。穴を埋める (filled は下で定義。cut は main で呼ぶので使える)
 job("tech", "av_tech_face", P / "o19c_avatar_tech_face.png", TECH, line=False, blob=30,
-    cut=lambda m: blobs([0])(colors_of(G / "o19c_avatar_tech.jpg", ["#AAA7A2", "#60CAE8"], reach=6, tol=60)(m)))
+    cut=lambda m: filled(lambda m2: blobs([0])(colors_of(G / "o19c_avatar_tech.jpg", ["#AAA7A2", "#60CAE8"],
+                                                         reach=6, tol=60)(m2)))(m))
 job("tech", "av_tech_top_std", P / "o19c_avatar_tech_region.png", TECH,
     cut=lambda m: blobs([0])(no_skin(smooth(colors_of(G / "o19c_avatar_tech.jpg", ["#62828F", "#CFE870"],
                                                        then=rows(290, 545), reach=6, tol=50)), reach=4)(m)))
