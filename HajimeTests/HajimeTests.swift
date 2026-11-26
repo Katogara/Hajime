@@ -585,11 +585,9 @@ final class CostumeTests: XCTestCase {
         XCTAssertLessThan(names.firstIndex(of: "av_lashes_std_line")!, names.firstIndex(of: "av_hair_bob_fill")!)
         XCTAssertFalse(names.contains("av_std_top_fill"))
         XCTAssertLessThan(names.firstIndex(of: "av_hair_bob_line")!, names.firstIndex(of: "av_xmas_head_fill")!)
-        // 手に持つ物は下の服より手前・上の服 (袖) より奥。袖口に重なって手首を貫いて見えないようにする
-        XCTAssertLessThan(names.firstIndex(of: "av_std_bottom_line")!, names.firstIndex(of: "av_xmas_hand_fill")!)
-        XCTAssertLessThan(names.firstIndex(of: "av_xmas_hand_line")!, names.firstIndex(of: "av_street_top_std_fill")!)
-        // 手の前に持つので、素体の手より手前で、右手は重ねない
-        XCTAssertLessThan(names.firstIndex(of: "av_std_hands_line")!, names.firstIndex(of: "av_xmas_hand_fill")!)
+        // 手の前に持つ物は全部の上 (袖が前だと物が服の中にあるように見える)。右手は重ねない
+        XCTAssertLessThan(names.firstIndex(of: "av_xmas_head_line")!, names.firstIndex(of: "av_xmas_hand_fill")!)
+        XCTAssertEqual(Array(names.suffix(2)), ["av_xmas_hand_fill", "av_xmas_hand_line"])
         XCTAssertFalse(names.contains("av_std_rhand_fill"))
         // 大喜びでは手に持つ物を出さない
         let joy = FigureRig.avatar(look, pose: .joy, wardrobe: wardrobe, catalog: catalog).map(\.asset)
@@ -648,11 +646,11 @@ final class CostumeTests: XCTestCase {
         wardrobe.avatar[.hand] = "halloween"
         names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
         XCTAssertLessThan(names.firstIndex(of: "av_halloween_hand_line")!, names.firstIndex(of: "av_std_hands_fill")!)
-        // 羽子板は手の前に持つ: 素体の手より手前、上の服より奥。右手は重ねない
+        // 羽子板は手の前に持つ: 手と服の前 (全部の上)。右手は重ねない
         wardrobe.avatar[.hand] = "newyear"
         names = FigureRig.avatar(look, pose: .normal, wardrobe: wardrobe, catalog: catalog).map(\.asset)
-        XCTAssertLessThan(names.firstIndex(of: "av_std_hands_line")!, names.firstIndex(of: "av_newyear_hand_fill")!)
-        XCTAssertLessThan(names.firstIndex(of: "av_newyear_hand_line")!, names.firstIndex(of: "av_std_top_fill")!)
+        XCTAssertLessThan(names.firstIndex(of: "av_std_top_line")!, names.firstIndex(of: "av_newyear_hand_fill")!)
+        XCTAssertEqual(names.last, "av_newyear_hand_line")
         XCTAssertFalse(names.contains("av_std_rhand_fill"))
         let joy = FigureRig.avatar(look, pose: .joy, wardrobe: wardrobe, catalog: catalog).map(\.asset)
         XCTAssertFalse(joy.contains("av_newyear_hand_fill"))
