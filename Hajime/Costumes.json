@@ -250,7 +250,7 @@
       "id": "halloween", "character": "avatar", "shelf": "season", "name": "ハロウィン", "month": 10, "order": 10,
       "items": [
         {"part": "head", "name": "とんがり帽", "art": {"all": "av_halloween_head"}, "hairLine": [260, 90]},
-        {"part": "hand", "name": "かぼちゃのバケツ", "art": {"all": "av_halloween_hand"}}
+        {"part": "hand", "name": "かぼちゃのバケツ", "art": {"all": "av_halloween_hand"}, "grip": true}
       ]
     },
     {
