@@ -82,9 +82,20 @@ enum Phrases {
     }
 }
 
-/// 文節の切れ目だけで折り返す `Text`。文や説明はこれで出す
-func PhraseText(_ text: String) -> Text {
-    Text(verbatim: Phrases.wrapped(text))
+/// 文節の切れ目だけで折り返す文。文や説明はこれで出す。
+/// 前は 1 つの `Text` (文節の中を Word Joiner でつなぐ) だったが、iOS がつなぎを無視して
+/// 「最初の一歩に／、ちゃんと」と読点の前で折り返した (2026-11-27 のユーザーの画面)。
+/// 見出しと同じく、文節を並べる位置を自分で決める (PhraseFlow)。
+struct PhraseText: View {
+    let text: String
+
+    init(_ text: String) {
+        self.text = text
+    }
+
+    var body: some View {
+        PhraseFlow(text: text)
+    }
 }
 
 /// 見出しや褒め言葉。1 行に収まればそのまま、収まらなければ句読点の後ろで行を分け、
@@ -116,7 +127,7 @@ struct HeadlineText: View {
 /// 文節ごとに別の Text にして並べ、文節の間だけで折り返す。
 /// PhraseText (文節の中を Word Joiner でつなぐ) でも、iOS が「あなたの「／はじめる」を」と括弧の直後で折り返した
 /// (2026-11-17 に ViewThatFits を直したあとも、2026-11-25 のユーザーの画面で同じ切れ方が残っていた)。
-/// 1 つの Text の中の折り返しは iOS に任せるしかないので、見出しは文節を並べる位置を自分で決める
+/// 1 つの Text の中の折り返しは iOS に任せるしかないので、文節を並べる位置を自分で決める (見出しと PhraseText)
 private struct PhraseFlow: View {
     let text: String
     @Environment(\.multilineTextAlignment) private var alignment
