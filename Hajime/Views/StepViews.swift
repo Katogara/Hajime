@@ -335,7 +335,8 @@ struct StepTipsView: View {
         case .only: return "最初の一歩は、これだけでいいんだ"
         case .notice: return tapped ? "押して始めたら、経験値+1。ワンダフル！" : "通知には、この一歩だけが出るよ"
         case .keepGoing: return "動き出せば、次は体が勝手に進むことが多いよ。続けるかは、そのとき決めればOK"
-        case .choose: return "きみのやることでも、からだの最初の動きを書いてね"
+        // 相手を「きみ」と呼ばない (2026-11-11 ワンのすけの言葉チーム)。お風呂の例のあとなので「ほかのやること」
+        case .choose: return "ほかのやることでも、からだの最初の動きを書いてね"
         }
     }
 
